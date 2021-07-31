@@ -1,0 +1,60 @@
+.darkBG {
+	background: #999;
+}
+body {overflow-x: hidden;}
+.firstButton{
+	padding-left: 3%;
+	background: #808080;
+}
+
+.back{	
+	background: #eee;
+}
+
+.columnText{
+	font-size: 18pt;
+	font-style: Helvetica;
+	padding-left: 3%
+}
+
+.vertical-center {
+	display: inline-block;
+ }
+
+
+ .github{
+ 	padding-left: 45%
+ }
+
+ .jsapp{	
+ 	padding-right: 15%
+ }
+/*The folllowing classes are from a stackoverflow commment by Sinan Unur */
+
+.latex sub {
+  vertical-align: -0.1ex;
+  margin-left: -0.1667em;
+  margin-right: -0.025em;
+}
+
+.xetex sub {
+  vertical-align: -0.1ex;
+  margin-left: -0.1667em;
+  margin-right: -0.125em;
+}
+
+.latex sub, .latex sup, .xetex sub {
+  font-size: 0.9em;
+  text-transform:uppercase;
+
+}
+.latex sup {
+  font-size: 0.85em;
+  vertical-align: -0.2em;
+  margin-left: -0.26em;
+  margin-right: -0.05em;
+}
+
+li.borderless {
+  border-top: 0 none;
+}
