@@ -1,2 +1,2 @@
 ### Personal Website
-Repository to person website.
+Repository for person website.
