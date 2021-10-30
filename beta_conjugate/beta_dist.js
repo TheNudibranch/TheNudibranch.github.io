@@ -241,7 +241,10 @@ function gen_beta_binomial_dist(n, alpha, beta, min_prob=1e-3){
 function gen_beta_dist(alpha, beta, n=1000){
   var xs = [];
   for (i=0;i<=1;i+=1/n){
-    xs.push([i,jStat.beta.pdf(i, alpha, beta)]);
+    var val = jStat.beta.pdf(i, alpha, beta);
+    if (val != Infinity){
+      xs.push([i,val]);
+    }
   };
   return xs;
 };
