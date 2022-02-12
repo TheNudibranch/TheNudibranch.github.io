@@ -224,15 +224,32 @@ function gen_beta_binomial_dist(n, alpha, beta, min_prob=1e-3){
   var xs = [];
   var ss = 0;
   var count = 0;
-  while (ss == 0){
-    var prob_val = binomail(n, count) * (beta_val(count+alpha, n-count+beta) / beta_val(alpha, beta));
-    if (prob_val > min_prob){
-      xs.push([count, prob_val]);
+  var mean = alpha / (alpha + beta);
+  console.log(mean)
+  if (beta_val(alpha, beta) > 1e-26){
+    while (ss == 0){
+      var prob_val = binomail(n, count) * (beta_val(count+alpha, n-count+beta) / beta_val(alpha, beta));
+      if (prob_val > min_prob){
+        xs.push([count, prob_val]);
+      }
+      if (((prob_val < min_prob) && (jStat.sum(xs) > 0.7)) || (count >= n)){
+        ss = 1;
+      }
+      count += 1;
     }
-    if (((prob_val < min_prob) && (jStat.sum(xs) > 0.7)) || (count >= n)){
-      ss = 1;
+  }
+  else{
+    while (ss == 0){
+      var prob_val = binomail(n, count) * (mean)**(count) * (1-mean)**(n-count)
+      console.log(prob_val)
+      if (prob_val > min_prob){
+        xs.push([count, prob_val]);
+      }
+      if (((prob_val < min_prob) && (jStat.sum(xs) > 0.7)) || (count >= n)){
+        ss = 1;
+      }
+      count += 1;
     }
-    count += 1;
   }
   return xs;
 }
