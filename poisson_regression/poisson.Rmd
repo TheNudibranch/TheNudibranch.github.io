@@ -1,0 +1,172 @@
+---
+title: "Bayesian Decision Analysis with Poisson Regression and Metropolis-Hastings"
+output: html_document
+---
+
+## A fishy situation
+Allow me to paint a picture:
+
+You're an avid salmon fisherman and statistician. You've fished 100 ponds in the surrounding area and have recorded the hourly rate at which you catch salmon while on the water. During your time on the water you also record a couple of measurable variables for each pond: pond depth and dissolved oxygen.
+
+Now, your friend Danny wants go fishing with you this week and suggests two ponds you haven't fished a before. Also, since Danny is a good friend, they have kindly measured both depth and dissolved oxygen of each pond. Very thoughtful! The question now stands: which pond will you catch more salmon at?
+
+## Data generation
+Lets assume that the number of salmon caught $Y$ is poisson distributed with rate $\lambda$. $$Y \sim Poi(\lambda)$$ 
+
+Let us also assume that the log rate of catching salmon is a linear function of the two pond variables:
+
+$$\log(\lambda) =  \beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0$$
+Finally, we may write the probability of catching $y$ salmon during one hour of fishing given the above parameters:
+
+$$P(y|x_i;\beta_{depth},\beta_{oxy},\beta_0)=\frac{\lambda^y}{y!}e^{-\lambda}, \hspace{4mm} \lambda=\exp(\beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0)$$
+Now, let's generate some data!
+```{r, fig.align='center'}
+# Function to standardize data
+standardize <- function(x){
+  return((x - mean(x)) / sd(x))
+}
+
+
+N <- 500 # Number of ponds fished at
+x.oxy <- rnorm(N, 5, 1) # Dissolved oxygen in mg per Liter
+x.depth <- abs(rnorm(N, 30, 10)) # Pond depth
+
+b.oxy <- 0.8
+b.depth <- -0.6
+b.int <- 0.4
+lambda <- exp(b.oxy*standardize(x.oxy) + b.depth*standardize(x.depth) + b.int)
+y <- rpois(length(lambda), lambda = lambda)
+
+par(mfrow=c(1,2))
+plot(x.oxy, y, pch=16, col='darkblue', ylab='Fish Caught Per Hour', xlab='Dissolved Oxygen (mg/L)')
+plot(x.depth, y, pch=16, col='darkred', ylab='Fish Caught Per Hour', xlab='Pond Depth (m)')
+```
+```{r}
+fit <- glm(y ~ standardize(x.oxy) + standardize(x.depth), family=poisson())
+summary(fit)
+```
+
+## MCMC with Metropolis Hastings
+### Theory
+
+First, we will assume that the parameters $\beta_{depth}$, $\beta_{oxy}$, and $\beta_0$ are independent of each other such that the joint probability distribution for the parameters can be expressed as:
+
+$$P(\beta_{depth}, \beta_{oxy}, \beta_0 ) = P(\beta_{depth} ) \cdot P(\beta_{oxy})\cdot P(\beta_0)$$
+
+Where $D$ is the observed data.
+
+
+Now, observing the data from the plots above, we can assume that $\beta_{depth}$ will be positive and $\beta_{oxy}$ to be negative. Thus, we can set out priors to reflect this observation:
+
+\begin{align}
+Y &\sim Poi(\lambda) \\
+\log(\lambda) &=  \beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0 \\
+\beta_{depth} &\sim N(0.5, 1) \\
+\beta_{oxy} &\sim N(-0.5,1) \\
+\beta_0 &\sim N(0, 10)
+\end{align}
+
+
+```{r}
+log.poi.liklihood <- function(params){
+  lam_cands <- exp(params[['b.oxy.cand']]*standardize(x.oxy) + 
+                     params[['b.depth.cand']]*standardize(x.depth) +
+                     params[['b.int.cand']])
+  return(sum(dpois(y, lam_cands, log=T)))
+}
+
+log.prior <- function(params){
+  return(
+    dnorm(params[['b.oxy.cand']], 0.5, 1, log=T) +
+    dnorm(params[['b.depth.cand']], -0.5, 1, log=T) +
+    dnorm(params[['b.int.cand']], 0, 10, log=T)
+  )
+}
+
+log.posterior.prob <- function(params){
+  return(log.prior(params) + log.poi.liklihood(params))
+}
+
+mcmc_chain <- function(N_sim, explore_param){
+  curr_params <-  list(
+    b.oxy.cand = rnorm(1, 0, 4),
+    b.depth.cand = rnorm(1, 0, 4),
+    b.int.cand = rnorm(1, 0, 4)
+  )
+  chain <- matrix(NA, nrow=N_sim, ncol=3)
+  for (i in 1:N_sim){
+    if (i %% 1e3 == 0){
+        cat('\014')
+    cat(sprintf('%s%% Done', round(i*100/N_sim)))
+    }
+    cand_params <- list(
+      b.oxy.cand = rnorm(1, curr_params[['b.oxy.cand']], explore_param),
+      b.depth.cand = rnorm(1, curr_params[['b.depth.cand']], explore_param),
+      b.int.cand = rnorm(1, curr_params[['b.int.cand']], explore_param)
+    )
+    a <- min(1, exp(log.posterior.prob(cand_params) - 
+                      log.posterior.prob(curr_params)))
+    u <- runif(1)
+    if (u <= a){
+      chain[i,] <- unlist(cand_params)
+      curr_params <- cand_params
+    }
+    else{
+      chain[i,] <- unlist(curr_params)
+    }
+  }
+  return(chain)
+}
+
+```
+
+```{r}
+N_sim <- 1e4
+N_chains <- 4
+
+posterior_samples <- array(NA, c(N_sim, 3, N_chains))
+
+chain <- mcmc_chain(N_sim, explore_param = 0.01)
+
+simulation <- list()
+for (i in 1:N_chains){
+  simulation[[paste0('chain_',i)]] <- mcmc_chain(N_sim, explore_param = 0.01)
+}
+
+names(simulation)
+```
+
+```{r, fig.align='center', fig.width=7, echo=F}
+burn <- 2e4
+par(mfrow=c(1,2))
+posterior.oxy <- density(chain[-seq(1,burn), 1])
+plot(posterior.oxy, lwd = 4, xlab='', ylab='', main='Posterior for Dissolved Oxygen Paramter')
+polygon(posterior.oxy, col=adjustcolor('darkgreen', 0.5))
+abline(v=0.8, col='red', lwd=4)
+
+
+posterior.depth <- density(chain[-seq(1,burn), 2])
+plot(posterior.depth, lwd = 4, xlab='', ylab='', main='Posterior for Depth Paramter')
+polygon(posterior.depth, col=adjustcolor('darkblue', 0.5))
+abline(v=-0.6, col='red', lwd=4)
+
+
+# posterior.int <- density(chain[-seq(1,burn), 3])
+# plot(posterior.int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
+# polygon(posterior.int, col=adjustcolor('darkred', 0.5))
+# abline(v=0.4, col='red', lwd=4)
+```
+
+
+```{r, fig.align='center', fig.width=7}
+par(mfrow=c(1,1))
+posterior.int <- density(chain[-seq(1,burn), 3])
+plot(posterior.int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
+polygon(posterior.int, col=adjustcolor('darkred', 0.5))
+abline(v=0.4, col='red', lwd=4)
+```
+
+```{r}
+plot(chain[-seq(1,3000),3], type='l')
+```
+
