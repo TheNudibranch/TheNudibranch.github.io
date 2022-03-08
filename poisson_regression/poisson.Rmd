@@ -28,21 +28,21 @@ standardize <- function(x){
 
 
 N <- 500 # Number of ponds fished at
-x.oxy <- rnorm(N, 5, 1) # Dissolved oxygen in mg per Liter
-x.depth <- abs(rnorm(N, 30, 10)) # Pond depth
+x_oxy <- rnorm(N, 5, 1) # Dissolved oxygen in mg per Liter
+x_depth <- abs(rnorm(N, 30, 10)) # Pond depth
 
-b.oxy <- 0.8
-b.depth <- -0.6
-b.int <- 0.4
-lambda <- exp(b.oxy*standardize(x.oxy) + b.depth*standardize(x.depth) + b.int)
+b_oxy <- 0.8
+b_depth <- -0.6
+b_int <- 0.4
+lambda <- exp(b_oxy*standardize(x_oxy) + b_depth*standardize(x_depth) + b_int)
 y <- rpois(length(lambda), lambda = lambda)
 
 par(mfrow=c(1,2))
-plot(x.oxy, y, pch=16, col='darkblue', ylab='Fish Caught Per Hour', xlab='Dissolved Oxygen (mg/L)')
-plot(x.depth, y, pch=16, col='darkred', ylab='Fish Caught Per Hour', xlab='Pond Depth (m)')
+plot(x_oxy, y, pch=16, col='darkblue', ylab='Fish Caught Per Hour', xlab='Dissolved Oxygen (mg/L)')
+plot(x_depth, y, pch=16, col='darkred', ylab='Fish Caught Per Hour', xlab='Pond Depth (m)')
 ```
 ```{r}
-fit <- glm(y ~ standardize(x.oxy) + standardize(x.depth), family=poisson())
+fit <- glm(y ~ standardize(x_oxy) + standardize(x_depth), family=poisson())
 summary(fit)
 ```
 
@@ -68,30 +68,30 @@ Y &\sim Poi(\lambda) \\
 
 
 ```{r}
-log.poi.liklihood <- function(params){
-  lam_cands <- exp(params[['b.oxy.cand']]*standardize(x.oxy) + 
-                     params[['b.depth.cand']]*standardize(x.depth) +
-                     params[['b.int.cand']])
+log_poi_liklihood <- function(params){
+  lam_cands <- exp(params[['b_oxy_cand']]*standardize(x_oxy) + 
+                     params[['b_depth_cand']]*standardize(x_depth) +
+                     params[['b_int_cand']])
   return(sum(dpois(y, lam_cands, log=T)))
 }
 
-log.prior <- function(params){
+log_prior <- function(params){
   return(
-    dnorm(params[['b.oxy.cand']], 0.5, 1, log=T) +
-    dnorm(params[['b.depth.cand']], -0.5, 1, log=T) +
-    dnorm(params[['b.int.cand']], 0, 10, log=T)
+    dnorm(params[['b_oxy_cand']], 0.5, 1, log=T) +
+    dnorm(params[['b_depth_cand']], -0.5, 1, log=T) +
+    dnorm(params[['b_int_cand']], 0, 10, log=T)
   )
 }
 
-log.posterior.prob <- function(params){
-  return(log.prior(params) + log.poi.liklihood(params))
+log_posterior_prob <- function(params){
+  return(log_prior(params) + log_poi_liklihood(params))
 }
 
 mcmc_chain <- function(N_sim, explore_param){
   curr_params <-  list(
-    b.oxy.cand = rnorm(1, 0, 4),
-    b.depth.cand = rnorm(1, 0, 4),
-    b.int.cand = rnorm(1, 0, 4)
+    b_oxy_cand = rnorm(1, 0, 4),
+    b_depth_cand = rnorm(1, 0, 4),
+    b_int_cand = rnorm(1, 0, 4)
   )
   chain <- matrix(NA, nrow=N_sim, ncol=3)
   for (i in 1:N_sim){
@@ -100,12 +100,12 @@ mcmc_chain <- function(N_sim, explore_param){
     cat(sprintf('%s%% Done', round(i*100/N_sim)))
     }
     cand_params <- list(
-      b.oxy.cand = rnorm(1, curr_params[['b.oxy.cand']], explore_param),
-      b.depth.cand = rnorm(1, curr_params[['b.depth.cand']], explore_param),
-      b.int.cand = rnorm(1, curr_params[['b.int.cand']], explore_param)
+      b_oxy_cand = rnorm(1, curr_params[['b_oxy_cand']], explore_param),
+      b_depth_cand = rnorm(1, curr_params[['b_depth_cand']], explore_param),
+      b_int_cand = rnorm(1, curr_params[['b_int_cand']], explore_param)
     )
-    a <- min(1, exp(log.posterior.prob(cand_params) - 
-                      log.posterior.prob(curr_params)))
+    a <- min(1, exp(log_posterior_prob(cand_params) - 
+                      log_posterior_prob(curr_params)))
     u <- runif(1)
     if (u <= a){
       chain[i,] <- unlist(cand_params)
@@ -135,34 +135,37 @@ for (i in 1:N_chains){
 
 names(simulation)
 ```
+```{r}
+chain
+```
 
 ```{r, fig.align='center', fig.width=7, echo=F}
-burn <- 2e4
+burn <- 2e3
 par(mfrow=c(1,2))
-posterior.oxy <- density(chain[-seq(1,burn), 1])
-plot(posterior.oxy, lwd = 4, xlab='', ylab='', main='Posterior for Dissolved Oxygen Paramter')
-polygon(posterior.oxy, col=adjustcolor('darkgreen', 0.5))
+posterior_oxy <- density(chain[-seq(1,burn), 1])
+plot(posterior_oxy, lwd = 4, xlab='', ylab='', main='Posterior for Dissolved Oxygen Paramter')
+polygon(posterior_oxy, col=adjustcolor('darkgreen', 0.5))
 abline(v=0.8, col='red', lwd=4)
 
 
-posterior.depth <- density(chain[-seq(1,burn), 2])
-plot(posterior.depth, lwd = 4, xlab='', ylab='', main='Posterior for Depth Paramter')
-polygon(posterior.depth, col=adjustcolor('darkblue', 0.5))
+posterior_depth <- density(chain[-seq(1,burn), 2])
+plot(posterior_depth, lwd = 4, xlab='', ylab='', main='Posterior for Depth Paramter')
+polygon(posterior_depth, col=adjustcolor('darkblue', 0.5))
 abline(v=-0.6, col='red', lwd=4)
 
 
-# posterior.int <- density(chain[-seq(1,burn), 3])
-# plot(posterior.int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
-# polygon(posterior.int, col=adjustcolor('darkred', 0.5))
+# posterior_int <- density(chain[-seq(1,burn), 3])
+# plot(posterior_int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
+# polygon(posterior_int, col=adjustcolor('darkred', 0.5))
 # abline(v=0.4, col='red', lwd=4)
 ```
 
 
 ```{r, fig.align='center', fig.width=7}
 par(mfrow=c(1,1))
-posterior.int <- density(chain[-seq(1,burn), 3])
-plot(posterior.int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
-polygon(posterior.int, col=adjustcolor('darkred', 0.5))
+posterior_int <- density(chain[-seq(1,burn), 3])
+plot(posterior_int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
+polygon(posterior_int, col=adjustcolor('darkred', 0.5))
 abline(v=0.4, col='red', lwd=4)
 ```
 
