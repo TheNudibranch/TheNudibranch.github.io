@@ -20,17 +20,18 @@ Finally, we may write the probability of catching $y$ salmon during one hour of 
 
 $$P(y|x_i;\beta_{depth},\beta_{oxy},\beta_0)=\frac{\lambda^y}{y!}e^{-\lambda}, \hspace{4mm} \lambda=\exp(\beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0)$$
 Now, let's generate some data!
-```{r, fig.align='center'}
-library(dplyr)
-library(bayesplot)
-library(rstan)
+```{r, fig.align='center', set.seed(1234)}
+knitr::opts_chunk$set(cache = T)
+
+suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(rstan)))
 # Function to standardize data
 standardize <- function(x){
   return((x - mean(x)) / sd(x))
 }
+set.seed(1234)
 
-
-N <- 100 # Number of ponds fished at
+N <- 200 # Number of ponds fished at
 x_oxy <- rnorm(N, 5, 1) # Dissolved oxygen in mg per Liter
 x_depth <- abs(rnorm(N, 30, 10)) # Pond depth
 
@@ -60,9 +61,9 @@ Now, observing the data from the plots above, we can assume that $\beta_{depth}$
 \begin{align}
 Y &\sim Poi(\lambda) \\
 \log(\lambda) &=  \beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0 \\
-\beta_{depth} &\sim N(0.5, 1) \\
-\beta_{oxy} &\sim N(-0.5,1) \\
-\beta_0 &\sim N(0, 10)
+\beta_{depth} &\sim N(0.5, 0.5) \\
+\beta_{oxy} &\sim N(-0.5,0.5) \\
+\beta_0 &\sim N(0, 0.5)
 \end{align}
 
 
@@ -91,7 +92,7 @@ log_posterior_prob <- function(params){
 
 While defining our priors it is always good practice to make sure that they make sense by checking the prior predictive distribution. We can do this by taking some samples from our prior distributions and using them in place of our model.
 
-```{r}
+```{r, fig.align='center'}
 n_prior_samples <- 1e3
 sample_priors <- cbind(rnorm(n_prior_samples, 0.5, 0.5),
                        rnorm(n_prior_samples, -0.5, 0.5),
@@ -100,8 +101,11 @@ sample_priors <- cbind(rnorm(n_prior_samples, 0.5, 0.5),
 prior_predicitive <- cbind(standardize(x_oxy), standardize(x_depth)) %>% apply(., 1, function(x) 
   rpois(n=n_prior_samples, exp(x[1]*sample_priors[,1] + x[2]*sample_priors[,2] + sample_priors[,3]) ))
 
-hist(prior_predicitive %>% log(),prob=T,ylim=c(0,0.8), col=adjustcolor('darkblue', alpha.f = 0.5))
+hist(prior_predicitive %>% log(),prob=T,ylim=c(0,0.8), col=adjustcolor('darkblue', alpha.f = 0.5),
+     main='Log of Prior Predictive and Y', xlab='', ylab='')
 hist(y %>% log(), prob=T, add=T, col=adjustcolor('darkred', alpha.f = 0.5))
+legend('topright', c('Prior Predidictive','y'), fill=c(adjustcolor('darkblue', alpha.f = 0.5),
+                                                       adjustcolor('darkred', alpha.f = 0.5)))
 ```
 
 
@@ -121,7 +125,7 @@ Note, here $P(x)$ will be the probability of our sampled $\{\beta_{depth}, \beta
 
 Now, let's write our MCMC algorithm and sample from our posterior! We run 4 different chains to get the best estimate of our posterior.
 ```{r}
-N_sim <- 4e4
+N_sim <- 1e5
 N_chains <- 4
 
 mcmc_chain <- function(N_sim, explore_param){
@@ -132,10 +136,6 @@ mcmc_chain <- function(N_sim, explore_param){
   )
   chain <- matrix(NA, nrow=N_sim, ncol=3)
   for (i in 1:N_sim){
-    if (i %% 1e3 == 0){
-        cat('\014')
-    cat(sprintf('%s%% Done', round(i*100/N_sim)))
-    }
     cand_params <- list(
       b_oxy_cand = rnorm(1, curr_params[['b_oxy_cand']], explore_param),
       b_depth_cand = rnorm(1, curr_params[['b_depth_cand']], explore_param),
@@ -160,6 +160,7 @@ for (i in 1:N_chains){
   simulation[[paste0('chain_',i)]] <- mcmc_chain(N_sim, explore_param = 0.01)
 }
 
+burn <- 3e4
 ```
 
 
@@ -167,26 +168,25 @@ for (i in 1:N_chains){
 Let's see how well our posteriors match the actual values:
 
 ```{r, fig.align='center', fig.width=7, echo=F}
-burn <- 1e4
 par(mfrow=c(1,3))
 posterior_oxy <- lapply(simulation, function(x) return(x[-seq(1,burn),1])) %>% 
-  unlist() %>% unname %>% density(.)
-plot(posterior_oxy, lwd = 4, xlab='', ylab='', main='Posterior for Dissolved Oxygen Paramter')
-polygon(posterior_oxy, col=adjustcolor('darkgreen', 0.5))
+  unlist() %>% unname()
+plot(posterior_oxy %>% density(), lwd = 4, xlab='', ylab='', main='Posterior for Dissolved Oxygen Paramter')
+polygon(posterior_oxy %>% density(), col=adjustcolor('darkgreen', 0.5))
 abline(v=0.8, col='red', lwd=4)
 
 
 posterior_depth <- lapply(simulation, function(x) return(x[-seq(1,burn),2])) %>% 
-  unlist() %>% unname %>% density(.)
-plot(posterior_depth, lwd = 4, xlab='', ylab='', main='Posterior for Depth Paramter')
-polygon(posterior_depth, col=adjustcolor('darkblue', 0.5))
+  unlist() %>% unname()
+plot(posterior_depth %>% density(), lwd = 4, xlab='', ylab='', main='Posterior for Depth Paramter')
+polygon(posterior_depth %>% density(), col=adjustcolor('darkblue', 0.5))
 abline(v=-0.6, col='red', lwd=4)
 
 
 posterior_int <- lapply(simulation, function(x) return(x[-seq(1,burn),3])) %>% 
-  unlist() %>% unname %>% density(.)
-plot(posterior_int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
-polygon(posterior_int, col=adjustcolor('darkred', 0.5))
+  unlist() %>% unname()
+plot(posterior_int %>% density(), lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
+polygon(posterior_int %>% density(), col=adjustcolor('darkred', 0.5))
 abline(v=0.4, col='red', lwd=4)
 ```
 
@@ -199,74 +199,89 @@ for (i in 1:4) hist(a[,i], col=adjustcolor('darkblue', alpha.f = 0.5), main=past
                     xlab='', ylab='')
 
 ```
-There a couple of metrics we can look at to assess the convergence of our MCMC sampling. One main metric is $\hat{R}$. It tells us how well all our chains converged and mixed. The other metrics have to do with effective sample size (ESS). We can use rstan to help us find $\hat{R}$, Bulk-ESS and tail-ESS.
+There a couple of metrics we can look at to assess the convergence of our MCMC sampling. One main metric is $\hat{R}$. It tells us how well all our chains converged and mixed. A good rule of thumb is to have $\hat{R}$ under 1.05.
+
+The other metrics have to do with effective sample size (ESS). In MCMC sampling, we are assuming a level of independence for samples not directly adjacent. In other words, we are hoping for a low degree of autocorrelation. Simply put, if we have a high degree of autocorrelation in our samples then we effectively have less information describing our posterior. This is what ESS measures, the degree of autocorrelation in our chains. The first, bulk-ESS tells us how well the center or bulk of our posterior has been sampled. The second is tail-ESS, which tells us how well our posterior tails were sampled. A good rule of thumb is to have a bulk-ESS and tail-ESS greater than 400.
 
 ```{r}
-Rhat(simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>% as.matrix())
-ess_bulk(simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>% as.matrix())
-ess_tail(simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>% as.matrix())
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r}
-split_sims <- simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% 
-  lapply(., function(x) list(x[1:floor(length(x)/2)], x[(floor(length(x)/2) + 1):length(x)])) %>%
-  unlist(., recursive = F)
-
-
-psi_d_j <- lapply(split_sims, function(x) (mean(x)))
-psi_d_d <- unlist(psi_d_j) %>% mean()
-
-b <- (length(split_sims[[1]]) / ((length(split_sims)) - 1)) * mean((unlist(psi_d_j) - psi_d_d)^2)
-
-s_j_sq <- mapply(function(x, y) (1/(length(x)-1))*sum((x - y)^2), split_sims, psi_d_j)
-w <- mean(s_j_sq)
-var_marg <- (length(split_sims[[1]]) - 1) / length(split_sims[[1]]) * w +
-  1/length(split_sims[[1]])*b
-r_hat <- sqrt(var_marg/w)
-r_hat
-```
-
-```{r}
-calc_vt <- function(t){
-    split_sims %>% lapply(., function(x) sum((diff(x, lag=t))^2)) %>% 
-    unlist() %>% sum() %>% 
-    `/`(length(split_sims)*(length(split_sims[[1]]) - 1))
+metric_mat <- matrix(NA, nrow=3, ncol=3)
+for (i in 1:3){
+  metric_mat[1,i] <- Rhat(simulation %>% lapply(., function(x) x[-seq(1,burn), i]) %>% 
+                            as.data.frame() %>% as.matrix()) %>% round(.,2)
+  metric_mat[2,i] <- ess_bulk(simulation %>% lapply(., function(x) x[-seq(1,burn), i]) %>% 
+                                as.data.frame() %>% as.matrix()) %>% round(.,1)
+  metric_mat[3,i] <- ess_tail(simulation %>% lapply(., function(x) x[-seq(1,burn), i]) %>% 
+                                as.data.frame() %>% as.matrix()) %>% round(.,1)
 }
-
-vt <- sapply(1:(length(split_sims[[1]]) - 1), calc_vt)
-p_t <- 1 - (vt/(2*var_marg))
-neff <- length(split_sims)*length(split_sims[[1]]) / (1 + 2*sum(p_t))
-neff
-```
-```{r}
-(p_t < 0) %>% which()
-
+colnames(metric_mat) <- c('b_oxy', 'b_depth', 'b_int')
+row.names(metric_mat) <- c('r_hat', 'bulk_ess', 'tail_ess')
+knitr::kable(metric_mat, align = 'ccc')
 ```
 
-```{r}
-ss <- simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>%
-  apply(2, as.numeric)
-Rhat(ss)
-ess_bulk(ss)
-ess_tail(ss)
+A good measure to determine how well model fits our data is to plot the posterior predictive against the observed data.
+
+```{r, fig.align='center'}
+posterior_predictive <- cbind(standardize(x_oxy), standardize(x_depth)) %>% apply(., 1, function(x) 
+  rpois(n=n_prior_samples, exp(x[1]*posterior_oxy + x[2]*posterior_depth + posterior_int))) %>% c()
+
+hist(posterior_predictive,prob=T, col=adjustcolor('darkblue', alpha.f = 0.5), breaks=length(unique(posterior_predictive)),
+     main='', ylab='', )
+hist(y, prob=T, add=T, col=adjustcolor('darkred', alpha.f = 0.5), breaks=34)
+legend('topright', c('Posterior Predictive','y'), fill=c(adjustcolor('darkblue', alpha.f = 0.5),
+                                                       adjustcolor('darkred', alpha.f = 0.5)))
 ```
+
+## Decision Analysis
+Back to the question at hand: what pond should you fish at? Let's say your friend Danny has the following measurements for the two ponds in question.
+
+```{r, echo=F, fig.align='center'}
+ponds <- matrix(c(8, 7, 40, 20), ncol=2) %>% as.data.frame()
+colnames(ponds) <- c('Dissolved Oxygen', 'Pond Depth')
+row.names(ponds) <- c('Pond A', 'Pond B')
+knitr::kable(ponds, align='ccc')
+```
+From our posterior samples, we can obtain distributions representing our uncertainty for the fish we will catch at each of the ponds in question.
+
+```{r, fig.align='center'}
+par(mfrow=c(1,2))
+pond_a <- ((ponds$`Dissolved Oxygen`[1] - mean(x_oxy)) / sd(x_oxy)) * posterior_oxy + 
+  ((ponds$`Pond Depth`[1] - mean(x_depth)) / sd(x_depth)) * posterior_depth + posterior_int
+pond_a <- rpois(length(pond_a), exp(pond_a))
+hist(pond_a, breaks=length(unique(pond_a)), prob=T, col=adjustcolor('darkgreen', alpha.f = 0.5),
+     main='Pond A', xlab='Fish Caught', ylab='')
+
+pond_b <- ((ponds$`Dissolved Oxygen`[2] - mean(x_oxy)) / sd(x_oxy)) * posterior_oxy + 
+  ((ponds$`Pond Depth`[2] - mean(x_depth)) / sd(x_depth)) * posterior_depth + posterior_int
+pond_b <- rpois(length(pond_b), exp(pond_b))
+hist(pond_b, breaks=length(unique(pond_b)), prob=T, col=adjustcolor('yellow', alpha.f = 0.5),
+     main='Pond B', xlab='Fish Caught', ylab='')
+
+```
+
+Now, we can take the difference of the two distributions and come to our conclusion.
+
+```{r, fig.align='center'}
+pond_diff <- (pond_b - pond_a)
+hist(pond_diff, prob=T, main='Pond B - Pond A', xlab='Difference in fish caught between ponds', ylab='',
+      col=adjustcolor('purple', alpha.f = 0.5))
+```
+
+If we want to find the expected increase in fish in choosing pond B of pond A, it's as simple as taking the average of our above distribution.
+
+```{r, echo=F}
+mean(pond_b - pond_a)
+```
+
+Hence, after our extensive analysis we can come to the conclusion that it is best to choose Pond B over A. Although, maybe your friend Danny has left by now!
+
+
+
+
+
+
+
+
+
 
 
 

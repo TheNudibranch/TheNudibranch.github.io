@@ -1,3 +1,5 @@
 Thumbs.db
 *.log
 *.Rhistory
+blog/pages/poisson_regression/poisson_files/*
+blog/pages/poisson_regression/poisson_cache/*
