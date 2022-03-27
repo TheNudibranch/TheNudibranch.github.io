@@ -21,13 +21,16 @@ Finally, we may write the probability of catching $y$ salmon during one hour of 
 $$P(y|x_i;\beta_{depth},\beta_{oxy},\beta_0)=\frac{\lambda^y}{y!}e^{-\lambda}, \hspace{4mm} \lambda=\exp(\beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0)$$
 Now, let's generate some data!
 ```{r, fig.align='center'}
+library(dplyr)
+library(bayesplot)
+library(rstan)
 # Function to standardize data
 standardize <- function(x){
   return((x - mean(x)) / sd(x))
 }
 
 
-N <- 500 # Number of ponds fished at
+N <- 100 # Number of ponds fished at
 x_oxy <- rnorm(N, 5, 1) # Dissolved oxygen in mg per Liter
 x_depth <- abs(rnorm(N, 30, 10)) # Pond depth
 
@@ -41,14 +44,10 @@ par(mfrow=c(1,2))
 plot(x_oxy, y, pch=16, col='darkblue', ylab='Fish Caught Per Hour', xlab='Dissolved Oxygen (mg/L)')
 plot(x_depth, y, pch=16, col='darkred', ylab='Fish Caught Per Hour', xlab='Pond Depth (m)')
 ```
-```{r}
-fit <- glm(y ~ standardize(x_oxy) + standardize(x_depth), family=poisson())
-summary(fit)
-```
 
 ## MCMC with Metropolis Hastings
 ### Theory
-
+#### Model Definition
 First, we will assume that the parameters $\beta_{depth}$, $\beta_{oxy}$, and $\beta_0$ are independent of each other such that the joint probability distribution for the parameters can be expressed as:
 
 $$P(\beta_{depth}, \beta_{oxy}, \beta_0 ) = P(\beta_{depth} ) \cdot P(\beta_{oxy})\cdot P(\beta_0)$$
@@ -67,6 +66,8 @@ Y &\sim Poi(\lambda) \\
 \end{align}
 
 
+Let's now define our likelihood and priors in R:
+
 ```{r}
 log_poi_liklihood <- function(params){
   lam_cands <- exp(params[['b_oxy_cand']]*standardize(x_oxy) + 
@@ -77,15 +78,51 @@ log_poi_liklihood <- function(params){
 
 log_prior <- function(params){
   return(
-    dnorm(params[['b_oxy_cand']], 0.5, 1, log=T) +
-    dnorm(params[['b_depth_cand']], -0.5, 1, log=T) +
-    dnorm(params[['b_int_cand']], 0, 10, log=T)
+    dnorm(params[['b_oxy_cand']], 0.5, 0.5, log=T) +
+    dnorm(params[['b_depth_cand']], -0.5, 0.5, log=T) +
+    dnorm(params[['b_int_cand']], 0, 0.5, log=T)
   )
 }
 
 log_posterior_prob <- function(params){
   return(log_prior(params) + log_poi_liklihood(params))
 }
+```
+
+While defining our priors it is always good practice to make sure that they make sense by checking the prior predictive distribution. We can do this by taking some samples from our prior distributions and using them in place of our model.
+
+```{r}
+n_prior_samples <- 1e3
+sample_priors <- cbind(rnorm(n_prior_samples, 0.5, 0.5),
+                       rnorm(n_prior_samples, -0.5, 0.5),
+                       rnorm(n_prior_samples, 0,0.5))
+
+prior_predicitive <- cbind(standardize(x_oxy), standardize(x_depth)) %>% apply(., 1, function(x) 
+  rpois(n=n_prior_samples, exp(x[1]*sample_priors[,1] + x[2]*sample_priors[,2] + sample_priors[,3]) ))
+
+hist(prior_predicitive %>% log(),prob=T,ylim=c(0,0.8), col=adjustcolor('darkblue', alpha.f = 0.5))
+hist(y %>% log(), prob=T, add=T, col=adjustcolor('darkred', alpha.f = 0.5))
+```
+
+
+
+
+#### MCMC
+Metropolis Hastings is rejection sampler defined as the following.
+
+Suppose we have some sampled value $x_t$ and some function $P(x)$ the returns the probability of a given $x$. We also have some proposal function that generates a new $x^\prime$ given a previously sampled $x_t$ defined by $g(x^\prime|x_t)$.
+
+Now, we need some way to "reject" or "accept" some newly generated $x^\prime$ value from our function $g$. Define this probability or acceptance to be 
+
+$$a=\frac{P(x^\prime)g(x_t|x^\prime)}{P(x_t)g(x^\prime|x_t)}$$
+Usually (and for our case today), we'll choose a function $g$ such that $g$ is symmetric, or $g(x_t|x^\prime)=g(x^\prime|x_t)$. A common choice to achieve this property would be to assume $g$ is normal with mean equal to the given point. In other words $$g(x_t|x^\prime)\sim N(x^\prime,\sigma)$$
+
+Note, here $P(x)$ will be the probability of our sampled $\{\beta_{depth}, \beta_{oxy}, \beta_0 \}$ given our data, as that is the posterior we which to rejection sample from.
+
+Now, let's write our MCMC algorithm and sample from our posterior! We run 4 different chains to get the best estimate of our posterior.
+```{r}
+N_sim <- 4e4
+N_chains <- 4
 
 mcmc_chain <- function(N_sim, explore_param){
   curr_params <-  list(
@@ -118,58 +155,118 @@ mcmc_chain <- function(N_sim, explore_param){
   return(chain)
 }
 
-```
-
-```{r}
-N_sim <- 1e4
-N_chains <- 4
-
-posterior_samples <- array(NA, c(N_sim, 3, N_chains))
-
-chain <- mcmc_chain(N_sim, explore_param = 0.01)
-
 simulation <- list()
 for (i in 1:N_chains){
   simulation[[paste0('chain_',i)]] <- mcmc_chain(N_sim, explore_param = 0.01)
 }
 
-names(simulation)
-```
-```{r}
-chain
 ```
 
+
+### Analyzing our chains
+Let's see how well our posteriors match the actual values:
+
 ```{r, fig.align='center', fig.width=7, echo=F}
-burn <- 2e3
-par(mfrow=c(1,2))
-posterior_oxy <- density(chain[-seq(1,burn), 1])
+burn <- 1e4
+par(mfrow=c(1,3))
+posterior_oxy <- lapply(simulation, function(x) return(x[-seq(1,burn),1])) %>% 
+  unlist() %>% unname %>% density(.)
 plot(posterior_oxy, lwd = 4, xlab='', ylab='', main='Posterior for Dissolved Oxygen Paramter')
 polygon(posterior_oxy, col=adjustcolor('darkgreen', 0.5))
 abline(v=0.8, col='red', lwd=4)
 
 
-posterior_depth <- density(chain[-seq(1,burn), 2])
+posterior_depth <- lapply(simulation, function(x) return(x[-seq(1,burn),2])) %>% 
+  unlist() %>% unname %>% density(.)
 plot(posterior_depth, lwd = 4, xlab='', ylab='', main='Posterior for Depth Paramter')
 polygon(posterior_depth, col=adjustcolor('darkblue', 0.5))
 abline(v=-0.6, col='red', lwd=4)
 
 
-# posterior_int <- density(chain[-seq(1,burn), 3])
-# plot(posterior_int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
-# polygon(posterior_int, col=adjustcolor('darkred', 0.5))
-# abline(v=0.4, col='red', lwd=4)
-```
-
-
-```{r, fig.align='center', fig.width=7}
-par(mfrow=c(1,1))
-posterior_int <- density(chain[-seq(1,burn), 3])
+posterior_int <- lapply(simulation, function(x) return(x[-seq(1,burn),3])) %>% 
+  unlist() %>% unname %>% density(.)
 plot(posterior_int, lwd = 4, xlab='', ylab='', main='Posterior for Beta_0')
 polygon(posterior_int, col=adjustcolor('darkred', 0.5))
 abline(v=0.4, col='red', lwd=4)
 ```
 
-```{r}
-plot(chain[-seq(1,3000),3], type='l')
+Focusing on $\beta_{oxy}$, let's see how well our chain converged using rank plots:
+```{r, fig.align='center', fig.width=7}
+a <- simulation %>% lapply(., function(x) x[-seq(1,burn),1]) %>% unlist() %>% rank() %>% 
+  matrix(., ncol=4)
+par(mfrow=c(2,2))
+for (i in 1:4) hist(a[,i], col=adjustcolor('darkblue', alpha.f = 0.5), main=paste0('Chain_',i),
+                    xlab='', ylab='')
+
 ```
+There a couple of metrics we can look at to assess the convergence of our MCMC sampling. One main metric is $\hat{R}$. It tells us how well all our chains converged and mixed. The other metrics have to do with effective sample size (ESS). We can use rstan to help us find $\hat{R}$, Bulk-ESS and tail-ESS.
+
+```{r}
+Rhat(simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>% as.matrix())
+ess_bulk(simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>% as.matrix())
+ess_tail(simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>% as.matrix())
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+split_sims <- simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% 
+  lapply(., function(x) list(x[1:floor(length(x)/2)], x[(floor(length(x)/2) + 1):length(x)])) %>%
+  unlist(., recursive = F)
+
+
+psi_d_j <- lapply(split_sims, function(x) (mean(x)))
+psi_d_d <- unlist(psi_d_j) %>% mean()
+
+b <- (length(split_sims[[1]]) / ((length(split_sims)) - 1)) * mean((unlist(psi_d_j) - psi_d_d)^2)
+
+s_j_sq <- mapply(function(x, y) (1/(length(x)-1))*sum((x - y)^2), split_sims, psi_d_j)
+w <- mean(s_j_sq)
+var_marg <- (length(split_sims[[1]]) - 1) / length(split_sims[[1]]) * w +
+  1/length(split_sims[[1]])*b
+r_hat <- sqrt(var_marg/w)
+r_hat
+```
+
+```{r}
+calc_vt <- function(t){
+    split_sims %>% lapply(., function(x) sum((diff(x, lag=t))^2)) %>% 
+    unlist() %>% sum() %>% 
+    `/`(length(split_sims)*(length(split_sims[[1]]) - 1))
+}
+
+vt <- sapply(1:(length(split_sims[[1]]) - 1), calc_vt)
+p_t <- 1 - (vt/(2*var_marg))
+neff <- length(split_sims)*length(split_sims[[1]]) / (1 + 2*sum(p_t))
+neff
+```
+```{r}
+(p_t < 0) %>% which()
+
+```
+
+```{r}
+ss <- simulation %>% lapply(., function(x) x[-seq(1,burn), 1]) %>% as.data.frame() %>%
+  apply(2, as.numeric)
+Rhat(ss)
+ess_bulk(ss)
+ess_tail(ss)
+```
+
+
 
