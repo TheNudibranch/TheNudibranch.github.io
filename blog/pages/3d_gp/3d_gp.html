@@ -1,76 +1,29 @@
-<head>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>var btn_state = false;</script>
-  </head>
-  <body>
-    <button onclick="btn_state = !btn_state; requestAnimationFrame(update);">STOP</button>
-    <div id="myDiv"></div>
-    <script>
-var n = 100;
-var x = [], y = [], z = [];
-var dt = 0.015;
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.3.0/math.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+        </head>
+    <body>
+        <button onclick="btn_state = !btn_state; requestAnimationFrame(update);">STOP</button>
+        <div class="container">
+            <div class="row">
+                <div class='col-sm-3 text-center'></div>
+                <div class='col-sm-4 text-center'>
+                    <div id="myDiv"></div>
+                </div>
+                <div class='col-sm-4 text-center'></div>
+            </div>
+        </div>
+        <textarea class="form-control" id="post_data" rows="3">(1,2,1)
+            (1,3,4)</textarea>
 
-for (i = 0; i < n; i++) {
-  x[i] = Math.random() * 2 - 1;
-  y[i] = Math.random() * 2 - 1;
-  z[i] = 30 + Math.random() * 10;
-}
+        <script src="3d_gp.js"></script>
 
-Plotly.newPlot('myDiv', [{
-  x: x,
-  y: z,
-  mode: 'markers'
-}], {
-  xaxis: {range: [-40, 40]},
-  yaxis: {range: [0, 60]}
-}, {displayModeBar: false})
+    </body>
 
-
-
-
-function compute () {
-  var s = 10, b = 8/3, r = 28;
-  var dx, dy, dz;
-  var xh, yh, zh;
-  for (var i = 0; i < n; i++) {
-    dx = s * (y[i] - x[i]);
-    dy = x[i] * (r - z[i]) - y[i];
-    dz = x[i] * y[i] - b * z[i];
-
-    xh = x[i] + dx * dt * 0.5;
-    yh = y[i] + dy * dt * 0.5;
-    zh = z[i] + dz * dt * 0.5;
-
-    dx = s * (yh - xh);
-    dy = xh * (r - zh) - yh;
-    dz = xh * yh - b * zh;
-
-    x[i] += dx * dt;
-    y[i] += dy * dt;
-    z[i] += dz * dt;
-  }
-}
-
-function update () {
-    compute();
-    if (btn_state){
-    Plotly.animate('myDiv', {
-        data: [{x: x, y: z}]
-    }, {
-    transition: {
-      duration: 0
-    },
-    frame: {
-      duration: 0,
-      redraw: false
-    }
-  });
-
-  requestAnimationFrame(update);
-    }
-}
-
-if (btn_state) requestAnimationFrame(update);
-
-    </script>
-  </body>
+</html>
