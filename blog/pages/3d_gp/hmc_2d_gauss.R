@@ -42,7 +42,7 @@ hmc_step <- function(starting_x, step_size, L){
 hmc <- function(starting_x, step_size, L, chain_length, n_burn=500){
   path <- matrix(NA, ncol=2, nrow=chain_length + 1 + n_burn)
   path[1,] <- starting_x
-  for (i in 1:chain_length){
+  for (i in 1:(chain_length+n_burn)){
     path[i+1,] <- hmc_step(path[i,], step_size, L)
   }
   return(path[-(1:n_burn),])
@@ -54,5 +54,5 @@ chain <- hmc(c(4,5), 0.01, 100, 1e3)
 (chain[-nrow(chain),] != lead(chain)[-nrow(chain),]) %>% sum(.) %>% `/`(2) %>% `/`(nrow(chain))
 
 base_plot %>% plot(.,col=adjustcolor('grey',0.4), pch=16)
-hmc(c(8,7), 0.01, 20, 3e3) %>% points(., col=viridis(nrow(.)), pch=16)
+hmc(c(8,7), 0.01, 100, 1000) %>% points(., col=viridis(nrow(.)), pch=16)
 
