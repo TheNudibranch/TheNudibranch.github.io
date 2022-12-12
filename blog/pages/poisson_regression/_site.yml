@@ -2,5 +2,6 @@ name: "Rmarkdown with navbar"
 output_dir: "."
 output:
   html_document:
+    code_folding: 
     theme: cosmo
-    highlight: textmate
+    highlight: zenburn

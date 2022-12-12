@@ -30,8 +30,6 @@
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
-<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
-<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -42,17 +40,101 @@
   ul.task-list{list-style: none;}
     </style>
 
-<style type="text/css">code{white-space: pre;}</style>
-<script type="text/javascript">
-if (window.hljs) {
-  hljs.configure({languages: []});
-  hljs.initHighlightingOnLoad();
-  if (document.readyState && document.readyState === "complete") {
-    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
-  }
-}
-</script>
 
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  { color: #cccccc; background-color: #303030; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ffcfaf; } /* Alert */
+code span.an { color: #7f9f7f; font-weight: bold; } /* Annotation */
+code span.at { } /* Attribute */
+code span.bn { color: #dca3a3; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #f0dfaf; } /* ControlFlow */
+code span.ch { color: #dca3a3; } /* Char */
+code span.cn { color: #dca3a3; font-weight: bold; } /* Constant */
+code span.co { color: #7f9f7f; } /* Comment */
+code span.cv { color: #7f9f7f; font-weight: bold; } /* CommentVar */
+code span.do { color: #7f9f7f; } /* Documentation */
+code span.dt { color: #dfdfbf; } /* DataType */
+code span.dv { color: #dcdccc; } /* DecVal */
+code span.er { color: #c3bf9f; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #c0bed1; } /* Float */
+code span.fu { color: #efef8f; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #7f9f7f; font-weight: bold; } /* Information */
+code span.kw { color: #f0dfaf; } /* Keyword */
+code span.op { color: #f0efd0; } /* Operator */
+code span.ot { color: #efef8f; } /* Other */
+code span.pp { color: #ffcfaf; font-weight: bold; } /* Preprocessor */
+code span.sc { color: #dca3a3; } /* SpecialChar */
+code span.ss { color: #cc9393; } /* SpecialString */
+code span.st { color: #cc9393; } /* String */
+code span.va { } /* Variable */
+code span.vs { color: #cc9393; } /* VerbatimString */
+code span.wa { color: #7f9f7f; font-weight: bold; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
 
 
 
@@ -268,28 +350,28 @@ $(document).ready(function () {
 <p>Let us also assume that the log rate of catching salmon is a linear function of the two pond variables:</p>
 <p><span class="math display">\[\log(\lambda) =  \beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0\]</span> Finally, we may write the probability of catching <span class="math inline">\(y\)</span> salmon during one hour of fishing given the above parameters:</p>
 <p><span class="math display">\[P(y|x_i;\beta_{depth},\beta_{oxy},\beta_0)=\frac{\lambda^y}{y!}e^{-\lambda}, \hspace{4mm} \lambda=\exp(\beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0)\]</span> Now, let’s generate some data!</p>
-<pre class="r"><code>suppressMessages(suppressWarnings(library(dplyr)))
-suppressMessages(suppressWarnings(library(rstan)))
-# Function to standardize data
-standardize &lt;- function(x){
-  return((x - mean(x)) / sd(x))
-}
-set.seed(1234)
-
-N &lt;- 200 # Number of ponds fished at
-x_oxy &lt;- rnorm(N, 5, 1) # Dissolved oxygen in mg per Liter
-x_depth &lt;- abs(rnorm(N, 30, 10)) # Pond depth
-
-b_oxy &lt;- 0.8
-b_depth &lt;- -0.6
-b_int &lt;- 0.4
-lambda &lt;- exp(b_oxy*standardize(x_oxy) + b_depth*standardize(x_depth) + b_int)
-y &lt;- rpois(length(lambda), lambda = lambda)
-
-par(mfrow=c(1,2))
-plot(x_oxy, y, pch=16, col=&#39;darkblue&#39;, ylab=&#39;Fish Caught Per Hour&#39;, xlab=&#39;Dissolved Oxygen (mg/L)&#39;)
-plot(x_depth, y, pch=16, col=&#39;darkred&#39;, ylab=&#39;Fish Caught Per Hour&#39;, xlab=&#39;Pond Depth (m)&#39;)</code></pre>
-<p><img src="poisson_files/figure-html/unnamed-chunk-1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstan)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to standardize data</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>standardize <span class="ot">&lt;-</span> <span class="cf">function</span>(x){</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>((x <span class="sc">-</span> <span class="fu">mean</span>(x)) <span class="sc">/</span> <span class="fu">sd</span>(x))</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>N <span class="ot">&lt;-</span> <span class="dv">200</span> <span class="co"># Number of ponds fished at</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>x_oxy <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(N, <span class="dv">5</span>, <span class="dv">1</span>) <span class="co"># Dissolved oxygen in mg per Liter</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>x_depth <span class="ot">&lt;-</span> <span class="fu">abs</span>(<span class="fu">rnorm</span>(N, <span class="dv">30</span>, <span class="dv">10</span>)) <span class="co"># Pond depth</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>b_oxy <span class="ot">&lt;-</span> <span class="fl">0.8</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>b_depth <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fl">0.6</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>b_int <span class="ot">&lt;-</span> <span class="fl">0.4</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="fu">exp</span>(b_oxy<span class="sc">*</span><span class="fu">standardize</span>(x_oxy) <span class="sc">+</span> b_depth<span class="sc">*</span><span class="fu">standardize</span>(x_depth) <span class="sc">+</span> b_int)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rpois</span>(<span class="fu">length</span>(lambda), <span class="at">lambda =</span> lambda)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x_oxy, y, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="st">&#39;darkblue&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;Fish Caught Per Hour&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;Dissolved Oxygen (mg/L)&#39;</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(x_depth, y, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="st">&#39;darkred&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;Fish Caught Per Hour&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;Pond Depth (m)&#39;</span>)</span></code></pre></div>
+<p><img src="poisson_files/figure-html/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="mcmc-with-metropolis-hastings" class="section level2">
 <h2>MCMC with Metropolis Hastings</h2>
@@ -308,39 +390,39 @@ Y &amp;\sim Poi(\lambda) \\
 \beta_0 &amp;\sim N(0, 0.5)
 \end{align}\]</span></p>
 <p>Let’s now define our likelihood and priors in R:</p>
-<pre class="r"><code>log_poi_liklihood &lt;- function(params){
-  lam_cands &lt;- exp(params[[&#39;b_oxy_cand&#39;]]*standardize(x_oxy) + 
-                     params[[&#39;b_depth_cand&#39;]]*standardize(x_depth) +
-                     params[[&#39;b_int_cand&#39;]])
-  return(sum(dpois(y, lam_cands, log=T)))
-}
-
-log_prior &lt;- function(params){
-  return(
-    dnorm(params[[&#39;b_oxy_cand&#39;]], 0.5, 0.5, log=T) +
-    dnorm(params[[&#39;b_depth_cand&#39;]], -0.5, 0.5, log=T) +
-    dnorm(params[[&#39;b_int_cand&#39;]], 0, 0.5, log=T)
-  )
-}
-
-log_posterior_prob &lt;- function(params){
-  return(log_prior(params) + log_poi_liklihood(params))
-}</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>log_poi_liklihood <span class="ot">&lt;-</span> <span class="cf">function</span>(params){</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  lam_cands <span class="ot">&lt;-</span> <span class="fu">exp</span>(params[[<span class="st">&#39;b_oxy_cand&#39;</span>]]<span class="sc">*</span><span class="fu">standardize</span>(x_oxy) <span class="sc">+</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                     params[[<span class="st">&#39;b_depth_cand&#39;</span>]]<span class="sc">*</span><span class="fu">standardize</span>(x_depth) <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                     params[[<span class="st">&#39;b_int_cand&#39;</span>]])</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">sum</span>(<span class="fu">dpois</span>(y, lam_cands, <span class="at">log=</span>T)))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>log_prior <span class="ot">&lt;-</span> <span class="cf">function</span>(params){</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dnorm</span>(params[[<span class="st">&#39;b_oxy_cand&#39;</span>]], <span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="at">log=</span>T) <span class="sc">+</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dnorm</span>(params[[<span class="st">&#39;b_depth_cand&#39;</span>]], <span class="sc">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span>, <span class="at">log=</span>T) <span class="sc">+</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dnorm</span>(params[[<span class="st">&#39;b_int_cand&#39;</span>]], <span class="dv">0</span>, <span class="fl">0.5</span>, <span class="at">log=</span>T)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>log_posterior_prob <span class="ot">&lt;-</span> <span class="cf">function</span>(params){</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">log_prior</span>(params) <span class="sc">+</span> <span class="fu">log_poi_liklihood</span>(params))</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>While defining our priors it is always good practice to make sure that they make sense by checking the prior predictive distribution. We can do this by taking some samples from our prior distributions and using them in place of our model.</p>
-<pre class="r"><code>n_prior_samples &lt;- 1e3
-sample_priors &lt;- cbind(rnorm(n_prior_samples, 0.5, 0.5),
-                       rnorm(n_prior_samples, -0.5, 0.5),
-                       rnorm(n_prior_samples, 0,0.5))
-
-prior_predicitive &lt;- cbind(standardize(x_oxy), standardize(x_depth)) %&gt;% apply(., 1, function(x) 
-  rpois(n=n_prior_samples, exp(x[1]*sample_priors[,1] + x[2]*sample_priors[,2] + sample_priors[,3]) ))
-
-hist(prior_predicitive %&gt;% log(),prob=T,ylim=c(0,0.8), col=adjustcolor(&#39;darkblue&#39;, alpha.f = 0.5),
-     main=&#39;Log of Prior Predictive and y&#39;, xlab=&#39;&#39;, ylab=&#39;&#39;)
-hist(y %&gt;% log(), prob=T, add=T, col=adjustcolor(&#39;darkred&#39;, alpha.f = 0.5))
-legend(&#39;topright&#39;, c(&#39;Prior Predidictive&#39;,&#39;y&#39;), fill=c(adjustcolor(&#39;darkblue&#39;, alpha.f = 0.5),
-                                                       adjustcolor(&#39;darkred&#39;, alpha.f = 0.5)))</code></pre>
-<p><img src="poisson_files/figure-html/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>n_prior_samples <span class="ot">&lt;-</span> <span class="fl">1e3</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sample_priors <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">rnorm</span>(n_prior_samples, <span class="fl">0.5</span>, <span class="fl">0.5</span>),</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">rnorm</span>(n_prior_samples, <span class="sc">-</span><span class="fl">0.5</span>, <span class="fl">0.5</span>),</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>                       <span class="fu">rnorm</span>(n_prior_samples, <span class="dv">0</span>,<span class="fl">0.5</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>prior_predicitive <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">standardize</span>(x_oxy), <span class="fu">standardize</span>(x_depth)) <span class="sc">%&gt;%</span> <span class="fu">apply</span>(., <span class="dv">1</span>, <span class="cf">function</span>(x) </span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rpois</span>(<span class="at">n=</span>n_prior_samples, <span class="fu">exp</span>(x[<span class="dv">1</span>]<span class="sc">*</span>sample_priors[,<span class="dv">1</span>] <span class="sc">+</span> x[<span class="dv">2</span>]<span class="sc">*</span>sample_priors[,<span class="dv">2</span>] <span class="sc">+</span> sample_priors[,<span class="dv">3</span>]) ))</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(prior_predicitive <span class="sc">%&gt;%</span> <span class="fu">log</span>(),<span class="at">prob=</span>T,<span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="fl">0.8</span>), <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;darkblue&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>),</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">&#39;Log of Prior Predictive and y&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;&#39;</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(y <span class="sc">%&gt;%</span> <span class="fu">log</span>(), <span class="at">prob=</span>T, <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;darkred&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>))</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&#39;topright&#39;</span>, <span class="fu">c</span>(<span class="st">&#39;Prior Predidictive&#39;</span>,<span class="st">&#39;y&#39;</span>), <span class="at">fill=</span><span class="fu">c</span>(<span class="fu">adjustcolor</span>(<span class="st">&#39;darkblue&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>                                                       <span class="fu">adjustcolor</span>(<span class="st">&#39;darkred&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>)))</span></code></pre></div>
+<p><img src="poisson_files/figure-html/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="mcmc" class="section level4">
 <h4>MCMC</h4>
@@ -350,69 +432,69 @@ legend(&#39;topright&#39;, c(&#39;Prior Predidictive&#39;,&#39;y&#39;), fill=c(a
 <p><span class="math display">\[a=\frac{P(x_{t+1})g(x_t|x_{t+1})}{P(x_t)g(x_{t+1}|x_t)}\]</span> Usually (and for our case today), we’ll choose a function <span class="math inline">\(g\)</span> such that <span class="math inline">\(g\)</span> is symmetric, or <span class="math inline">\(g(x_t|x_{t+1})=g(x_{t+1}|x_t)\)</span>. A common choice to achieve this property would be to assume <span class="math inline">\(g\)</span> is normal with mean equal to the given point. In other words <span class="math display">\[g(x_t|x_{t+1})\sim N(x_{t+1},\sigma)\]</span></p>
 <p>Note, here <span class="math inline">\(P(x)\)</span> will be the probability of our sampled <span class="math inline">\(\{\beta_{depth}, \beta_{oxy}, \beta_0 \}\)</span> given our data, as that is the posterior we which to rejection sample from.</p>
 <p>Now, let’s write our MCMC algorithm and sample from our posterior! We run 4 different chains to get the best estimate of our posterior.</p>
-<pre class="r"><code>N_sim &lt;- 1e5
-N_chains &lt;- 4
-
-mcmc_chain &lt;- function(N_sim, explore_param){
-  curr_params &lt;-  list(
-    b_oxy_cand = rnorm(1, 0, 4),
-    b_depth_cand = rnorm(1, 0, 4),
-    b_int_cand = rnorm(1, 0, 4)
-  )
-  chain &lt;- matrix(NA, nrow=N_sim, ncol=3)
-  for (i in 1:N_sim){
-    cand_params &lt;- list(
-      b_oxy_cand = rnorm(1, curr_params[[&#39;b_oxy_cand&#39;]], explore_param),
-      b_depth_cand = rnorm(1, curr_params[[&#39;b_depth_cand&#39;]], explore_param),
-      b_int_cand = rnorm(1, curr_params[[&#39;b_int_cand&#39;]], explore_param)
-    )
-    a &lt;- min(1, exp(log_posterior_prob(cand_params) - 
-                      log_posterior_prob(curr_params)))
-    u &lt;- runif(1)
-    if (u &lt;= a){
-      chain[i,] &lt;- unlist(cand_params)
-      curr_params &lt;- cand_params
-    }
-    else{
-      chain[i,] &lt;- unlist(curr_params)
-    }
-  }
-  return(chain)
-}
-
-simulation &lt;- list()
-for (i in 1:N_chains){
-  simulation[[paste0(&#39;chain_&#39;,i)]] &lt;- mcmc_chain(N_sim, explore_param = 0.01)
-}
-
-burn &lt;- 3e4</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>N_sim <span class="ot">&lt;-</span> <span class="fl">1e5</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>N_chains <span class="ot">&lt;-</span> <span class="dv">4</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>mcmc_chain <span class="ot">&lt;-</span> <span class="cf">function</span>(N_sim, explore_param){</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  curr_params <span class="ot">&lt;-</span>  <span class="fu">list</span>(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">b_oxy_cand =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">4</span>),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">b_depth_cand =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">4</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">b_int_cand =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">4</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  chain <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span>N_sim, <span class="at">ncol=</span><span class="dv">3</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N_sim){</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    cand_params <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">b_oxy_cand =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, curr_params[[<span class="st">&#39;b_oxy_cand&#39;</span>]], explore_param),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">b_depth_cand =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, curr_params[[<span class="st">&#39;b_depth_cand&#39;</span>]], explore_param),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">b_int_cand =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, curr_params[[<span class="st">&#39;b_int_cand&#39;</span>]], explore_param)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    a <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="dv">1</span>, <span class="fu">exp</span>(<span class="fu">log_posterior_prob</span>(cand_params) <span class="sc">-</span> </span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">log_posterior_prob</span>(curr_params)))</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    u <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (u <span class="sc">&lt;=</span> a){</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>      chain[i,] <span class="ot">&lt;-</span> <span class="fu">unlist</span>(cand_params)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>      curr_params <span class="ot">&lt;-</span> cand_params</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>{</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>      chain[i,] <span class="ot">&lt;-</span> <span class="fu">unlist</span>(curr_params)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(chain)</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>simulation <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N_chains){</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  simulation[[<span class="fu">paste0</span>(<span class="st">&#39;chain_&#39;</span>,i)]] <span class="ot">&lt;-</span> <span class="fu">mcmc_chain</span>(N_sim, <span class="at">explore_param =</span> <span class="fl">0.01</span>)</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>burn <span class="ot">&lt;-</span> <span class="fl">3e4</span></span></code></pre></div>
 </div>
 </div>
 <div id="analyzing-our-chains" class="section level3">
 <h3>Analyzing our chains</h3>
 <p>Let’s see how well our posteriors match the actual values:</p>
-<p><img src="poisson_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="poisson_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>Focusing on <span class="math inline">\(\beta_{oxy}\)</span>, let’s see how well our chain converged using rank plots:</p>
-<pre class="r"><code>a &lt;- simulation %&gt;% lapply(., function(x) x[-seq(1,burn),1]) %&gt;% unlist() %&gt;% rank() %&gt;% 
-  matrix(., ncol=4)
-par(mfrow=c(2,2))
-for (i in 1:4) hist(a[,i], col=adjustcolor(&#39;darkblue&#39;, alpha.f = 0.5), main=paste0(&#39;Chain_&#39;,i),
-                    xlab=&#39;&#39;, ylab=&#39;&#39;)</code></pre>
-<p><img src="poisson_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /> Rank plots are calculated by combining all our MCMC samples and finding each samples respective rank. The resulting ranks are separated back into their respective chains and plotted as histograms. If the MCMC sampler converged and the chains mixed well without a high degree of autocorrelation, we can expected uniform distributions for each rank plot.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> simulation <span class="sc">%&gt;%</span> <span class="fu">lapply</span>(., <span class="cf">function</span>(x) x[<span class="sc">-</span><span class="fu">seq</span>(<span class="dv">1</span>,burn),<span class="dv">1</span>]) <span class="sc">%&gt;%</span> <span class="fu">unlist</span>() <span class="sc">%&gt;%</span> <span class="fu">rank</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">matrix</span>(., <span class="at">ncol=</span><span class="dv">4</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">2</span>))</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) <span class="fu">hist</span>(a[,i], <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;darkblue&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>), <span class="at">main=</span><span class="fu">paste0</span>(<span class="st">&#39;Chain_&#39;</span>,i),</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">xlab=</span><span class="st">&#39;&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;&#39;</span>)</span></code></pre></div>
+<p><img src="poisson_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /> Rank plots are calculated by combining all our MCMC samples and finding each samples respective rank. The resulting ranks are separated back into their respective chains and plotted as histograms. If the MCMC sampler converged and the chains mixed well without a high degree of autocorrelation, we can expected uniform distributions for each rank plot.</p>
 <p>There a couple of metrics we can look at to assess the convergence of our MCMC sampling. One main metric is <span class="math inline">\(\hat{R}\)</span>. It tells us how well all our chains converged and mixed. A good rule of thumb is to have <span class="math inline">\(\hat{R}\)</span> under 1.05.</p>
 <p>The other metrics have to do with effective sample size (ESS). In MCMC sampling, we are assuming a level of independence for samples not directly adjacent. In other words, we are hoping for a low degree of autocorrelation. Simply put, if we have a high degree of autocorrelation in our samples then we effectively have less information describing our posterior. This is what ESS measures, the degree of autocorrelation in our chains. The first, bulk-ESS tells us how well the center or bulk of our posterior has been sampled. The second is tail-ESS, which tells us how well our posterior tails were sampled. A good rule of thumb is to have a bulk-ESS and tail-ESS greater than 400.</p>
-<pre class="r"><code>metric_mat &lt;- matrix(NA, nrow=3, ncol=3)
-for (i in 1:3){
-  metric_mat[1,i] &lt;- Rhat(simulation %&gt;% lapply(., function(x) x[-seq(1,burn), i]) %&gt;% 
-                            as.data.frame() %&gt;% as.matrix()) %&gt;% round(.,2)
-  metric_mat[2,i] &lt;- ess_bulk(simulation %&gt;% lapply(., function(x) x[-seq(1,burn), i]) %&gt;% 
-                                as.data.frame() %&gt;% as.matrix()) %&gt;% round(.,1)
-  metric_mat[3,i] &lt;- ess_tail(simulation %&gt;% lapply(., function(x) x[-seq(1,burn), i]) %&gt;% 
-                                as.data.frame() %&gt;% as.matrix()) %&gt;% round(.,1)
-}
-colnames(metric_mat) &lt;- c(&#39;b_oxy&#39;, &#39;b_depth&#39;, &#39;b_0&#39;)
-row.names(metric_mat) &lt;- c(&#39;r_hat&#39;, &#39;bulk_ess&#39;, &#39;tail_ess&#39;)
-knitr::kable(metric_mat, align = &#39;ccc&#39;)</code></pre>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>metric_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow=</span><span class="dv">3</span>, <span class="at">ncol=</span><span class="dv">3</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>){</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  metric_mat[<span class="dv">1</span>,i] <span class="ot">&lt;-</span> <span class="fu">Rhat</span>(simulation <span class="sc">%&gt;%</span> <span class="fu">lapply</span>(., <span class="cf">function</span>(x) x[<span class="sc">-</span><span class="fu">seq</span>(<span class="dv">1</span>,burn), i]) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> <span class="fu">as.matrix</span>()) <span class="sc">%&gt;%</span> <span class="fu">round</span>(.,<span class="dv">2</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  metric_mat[<span class="dv">2</span>,i] <span class="ot">&lt;-</span> <span class="fu">ess_bulk</span>(simulation <span class="sc">%&gt;%</span> <span class="fu">lapply</span>(., <span class="cf">function</span>(x) x[<span class="sc">-</span><span class="fu">seq</span>(<span class="dv">1</span>,burn), i]) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> <span class="fu">as.matrix</span>()) <span class="sc">%&gt;%</span> <span class="fu">round</span>(.,<span class="dv">1</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  metric_mat[<span class="dv">3</span>,i] <span class="ot">&lt;-</span> <span class="fu">ess_tail</span>(simulation <span class="sc">%&gt;%</span> <span class="fu">lapply</span>(., <span class="cf">function</span>(x) x[<span class="sc">-</span><span class="fu">seq</span>(<span class="dv">1</span>,burn), i]) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> <span class="fu">as.matrix</span>()) <span class="sc">%&gt;%</span> <span class="fu">round</span>(.,<span class="dv">1</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(metric_mat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;b_oxy&#39;</span>, <span class="st">&#39;b_depth&#39;</span>, <span class="st">&#39;b_0&#39;</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="fu">row.names</span>(metric_mat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;r_hat&#39;</span>, <span class="st">&#39;bulk_ess&#39;</span>, <span class="st">&#39;tail_ess&#39;</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(metric_mat, <span class="at">align =</span> <span class="st">&#39;ccc&#39;</span>)</span></code></pre></div>
 <table>
 <thead>
 <tr class="header">
@@ -444,15 +526,17 @@ knitr::kable(metric_mat, align = &#39;ccc&#39;)</code></pre>
 </tbody>
 </table>
 <p>A good measure to determine how well model fits our data is to plot the posterior predictive against the observed data.</p>
-<pre class="r"><code>posterior_predictive &lt;- cbind(standardize(x_oxy), standardize(x_depth)) %&gt;% apply(., 1, function(x) 
-  rpois(n=n_prior_samples, exp(x[1]*posterior_oxy + x[2]*posterior_depth + posterior_int))) %&gt;% c()
-
-hist(posterior_predictive,prob=T, col=adjustcolor(&#39;darkblue&#39;, alpha.f = 0.5), breaks=length(unique(posterior_predictive)),
-     main=&#39;Posterior Predictive and y&#39;, ylab=&#39;&#39;, xlab=&#39;&#39;)
-hist(y, prob=T, add=T, col=adjustcolor(&#39;darkred&#39;, alpha.f = 0.5), breaks=34)
-legend(&#39;topright&#39;, c(&#39;Posterior Predictive&#39;,&#39;y&#39;), fill=c(adjustcolor(&#39;darkblue&#39;, alpha.f = 0.5),
-                                                       adjustcolor(&#39;darkred&#39;, alpha.f = 0.5)))</code></pre>
-<p><img src="poisson_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>posterior_predictive <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">standardize</span>(x_oxy), <span class="fu">standardize</span>(x_depth)) <span class="sc">%&gt;%</span> <span class="fu">apply</span>(., <span class="dv">1</span>, <span class="cf">function</span>(x) </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rpois</span>(<span class="at">n=</span>n_prior_samples, <span class="fu">exp</span>(x[<span class="dv">1</span>]<span class="sc">*</span>posterior_oxy <span class="sc">+</span> x[<span class="dv">2</span>]<span class="sc">*</span>posterior_depth <span class="sc">+</span> posterior_int))) <span class="sc">%&gt;%</span> <span class="fu">c</span>()</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(posterior_predictive,<span class="at">prob=</span>T, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;darkblue&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">breaks=</span><span class="fu">length</span>(<span class="fu">unique</span>(posterior_predictive)),</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">&#39;Posterior Predictive and y&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;&#39;</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(y, <span class="at">prob=</span>T, <span class="at">add=</span>T, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;darkred&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>), <span class="at">breaks=</span><span class="dv">34</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">&#39;topright&#39;</span>, <span class="fu">c</span>(<span class="st">&#39;Posterior Predictive&#39;</span>,<span class="st">&#39;y&#39;</span>), <span class="at">fill=</span><span class="fu">c</span>(<span class="fu">adjustcolor</span>(<span class="st">&#39;darkblue&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>),</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                                                       <span class="fu">adjustcolor</span>(<span class="st">&#39;darkred&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>)))</span></code></pre></div>
+<p><img src="poisson_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="decision-analysis" class="section level2">
@@ -480,24 +564,24 @@ legend(&#39;topright&#39;, c(&#39;Posterior Predictive&#39;,&#39;y&#39;), fill=c
 </tbody>
 </table>
 <p>From our posterior samples, we can obtain distributions representing our uncertainty for the fish we will catch at each of the ponds in question.</p>
-<pre class="r"><code>par(mfrow=c(1,2))
-pond_a &lt;- ((ponds$`Dissolved Oxygen`[1] - mean(x_oxy)) / sd(x_oxy)) * posterior_oxy + 
-  ((ponds$`Pond Depth`[1] - mean(x_depth)) / sd(x_depth)) * posterior_depth + posterior_int
-pond_a &lt;- rpois(length(pond_a), exp(pond_a))
-hist(pond_a, breaks=length(unique(pond_a)), prob=T, col=adjustcolor(&#39;darkgreen&#39;, alpha.f = 0.5),
-     main=&#39;Pond A&#39;, xlab=&#39;Fish Caught&#39;, ylab=&#39;&#39;)
-
-pond_b &lt;- ((ponds$`Dissolved Oxygen`[2] - mean(x_oxy)) / sd(x_oxy)) * posterior_oxy + 
-  ((ponds$`Pond Depth`[2] - mean(x_depth)) / sd(x_depth)) * posterior_depth + posterior_int
-pond_b &lt;- rpois(length(pond_b), exp(pond_b))
-hist(pond_b, breaks=length(unique(pond_b)), prob=T, col=adjustcolor(&#39;yellow&#39;, alpha.f = 0.5),
-     main=&#39;Pond B&#39;, xlab=&#39;Fish Caught&#39;, ylab=&#39;&#39;)</code></pre>
-<p><img src="poisson_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>Now, we can take the difference of the two distributions and come to our conclusion.</p>
-<pre class="r"><code>pond_diff &lt;- (pond_b - pond_a)
-hist(pond_diff, prob=T, main=&#39;Pond B - Pond A&#39;, xlab=&#39;Difference in fish caught between ponds&#39;, ylab=&#39;&#39;,
-      col=adjustcolor(&#39;purple&#39;, alpha.f = 0.5))</code></pre>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>pond_a <span class="ot">&lt;-</span> ((ponds<span class="sc">$</span><span class="st">`</span><span class="at">Dissolved Oxygen</span><span class="st">`</span>[<span class="dv">1</span>] <span class="sc">-</span> <span class="fu">mean</span>(x_oxy)) <span class="sc">/</span> <span class="fu">sd</span>(x_oxy)) <span class="sc">*</span> posterior_oxy <span class="sc">+</span> </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  ((ponds<span class="sc">$</span><span class="st">`</span><span class="at">Pond Depth</span><span class="st">`</span>[<span class="dv">1</span>] <span class="sc">-</span> <span class="fu">mean</span>(x_depth)) <span class="sc">/</span> <span class="fu">sd</span>(x_depth)) <span class="sc">*</span> posterior_depth <span class="sc">+</span> posterior_int</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>pond_a <span class="ot">&lt;-</span> <span class="fu">rpois</span>(<span class="fu">length</span>(pond_a), <span class="fu">exp</span>(pond_a))</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pond_a, <span class="at">breaks=</span><span class="fu">length</span>(<span class="fu">unique</span>(pond_a)), <span class="at">prob=</span>T, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;darkgreen&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">&#39;Pond A&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;Fish Caught&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;&#39;</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>pond_b <span class="ot">&lt;-</span> ((ponds<span class="sc">$</span><span class="st">`</span><span class="at">Dissolved Oxygen</span><span class="st">`</span>[<span class="dv">2</span>] <span class="sc">-</span> <span class="fu">mean</span>(x_oxy)) <span class="sc">/</span> <span class="fu">sd</span>(x_oxy)) <span class="sc">*</span> posterior_oxy <span class="sc">+</span> </span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  ((ponds<span class="sc">$</span><span class="st">`</span><span class="at">Pond Depth</span><span class="st">`</span>[<span class="dv">2</span>] <span class="sc">-</span> <span class="fu">mean</span>(x_depth)) <span class="sc">/</span> <span class="fu">sd</span>(x_depth)) <span class="sc">*</span> posterior_depth <span class="sc">+</span> posterior_int</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>pond_b <span class="ot">&lt;-</span> <span class="fu">rpois</span>(<span class="fu">length</span>(pond_b), <span class="fu">exp</span>(pond_b))</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pond_b, <span class="at">breaks=</span><span class="fu">length</span>(<span class="fu">unique</span>(pond_b)), <span class="at">prob=</span>T, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;yellow&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">&#39;Pond B&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;Fish Caught&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;&#39;</span>)</span></code></pre></div>
 <p><img src="poisson_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Now, we can take the difference of the two distributions and come to our conclusion.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>pond_diff <span class="ot">&lt;-</span> (pond_b <span class="sc">-</span> pond_a)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(pond_diff, <span class="at">prob=</span>T, <span class="at">main=</span><span class="st">&#39;Pond B - Pond A&#39;</span>, <span class="at">xlab=</span><span class="st">&#39;Difference in fish caught between ponds&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;&#39;</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">&#39;purple&#39;</span>, <span class="at">alpha.f =</span> <span class="fl">0.5</span>))</span></code></pre></div>
+<p><img src="poisson_files/figure-html/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>If we want to find the expected increase in fish in choosing pond B of pond A, it’s as simple as taking the average of our above distribution.</p>
 <pre><code>## [1] 3.110529</code></pre>
 <p>Hence, after our extensive analysis we can come to the conclusion that it is best to choose Pond B over A. Although, maybe your friend Danny has left by now!</p>

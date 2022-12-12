@@ -107,6 +107,57 @@ for (i in 1:length(c_points[[1]])){
 ```
 
 ## Modeling
-Our model is almost fully specified with the data generating process outlined above, but we still need to incorporate our priors. For the correlation matrix, we will reparametrize using the Cholesky decomposition and use a LKJ prior. The cut-points are a little trickier, but notice that the marginals of our latent distribution are standard normals. We can use the to our advantage by reparametrizing the cut-points as a vector of probabilities where each entry is the probability allocated to the interval on the standard normal distribution between two adjacent cut-points $c_i$ and $c_j$.
+Our model is almost fully specified with the data generating process outlined above, but we still need to incorporate our priors. For the correlation matrix, we will reparametrize using the Cholesky decomposition and use a LKJ prior. The cut-points are a little trickier, but notice that the marginals of our latent distribution are standard normals. We can use this to our advantage by reparametrizing the cut-points as a vector of probabilities where each entry is the probability allocated to the interval on the standard normal distribution between two adjacent cut-points $c_i$ and $c_j$. Note that for $p-1$ cutpoints, there will be $p$ entries in our probability vector. Thus, we can write:
+
+$$
+\begin{align}
+\begin{bmatrix}
+c_1\\
+c_2 \\
+\vdots\\
+c_{p-1}
+\end{bmatrix}
+& \rightarrow \begin{bmatrix}
+\theta_1\\
+\theta_2\\
+\vdots\\
+\theta_{p}
+\end{bmatrix} \\ \\
+&= \begin{bmatrix}
+\Phi(c_1) \\
+\Phi(c_2) - \Phi(c_1) ] \\
+\vdots \\
+1 - \Phi(c_{p-1})
+\end{bmatrix}
+\end{align}
+$$
+Since our probability interval vector must sum to one, we can use a dirichlet distribution as the prior. The stan code to speicfy this prior and perform the reparametrization is below:
+
+```{r, eval=F}
+real induced_dirichlet_lpdf(vector c, vector alpha, real gamma){
+    int K = num_elements(c) + 1;
+    vector[K - 1] cuml = Phi(c - gamma);
+    vector[K] p;
+    matrix[K,K] J = rep_matrix(0,K,K);
+
+    p[1] = cuml[1];
+    for (k in 2:(K-1)){
+        p[k] = cuml[k] - cuml[k-1];
+    }
+    p[K] = 1 - cuml[K-1];
+
+    for (k in 1:K) J[k,1] = 1;
+
+    for (k in 2:K){
+        real rho = exp(std_normal_lpdf(c[k-1] - gamma));
+        J[k,k] = -rho;
+        J[k - 1, k] = rho;
+    }
+    return dirichlet_lpdf(p | alpha) + log_determinant(J);
+}
+```
+The stan code is a bit more involved, and includes the Jacobian calculations since we are specifying a prior on the transformed paremeters. For more detail about the reparametrization and Jacobian calculations I suggest reading [Michael Betancourt's ordinal regression tutorial](https://betanalpha.github.io/assets/case_studies/ordinal_regression.html). Be aware that his model uses latent logistic distribution (different than our standard normal).
+
+
 
 

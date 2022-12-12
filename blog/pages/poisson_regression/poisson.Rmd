@@ -24,9 +24,14 @@ Now, let's generate some data!
 knitr::opts_chunk$set(cache = T)
 ```
 
+```{r, results='hide', warning=FALSE, message=FALSE}
+library(dplyr)
+library(rstan)
+```
+
+
+
 ```{r, fig.align='center'}
-suppressMessages(suppressWarnings(library(dplyr)))
-suppressMessages(suppressWarnings(library(rstan)))
 # Function to standardize data
 standardize <- function(x){
   return((x - mean(x)) / sd(x))
@@ -225,8 +230,10 @@ A good measure to determine how well model fits our data is to plot the posterio
 posterior_predictive <- cbind(standardize(x_oxy), standardize(x_depth)) %>% apply(., 1, function(x) 
   rpois(n=n_prior_samples, exp(x[1]*posterior_oxy + x[2]*posterior_depth + posterior_int))) %>% c()
 
-hist(posterior_predictive,prob=T, col=adjustcolor('darkblue', alpha.f = 0.5), breaks=length(unique(posterior_predictive)),
+hist(posterior_predictive,prob=T, col=adjustcolor('darkblue', alpha.f = 0.5),
+     breaks=length(unique(posterior_predictive)),
      main='Posterior Predictive and y', ylab='', xlab='')
+
 hist(y, prob=T, add=T, col=adjustcolor('darkred', alpha.f = 0.5), breaks=34)
 legend('topright', c('Posterior Predictive','y'), fill=c(adjustcolor('darkblue', alpha.f = 0.5),
                                                        adjustcolor('darkred', alpha.f = 0.5)))
