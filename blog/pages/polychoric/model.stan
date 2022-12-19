@@ -68,7 +68,6 @@ data {
   array[N, D] int<lower=0, upper=10> y;
   int<lower=0> y_min;
   int y_max;
-//   array[D] matrix[D,D] L_Omega;
 }
 transformed data {
    int n_cut = y_max - y_min;
@@ -87,5 +86,4 @@ model {
 generated quantities {
    corr_matrix[D] Omega;
    Omega = multiply_lower_tri_self_transpose(L_Omega);
-//    vector[2] p = Phi(10 - c_points[2,2]);
 }
