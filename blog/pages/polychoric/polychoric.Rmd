@@ -26,6 +26,7 @@ library(tidyverse)
 library(cmdstanr)
 library(knitr)
 library(kableExtra)
+library(ggridges)
 ```
 ```{r, echo=F, results='hide'}
 sigma <- c(1,0.5,0.5,1) %>% matrix(.,nrow=2,byrow=T)
@@ -215,29 +216,46 @@ poly_cor <- readRDS('poly_cor.Rds')
 Let's take a look out some diagnotics to make sure we had adequate posterior sampling:
 ```{r}
 poly_cor$summary(c(paste0('c_points[1,', 1:4,']'), paste0('c_points[2,', 1:4,']'), 'Omega[2,1]')) %>%
-  map(., \(x) if(is.character(x)) x else round(x,3)) %>% as.data.frame() %>%
+  select(-c(median, q5, q95, mad)) %>%
+  map(., \(x) if(is.character(x)) x else round(x,2)) %>% as.data.frame() %>%
   kbl() %>% kable_styling()
 
 ```
-Our `Rhat`, `ess_bulk`, and `ess_tail` look good! Let's take a look at our posteriors for the `c_points` paramter:
+Our `Rhat`, `ess_bulk`, and `ess_tail` look good! Let's take a look at our posteriors for the `c_points` parameter:
 
-```{r}
-d1 <- data.frame(n=paste0('c_points[2,', 4:1,']') %>% as.factor() %>% rev(), x0=c_points[[2]])
+```{r, fig.align='center'}
+get_cut_point <- function(dim, n){
+  c_name <- paste0('c_points[', dim, ',', n, ']')
+  poly_cor$draws(c_name) %>% 
+    .[,,1,drop=T] %>%
+    as.vector() %>% as.data.frame() %>%
+    cbind(., c_name)
+}
 
-poly_cor$draws(paste0('c_points[2,', 4:1,']')) %>% bayesplot::mcmc_areas_ridges() +
-  geom_segment(data=d1, aes(x = x0, xend = x0, y = as.numeric(n),
-                                      yend = as.numeric(n)), color='red')
+cut_point_draws <- lapply(4:1, \(x) get_cut_point(2,x)) %>% do.call('rbind', .) %>% set_names(c('value', 'name'))
 
-# a <- map(c(1,2,3,4), ~rnorm(1e4,mean=.x,sd=0.5)) %>% as.data.frame() %>%
-#   ggplot(, )
-
-iris_med <- iris %>% group_by(Species) %>% summarise(Sepal.Length = median(Sepal.Length))
+comp <- ggplot(cut_point_draws, aes(x=value, y=name)) + geom_density_ridges()
+ingredients <- ggplot_build(comp) %>% purrr::pluck("data", 1)
 
 
-ggplot(iris, aes(x = Sepal.Length, y = Species, fill = 0.5 - abs(0.5-..ecdf..))) +
-  ggridges::stat_density_ridges(geom = "density_ridges_gradient", calc_ecdf = TRUE) +
-  geom_point(aes(x = Sepal.Length, y = Species, color = "red"), data = iris_med, inherit.aes = F)
+density_lines <- ingredients %>%
+  group_by(group) %>% filter(density == max(density)) %>% ungroup()
 
+density_lines <- ingredients %>% group_by(group) %>% mutate(a = c_points[[2]][[max(group)]]) %>% 
+  slice(which.min(abs(x-a)))
+
+ggplot(cut_point_draws, aes(x=value, y=name)) + 
+  geom_density_ridges(rel_min_height = 0.01, lwd=1.2, fill='darkblue', alpha=0.3) +
+  scale_x_continuous(breaks = seq(-1.5,2.5,0.5),limits = c(-1.5,2), expand=c(0,0), name='') +
+  scale_y_discrete(name='') + 
+  geom_segment(data = density_lines, col='darkred',lwd=1.2,
+               aes(x = x, y = ymin, xend = x, 
+                   yend = ymin+density*scale*iscale)) +
+  # geom_text(data = density_lines, 
+  #           aes(x = x, y = ymin + 0.5 *(density*scale*iscale),
+  #               label = round(x, 2)),
+  #           hjust = -0.8) + 
+  theme_ridges()
 ```
 
 
