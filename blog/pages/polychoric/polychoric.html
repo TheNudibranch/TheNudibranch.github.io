@@ -30,6 +30,8 @@
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
@@ -42,101 +44,17 @@
   ul.task-list{list-style: none;}
     </style>
 
-
-<style type="text/css">
-  code {
-    white-space: pre;
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
   }
-  .sourceCode {
-    overflow: visible;
-  }
-</style>
-<style type="text/css" data-origin="pandoc">
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
 }
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  { color: #cccccc; background-color: #303030; }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
-code span.al { color: #ffcfaf; } /* Alert */
-code span.an { color: #7f9f7f; font-weight: bold; } /* Annotation */
-code span.at { } /* Attribute */
-code span.bn { color: #dca3a3; } /* BaseN */
-code span.bu { } /* BuiltIn */
-code span.cf { color: #f0dfaf; } /* ControlFlow */
-code span.ch { color: #dca3a3; } /* Char */
-code span.cn { color: #dca3a3; font-weight: bold; } /* Constant */
-code span.co { color: #7f9f7f; } /* Comment */
-code span.cv { color: #7f9f7f; font-weight: bold; } /* CommentVar */
-code span.do { color: #7f9f7f; } /* Documentation */
-code span.dt { color: #dfdfbf; } /* DataType */
-code span.dv { color: #dcdccc; } /* DecVal */
-code span.er { color: #c3bf9f; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #c0bed1; } /* Float */
-code span.fu { color: #efef8f; } /* Function */
-code span.im { } /* Import */
-code span.in { color: #7f9f7f; font-weight: bold; } /* Information */
-code span.kw { color: #f0dfaf; } /* Keyword */
-code span.op { color: #f0efd0; } /* Operator */
-code span.ot { color: #efef8f; } /* Other */
-code span.pp { color: #ffcfaf; font-weight: bold; } /* Preprocessor */
-code span.sc { color: #dca3a3; } /* SpecialChar */
-code span.ss { color: #cc9393; } /* SpecialString */
-code span.st { color: #cc9393; } /* String */
-code span.va { } /* Variable */
-code span.vs { color: #cc9393; } /* VerbatimString */
-code span.wa { color: #7f9f7f; font-weight: bold; } /* Warning */
-
-</style>
-<script>
-// apply pandoc div.sourceCode style to pre.sourceCode instead
-(function() {
-  var sheets = document.styleSheets;
-  for (var i = 0; i < sheets.length; i++) {
-    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
-    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
-    for (var j = 0; j < rules.length; j++) {
-      var rule = rules[j];
-      // check if there is a div.sourceCode rule
-      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
-      var style = rule.style.cssText;
-      // check if color or background-color is set
-      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
-      // replace div.sourceCode by a pre.sourceCode rule
-      sheets[i].deleteRule(j);
-      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
-    }
-  }
-})();
 </script>
+
 
 
 
@@ -356,16 +274,32 @@ $(document).ready(function () {
 </ol>
 <p>There are of course limitations to this kind of survey design. For one, most people have a hard time discretizing their feelings or emotions into a single bucket. Perhaps the more appropriate question response would feature a slider that allows respondents to freely select their agreement on a continuous scale. Regardless, as this is the design chosen by thousands of companies and organizations, we’ll choose it as well. Though, we’ll recognize that agreement or sentiment in general is better categorized as a spectrum.</p>
 <p>Enough philosophy, now to the actual data. I’m going to show how the data is generated further down, but for now let’s say that we ran the survey and collected 1,000 responses. First, let’s start by loading in all the packages we’ll need for this analysis.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cmdstanr)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggridges)</span></code></pre></div>
+<pre class="r"><code>library(tidyverse)
+library(cmdstanr)
+library(knitr)
+library(kableExtra)
+library(ggridges)</code></pre>
+<style type="text/css">
+pre {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 500px;
+}
+
+.scroll-100 {
+  max-height: 100px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+</style>
 <p>Next, we’ll take our <code>discrete_data</code> data frame which holds our survey responses and visualize it as a table of all unique responses. For example, the third row and second column will be the number of customers that responded <code>3</code> to question 1 and <code>2</code> to question 2.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(discrete_data[,<span class="dv">1</span>], discrete_data[,<span class="dv">2</span>]) <span class="sc">%&gt;%</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kbl</span>(<span class="at">row.names=</span><span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable_styling</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="at">column =</span> <span class="dv">1</span>, <span class="at">bold=</span>T)</span></code></pre></div>
+<pre class="r"><code>table(discrete_data[,1], discrete_data[,2]) %&gt;%
+  kbl(row.names=1) %&gt;%
+  kable_styling() %&gt;%
+  column_spec(column = 1, bold=T)</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -394,7 +328,7 @@ $(document).ready(function () {
 1
 </td>
 <td style="text-align:right;">
-1
+2
 </td>
 <td style="text-align:right;">
 1
@@ -414,13 +348,13 @@ $(document).ready(function () {
 2
 </td>
 <td style="text-align:right;">
-24
+30
 </td>
 <td style="text-align:right;">
-75
+80
 </td>
 <td style="text-align:right;">
-9
+12
 </td>
 <td style="text-align:right;">
 1
@@ -434,19 +368,19 @@ $(document).ready(function () {
 3
 </td>
 <td style="text-align:right;">
-13
+21
 </td>
 <td style="text-align:right;">
-85
+87
 </td>
 <td style="text-align:right;">
-23
+26
 </td>
 <td style="text-align:right;">
-4
+2
 </td>
 <td style="text-align:right;">
-7
+1
 </td>
 </tr>
 <tr>
@@ -454,19 +388,19 @@ $(document).ready(function () {
 4
 </td>
 <td style="text-align:right;">
-6
-</td>
-<td style="text-align:right;">
-120
-</td>
-<td style="text-align:right;">
-35
-</td>
-<td style="text-align:right;">
 8
 </td>
 <td style="text-align:right;">
-9
+111
+</td>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+8
 </td>
 </tr>
 <tr>
@@ -477,16 +411,16 @@ $(document).ready(function () {
 0
 </td>
 <td style="text-align:right;">
-34
+24
 </td>
 <td style="text-align:right;">
-25
+24
 </td>
 <td style="text-align:right;">
-9
+3
 </td>
 <td style="text-align:right;">
-11
+15
 </td>
 </tr>
 </tbody>
@@ -496,19 +430,19 @@ $(document).ready(function () {
 <div id="data-generating-process" class="section level2">
 <h2>Data Generating Process</h2>
 <p>We assumed that our data was generated by customers that were forced to discretize their agreement with a given question. If we wanted to properly model this, we might want to assume that our data is first generated from some latent multivariate continuous distribution, and then discretized using a set of <code>p - 1</code> “cut-points” for each dimension of the latent space, where <code>p</code> is the number of possible choices in the questionnaire. The code to generate data from this process is shown below:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>sigma <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="fl">0.5</span>,<span class="fl">0.5</span>,<span class="dv">1</span>) <span class="sc">%&gt;%</span> <span class="fu">matrix</span>(.,<span class="at">nrow=</span><span class="dv">2</span>,<span class="at">byrow=</span>T)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> mvtnorm<span class="sc">::</span><span class="fu">rmvnorm</span>(<span class="dv">500</span>, <span class="at">sigma=</span>sigma)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>c_points <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="sc">-</span><span class="fl">2.69</span>, <span class="sc">-</span><span class="fl">0.68</span>, <span class="fl">0.07</span>, <span class="fl">1.13</span>),</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.29</span>, <span class="fl">0.62</span>, <span class="fl">1.38</span>, <span class="fl">1.65</span>)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>discrete_data <span class="ot">&lt;-</span> dat <span class="sc">%&gt;%</span> <span class="fu">apply</span>(., <span class="dv">1</span>, </span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                               \(x) <span class="fu">c</span>(</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>                                 <span class="fu">sum</span>(x[<span class="dv">1</span>] <span class="sc">&gt;</span> c_points[[<span class="dv">1</span>]]) <span class="sc">+</span> <span class="dv">1</span>,</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>                                 <span class="fu">sum</span>(x[<span class="dv">2</span>] <span class="sc">&gt;</span> c_points[[<span class="dv">2</span>]]) <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>                               ) <span class="sc">%&gt;%</span> <span class="fu">t</span>()</span></code></pre></div>
+<pre class="r"><code>sigma &lt;- c(1,0.5,0.5,1) %&gt;% matrix(.,nrow=2,byrow=T)
+dat &lt;- mvtnorm::rmvnorm(500, sigma=sigma)
+
+c_points &lt;- list(
+  c(-2.69, -0.68, 0.07, 1.13),
+  c(-1.29, 0.62, 1.38, 1.65)
+)
+
+discrete_data &lt;- dat %&gt;% apply(., 1, 
+                               \(x) c(
+                                 sum(x[1] &gt; c_points[[1]]) + 1,
+                                 sum(x[2] &gt; c_points[[2]]) + 1)
+                               ) %&gt;% t()</code></pre>
 <p>We use a bivariate gaussian as our latent distribution with a mean of 0 and variance, or equivalently in this case, a correlation matrix of</p>
 <p><span class="math display">\[
 \begin{bmatrix}
@@ -516,13 +450,13 @@ $(document).ready(function () {
 0.5 &amp; 1
 \end{bmatrix}
 \]</span> If we plot the latent variables with the cut-points we obtain:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(dat,<span class="at">pch=</span><span class="st">&#39;.&#39;</span>, <span class="at">xlab =</span> <span class="st">&#39;Question 1&#39;</span>, <span class="at">ylab=</span><span class="st">&#39;Question 2&#39;</span>, <span class="at">main=</span><span class="st">&#39;Latent Space Representation&#39;</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(c_points[[<span class="dv">1</span>]])){</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">v=</span>c_points[[<span class="dv">1</span>]][i], <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="st">&#39;darkred&#39;</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">h=</span>c_points[[<span class="dv">2</span>]][i], <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span><span class="st">&#39;darkblue&#39;</span>)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p><img src="polychoric_files/figure-html/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /> So a respondent that answered <code>3</code> for the first question and <code>2</code> for the second question would have had their latent representation in the below region:</p>
-<p><img src="polychoric_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(dat,pch=&#39;.&#39;, xlab = &#39;Question 1&#39;, ylab=&#39;Question 2&#39;, main=&#39;Latent Space Representation&#39;)
+for (i in 1:length(c_points[[1]])){
+  abline(v=c_points[[1]][i], lwd=2, col=&#39;darkred&#39;)
+  abline(h=c_points[[2]][i], lwd=2, col=&#39;darkblue&#39;)
+}</code></pre>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /> So a respondent that answered <code>3</code> for the first question and <code>2</code> for the second question would have had their latent representation in the below region:</p>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="modeling" class="section level2">
 <h2>Modeling</h2>
@@ -551,27 +485,27 @@ c_{p-1}
 \end{bmatrix}
 \end{align}
 \]</span> Since our probability interval vector must sum to one, we can use a dirichlet distribution as the prior. The stan code to specify this prior and perform the reparametrization is below:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>real <span class="fu">induced_dirichlet_lpdf</span>(vector c, vector alpha, real gamma){</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    int K <span class="ot">=</span> <span class="fu">num_elements</span>(c) <span class="sc">+</span> <span class="dv">1</span>;</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    vector[K <span class="sc">-</span> <span class="dv">1</span>] cuml <span class="ot">=</span> <span class="fu">Phi</span>(c <span class="sc">-</span> gamma);</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    vector[K] p;</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    matrix[K,K] J <span class="ot">=</span> <span class="fu">rep_matrix</span>(<span class="dv">0</span>,K,K);</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    p[<span class="dv">1</span>] <span class="ot">=</span> cuml[<span class="dv">1</span>];</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>(K<span class="dv">-1</span>)){</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        p[k] <span class="ot">=</span> cuml[k] <span class="sc">-</span> cuml[k<span class="dv">-1</span>];</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    p[K] <span class="ot">=</span> <span class="dv">1</span> <span class="sc">-</span> cuml[K<span class="dv">-1</span>];</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>K) J[k,<span class="dv">1</span>] <span class="ot">=</span> <span class="dv">1</span>;</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>K){</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        real rho <span class="ot">=</span> <span class="fu">exp</span>(<span class="fu">std_normal_lpdf</span>(c[k<span class="dv">-1</span>] <span class="sc">-</span> gamma));</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        J[k,k] <span class="ot">=</span> <span class="sc">-</span>rho;</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        J[k <span class="sc">-</span> <span class="dv">1</span>, k] <span class="ot">=</span> rho;</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    return <span class="fu">dirichlet_lpdf</span>(p <span class="sc">|</span> alpha) <span class="sc">+</span> <span class="fu">log_determinant</span>(J);</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<pre class="r"><code>real induced_dirichlet_lpdf(vector c, vector alpha, real gamma){
+    int K = num_elements(c) + 1;
+    vector[K - 1] cuml = Phi(c - gamma);
+    vector[K] p;
+    matrix[K,K] J = rep_matrix(0,K,K);
+
+    p[1] = cuml[1];
+    for (k in 2:(K-1)){
+        p[k] = cuml[k] - cuml[k-1];
+    }
+    p[K] = 1 - cuml[K-1];
+
+    for (k in 1:K) J[k,1] = 1;
+
+    for (k in 2:K){
+        real rho = exp(std_normal_lpdf(c[k-1] - gamma));
+        J[k,k] = -rho;
+        J[k - 1, k] = rho;
+    }
+    return dirichlet_lpdf(p | alpha) + log_determinant(J);
+}</code></pre>
 <p>The stan code is a bit more involved, and includes the Jacobian calculations since we are specifying a prior on the transformed parameters. For more detail about the reparametrization and Jacobian calculations I suggest reading <a href="https://betanalpha.github.io/assets/case_studies/ordinal_regression.html">Michael Betancourt’s ordinal regression tutorial</a>. Be aware that his model uses a latent logistic distribution (different than our standard normal).</p>
 <p>Finally, we need to consider the likelihood of the data, conditioned on our parameters. To model this, we will extend the multivariate probit model to the case where an arbitrary number of ordinal categories are observed. Without going into too much detail, the multivariate probit is used to model a bernoulli distributed random vector, where the data is assumed to have been generated from a latent multivariate normal distribution. For example, if you consider our data generating process above but instead only have one cut-point per dimension, then the data generated would be a bernoulli random vector. The stan code used to define this extenstion of the multivariate probit likelihood is here, along with the full stan code for the model.</p>
 <p>The full derivation for the likelihood, and therefore stan code, is beyond the scope of this blog post, but I refer you to these two other resources to learn more if you are interested:</p>
@@ -580,45 +514,45 @@ c_{p-1}
 <li><a href="https://en.wikipedia.org/wiki/GHK_algorithm">GHK Algorithm</a>, which is what Ben’s implementation is based on</li>
 </ul>
 <p>The parameter, model, and generated quantities block is shown below:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>parameters {</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  cholesky_factor_corr[D] L_Omega;</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  array[N,D] real<span class="sc">&lt;</span>lower<span class="ot">=</span><span class="dv">0</span>, upper<span class="ot">=</span><span class="dv">1</span><span class="sc">&gt;</span> u;</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  array[D] ordered[n_cut] c_points;</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>model {</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    L_Omega <span class="sc">~</span> <span class="fu">lkj_corr_cholesky</span>(<span class="dv">4</span>);</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (d <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>D) target <span class="sc">+</span><span class="er">=</span> <span class="fu">induced_dirichlet_lpdf</span>(c_points[d] <span class="sc">|</span> <span class="fu">rep_vector</span>(<span class="dv">1</span>, n_cut <span class="sc">+</span> <span class="dv">1</span>), <span class="dv">0</span>);</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) target <span class="sc">+</span><span class="er">=</span> <span class="fu">trunc_norm</span>(y[n], c_points, L_Omega, u[n], D, y_min, y_max);</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>generated quantities {</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>   corr_matrix[D] Omega;</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>   Omega <span class="ot">=</span> <span class="fu">multiply_lower_tri_self_transpose</span>(L_Omega);</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<pre class="r"><code>parameters {
+  cholesky_factor_corr[D] L_Omega;
+  array[N,D] real&lt;lower=0, upper=1&gt; u;
+  array[D] ordered[n_cut] c_points;
+}
+model {
+    L_Omega ~ lkj_corr_cholesky(4);
+    for (d in 1:D) target += induced_dirichlet_lpdf(c_points[d] | rep_vector(1, n_cut + 1), 0);
+
+    for (n in 1:N) target += trunc_norm(y[n], c_points, L_Omega, u[n], D, y_min, y_max);
+}
+generated quantities {
+   corr_matrix[D] Omega;
+   Omega = multiply_lower_tri_self_transpose(L_Omega);
+}</code></pre>
 <p>The parameters of interest here are <code>L_Omega</code>, which will give us the correlation matrix for our latent gaussian and the <code>c_points</code> array which determines the cut-points that generated our data. Ignore the <code>u</code> parameter, as it is a nuisance parameter and is only used to help define the likelihood of our data.</p>
 </div>
 <div id="sampling-and-posterior-exploration" class="section level3">
 <h3>Sampling and Posterior Exploration</h3>
 <p>Now that are model is fully defined, we can used the <code>cmdstanr</code> package to sample our posterior. The full stan code can found <a href="https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan">here</a>.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fp &lt;- file.path(&#39;PATH TO YOUR STAN MODEL CODE&#39;)</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(fp)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">D =</span> <span class="fu">ncol</span>(discrete_data),</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(discrete_data),</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> discrete_data,</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y_min =</span> <span class="fu">min</span>(discrete_data),</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">y_max =</span> <span class="fu">max</span>(discrete_data)</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># poly_cor &lt;- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#                        iter_warmup = 2000,iter_sampling = 2000)</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># saveRDS(poly_cor, &#39;poly_cor.Rds&#39;)</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>poly_cor <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">&#39;poly_cor.Rds&#39;</span>)</span></code></pre></div>
+<pre class="r"><code># fp &lt;- file.path(&#39;PATH TO YOUR STAN MODEL CODE&#39;)
+mod &lt;- cmdstan_model(fp)
+data &lt;- list(
+  D = ncol(discrete_data),
+  N = nrow(discrete_data),
+  y = discrete_data,
+  y_min = min(discrete_data),
+  y_max = max(discrete_data)
+)
+
+# poly_cor &lt;- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,
+#                        iter_warmup = 2000,iter_sampling = 2000)
+# saveRDS(poly_cor, &#39;poly_cor.Rds&#39;)
+poly_cor &lt;- readRDS(&#39;poly_cor.Rds&#39;)</code></pre>
 <p>Let’s take a look out some diagnotics to make sure we had adequate posterior sampling:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>poly_cor<span class="sc">$</span><span class="fu">summary</span>(<span class="fu">c</span>(<span class="fu">paste0</span>(<span class="st">&#39;c_points[1,&#39;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>,<span class="st">&#39;]&#39;</span>), <span class="fu">paste0</span>(<span class="st">&#39;c_points[2,&#39;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>,<span class="st">&#39;]&#39;</span>), <span class="st">&#39;Omega[2,1]&#39;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(median, q5, q95, mad)) <span class="sc">%&gt;%</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map</span>(., \(x) <span class="cf">if</span>(<span class="fu">is.character</span>(x)) x <span class="cf">else</span> <span class="fu">round</span>(x,<span class="dv">2</span>)) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kbl</span>() <span class="sc">%&gt;%</span> <span class="fu">kable_styling</span>()</span></code></pre></div>
+<pre class="r"><code>poly_cor$summary(c(paste0(&#39;c_points[1,&#39;, 1:4,&#39;]&#39;), paste0(&#39;c_points[2,&#39;, 1:4,&#39;]&#39;), &#39;Omega[2,1]&#39;)) %&gt;%
+  select(-c(median, q5, q95, mad)) %&gt;%
+  map(., \(x) if(is.character(x)) x else round(x,2)) %&gt;% as.data.frame() %&gt;%
+  kbl() %&gt;% kable_styling()</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -826,40 +760,44 @@ Omega[2,1]
 </tbody>
 </table>
 <p>Our <code>Rhat</code>, <code>ess_bulk</code>, and <code>ess_tail</code> look good! Let’s take a look at our posteriors for the <code>c_points</code> parameter:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>get_cut_point <span class="ot">&lt;-</span> <span class="cf">function</span>(dim, n){</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  c_name <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&#39;c_points[&#39;</span>, dim, <span class="st">&#39;,&#39;</span>, n, <span class="st">&#39;]&#39;</span>)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  poly_cor<span class="sc">$</span><span class="fu">draws</span>(c_name) <span class="sc">%&gt;%</span> </span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    .[,,<span class="dv">1</span>,drop<span class="ot">=</span>T] <span class="sc">%&gt;%</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as.vector</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cbind</span>(., c_name)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>cut_point_draws <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">4</span><span class="sc">:</span><span class="dv">1</span>, \(x) <span class="fu">get_cut_point</span>(<span class="dv">2</span>,x)) <span class="sc">%&gt;%</span> <span class="fu">do.call</span>(<span class="st">&#39;rbind&#39;</span>, .) <span class="sc">%&gt;%</span> <span class="fu">set_names</span>(<span class="fu">c</span>(<span class="st">&#39;value&#39;</span>, <span class="st">&#39;name&#39;</span>))</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>comp <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(cut_point_draws, <span class="fu">aes</span>(<span class="at">x=</span>value, <span class="at">y=</span>name)) <span class="sc">+</span> <span class="fu">geom_density_ridges</span>()</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>ingredients <span class="ot">&lt;-</span> <span class="fu">ggplot_build</span>(comp) <span class="sc">%&gt;%</span> purrr<span class="sc">::</span><span class="fu">pluck</span>(<span class="st">&quot;data&quot;</span>, <span class="dv">1</span>)</span></code></pre></div>
-<pre><code>## Picking joint bandwidth of 0.0112</code></pre>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>density_lines <span class="ot">&lt;-</span> ingredients <span class="sc">%&gt;%</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(group) <span class="sc">%&gt;%</span> <span class="fu">filter</span>(density <span class="sc">==</span> <span class="fu">max</span>(density)) <span class="sc">%&gt;%</span> <span class="fu">ungroup</span>()</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>density_lines <span class="ot">&lt;-</span> ingredients <span class="sc">%&gt;%</span> <span class="fu">group_by</span>(group) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">a =</span> c_points[[<span class="dv">2</span>]][[<span class="fu">max</span>(group)]]) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="fu">which.min</span>(<span class="fu">abs</span>(x<span class="sc">-</span>a)))</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(cut_point_draws, <span class="fu">aes</span>(<span class="at">x=</span>value, <span class="at">y=</span>name)) <span class="sc">+</span> </span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density_ridges</span>(<span class="at">rel_min_height =</span> <span class="fl">0.01</span>, <span class="at">lwd=</span><span class="fl">1.2</span>, <span class="at">fill=</span><span class="st">&#39;darkblue&#39;</span>, <span class="at">alpha=</span><span class="fl">0.3</span>) <span class="sc">+</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">1.5</span>,<span class="fl">2.5</span>,<span class="fl">0.5</span>),<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.5</span>,<span class="dv">2</span>), <span class="at">expand=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>), <span class="at">name=</span><span class="st">&#39;&#39;</span>) <span class="sc">+</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_discrete</span>(<span class="at">name=</span><span class="st">&#39;&#39;</span>) <span class="sc">+</span> </span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="at">data =</span> density_lines, <span class="at">col=</span><span class="st">&#39;darkred&#39;</span>,<span class="at">lwd=</span><span class="fl">1.2</span>,</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>               <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> ymin, <span class="at">xend =</span> x, </span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">yend =</span> ymin<span class="sc">+</span>density<span class="sc">*</span>scale<span class="sc">*</span>iscale)) <span class="sc">+</span></span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># geom_text(data = density_lines, </span></span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="co">#           aes(x = x, y = ymin + 0.5 *(density*scale*iscale),</span></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="co">#               label = round(x, 2)),</span></span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">#           hjust = -0.8) + </span></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_ridges</span>()</span></code></pre></div>
-<pre><code>## Picking joint bandwidth of 0.0112</code></pre>
-<pre><code>## Warning: Removed 19 rows containing non-finite values (stat_density_ridges).</code></pre>
-<p><img src="polychoric_files/figure-html/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Function to extract Cut Points from stan model
+get_cut_point &lt;- function(dim, n){
+  c_name &lt;- paste0(&#39;c_points[&#39;, dim, &#39;,&#39;, n, &#39;]&#39;)
+  poly_cor$draws(c_name) %&gt;% 
+    .[,,1,drop=T] %&gt;%
+    as.vector() %&gt;% as.data.frame() %&gt;%
+    cbind(., c_name, dim)
+}
+
+cut_point_draws &lt;- lapply(4:1, \(x) get_cut_point(1,x)) %&gt;% 
+  append(., lapply(4:1, \(x) get_cut_point(2,x))) %&gt;%
+  do.call(&#39;rbind&#39;, .) %&gt;% set_names(c(&#39;value&#39;, &#39;name&#39;, &#39;dim&#39;)) %&gt;% 
+  mutate(dim=as.factor(dim))
+
+# Plot the Cut Point Ridge plot
+comp &lt;- ggplot(cut_point_draws, aes(x=value, y=name)) + geom_density_ridges()
+ingredients &lt;- ggplot_build(comp) %&gt;% purrr::pluck(&quot;data&quot;, 1)
+
+density_lines &lt;- ingredients %&gt;% group_by(group) %&gt;% 
+  mutate(a = c_points[[floor(max(group)/5) + 1]][[((max(group) - 1) %% 4) + 1]]) %&gt;% 
+  slice(which.min(abs(x-a)))
+
+ggplot(cut_point_draws, aes(x=value, y=name)) + 
+  geom_density_ridges(aes(fill=dim), rel_min_height = 0.01, lwd=1.2, alpha=0.3) +
+  scale_x_continuous(breaks = seq(-3.5,2.5,0.5),limits = c(-3.5,2), expand=c(0,0)) +
+  geom_segment(data = density_lines, col=&#39;darkred&#39;,lwd=1.2,
+               aes(x = x, y = ymin, xend = x, 
+                   yend = ymin+density*scale*iscale, linetype=&#39;Actual Cut-Point Value&#39;)) +
+  scale_linetype_manual(&quot;&quot;,values=c(&#39;Actual Cut-Point Value&#39;=1)) +
+  scale_fill_manual(&quot;Cut-point Dimension&quot;, 
+                    values=c(&#39;darkblue&#39;, &#39;darkred&#39;, &#39;yellow&#39;), 
+                    labels=c(&#39;Dim. 1&#39;, &#39;Dim. 2&#39;)) +
+  labs(title=&#39;Cut Point Parameter Estimates&#39;) +
+  theme_ridges() + 
+  theme(axis.title.y = element_blank(), axis.title.x = element_blank(), 
+        axis.text = element_text(size=20), plot.title = element_text(size=30),
+        legend.text = element_text(size=20), legend.title = element_text(size=30))</code></pre>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-13-1.png" width="1440" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 
