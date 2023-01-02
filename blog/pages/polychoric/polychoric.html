@@ -328,10 +328,10 @@ pre[class] {
 1
 </td>
 <td style="text-align:right;">
-2
+3
 </td>
 <td style="text-align:right;">
-1
+0
 </td>
 <td style="text-align:right;">
 0
@@ -348,19 +348,19 @@ pre[class] {
 2
 </td>
 <td style="text-align:right;">
-30
+25
 </td>
 <td style="text-align:right;">
-80
+75
 </td>
 <td style="text-align:right;">
-12
-</td>
-<td style="text-align:right;">
-1
+7
 </td>
 <td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+1
 </td>
 </tr>
 <tr>
@@ -368,19 +368,19 @@ pre[class] {
 3
 </td>
 <td style="text-align:right;">
-21
+16
 </td>
 <td style="text-align:right;">
-87
+97
 </td>
 <td style="text-align:right;">
-26
+23
+</td>
+<td style="text-align:right;">
+3
 </td>
 <td style="text-align:right;">
 2
-</td>
-<td style="text-align:right;">
-1
 </td>
 </tr>
 <tr>
@@ -388,19 +388,19 @@ pre[class] {
 4
 </td>
 <td style="text-align:right;">
-8
+7
 </td>
 <td style="text-align:right;">
-111
+117
 </td>
 <td style="text-align:right;">
-34
+36
 </td>
 <td style="text-align:right;">
-10
+12
 </td>
 <td style="text-align:right;">
-8
+13
 </td>
 </tr>
 <tr>
@@ -411,21 +411,21 @@ pre[class] {
 0
 </td>
 <td style="text-align:right;">
-24
+21
 </td>
 <td style="text-align:right;">
-24
+22
 </td>
 <td style="text-align:right;">
-3
+6
 </td>
 <td style="text-align:right;">
-15
+14
 </td>
 </tr>
 </tbody>
 </table>
-<p>From the table above, we can already see that there is a high degree of positive correlation between the questions. If we wanted to quantifying this correlation, we might naively use the <code>cor</code>, but this produces biased results as our provided data is not continuous, which is assumed by the default Pearson correlation measure. There are other measures of correlation such as Spearman or Kendall which are non-parametric, but neither take into account the data generating process that aligns with our philosophy.</p>
+<p>From the table above, we can already see that there is a high degree of positive correlation between the questions. If we wanted to quantifying this correlation, we might naively use the <code>cor</code> function, but this produces biased results as our provided data is not continuous, which is assumed by the default Pearson correlation measure. There are other measures of correlation such as Spearman or Kendall which are non-parametric, but neither take into account the data generating process that aligns with our philosophy. For that, we will need to employ the polychoric correlation which we will further define below.</p>
 </div>
 <div id="data-generating-process" class="section level2">
 <h2>Data Generating Process</h2>
@@ -450,13 +450,13 @@ discrete_data &lt;- dat %&gt;% apply(., 1,
 0.5 &amp; 1
 \end{bmatrix}
 \]</span> If we plot the latent variables with the cut-points we obtain:</p>
-<pre class="r"><code>plot(dat,pch=&#39;.&#39;, xlab = &#39;Question 1&#39;, ylab=&#39;Question 2&#39;, main=&#39;Latent Space Representation&#39;)
+<pre class="r"><code>plot(dat,pch=16, xlab = &#39;Question 1&#39;, ylab=&#39;Question 2&#39;, main=&#39;Latent Space Representation&#39;)
 for (i in 1:length(c_points[[1]])){
   abline(v=c_points[[1]][i], lwd=2, col=&#39;darkred&#39;)
   abline(h=c_points[[2]][i], lwd=2, col=&#39;darkblue&#39;)
 }</code></pre>
-<p><img src="polychoric_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /> So a respondent that answered <code>3</code> for the first question and <code>2</code> for the second question would have had their latent representation in the below region:</p>
-<p><img src="polychoric_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /> So a customer that answered <code>3</code> for the first question and <code>2</code> for the second question would have had their latent representation in the below region:</p>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="modeling" class="section level2">
 <h2>Modeling</h2>
@@ -507,7 +507,7 @@ c_{p-1}
     return dirichlet_lpdf(p | alpha) + log_determinant(J);
 }</code></pre>
 <p>The stan code is a bit more involved, and includes the Jacobian calculations since we are specifying a prior on the transformed parameters. For more detail about the reparametrization and Jacobian calculations I suggest reading <a href="https://betanalpha.github.io/assets/case_studies/ordinal_regression.html">Michael Betancourt’s ordinal regression tutorial</a>. Be aware that his model uses a latent logistic distribution (different than our standard normal).</p>
-<p>Finally, we need to consider the likelihood of the data, conditioned on our parameters. To model this, we will extend the multivariate probit model to the case where an arbitrary number of ordinal categories are observed. Without going into too much detail, the multivariate probit is used to model a bernoulli distributed random vector, where the data is assumed to have been generated from a latent multivariate normal distribution. For example, if you consider our data generating process above but instead only have one cut-point per dimension, then the data generated would be a bernoulli random vector. The stan code used to define this extenstion of the multivariate probit likelihood is here, along with the full stan code for the model.</p>
+<p>Finally, we need to consider the likelihood of the data, conditioned on our parameters. To model this, we will extend the multivariate probit model to the case where an arbitrary number of ordinal categories are observed. Without going into too much detail, the multivariate probit is used to model a bernoulli distributed random vector, where the data is assumed to have been generated from a latent multivariate normal distribution. For example, if you consider our data generating process above but instead only have one cut-point per dimension, then the data generated would be a bernoulli random vector. The stan code used to define this extenstion of the multivariate probit likelihood is <a href="https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan">here</a>, along with the full stan code for the model.</p>
 <p>The full derivation for the likelihood, and therefore stan code, is beyond the scope of this blog post, but I refer you to these two other resources to learn more if you are interested:</p>
 <ul>
 <li><a href="https://groups.google.com/g/stan-users/c/GuWUJogum1o/m/LvxjlUBnBwAJ">Ben Goodrich’s Truncated Normal Sampler in STAN</a></li>
@@ -533,7 +533,7 @@ generated quantities {
 </div>
 <div id="sampling-and-posterior-exploration" class="section level3">
 <h3>Sampling and Posterior Exploration</h3>
-<p>Now that are model is fully defined, we can used the <code>cmdstanr</code> package to sample our posterior. The full stan code can found <a href="https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan">here</a>.</p>
+<p>Now that are model is fully defined, we can used the <code>cmdstanr</code> package to sample our posterior. The full stan code can found <a href="https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan">here</a>. Note, during model fitting we are expecting some rejected samples due to the highly constrained values of the correlation matrix. When fitting this model with a higher dimension latent</p>
 <pre class="r"><code># fp &lt;- file.path(&#39;PATH TO YOUR STAN MODEL CODE&#39;)
 mod &lt;- cmdstan_model(fp)
 data &lt;- list(
@@ -544,10 +544,233 @@ data &lt;- list(
   y_max = max(discrete_data)
 )
 
-# poly_cor &lt;- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,
-#                        iter_warmup = 2000,iter_sampling = 2000)
-# saveRDS(poly_cor, &#39;poly_cor.Rds&#39;)
-poly_cor &lt;- readRDS(&#39;poly_cor.Rds&#39;)</code></pre>
+poly_cor &lt;- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,
+                       iter_warmup = 2000,iter_sampling = 2000)</code></pre>
+<pre><code>## Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+## Chain 1 Exception: Exception: Phi: x is nan, but must be not nan! (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 30, column 16 to column 86) (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 84, column 19 to column 88)
+## Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+## Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+## Chain 1
+## Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+## Chain 1 Exception: Exception: Phi: x is nan, but must be not nan! (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 30, column 16 to column 86) (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 84, column 19 to column 88)
+## Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+## Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+## Chain 1
+## Chain 2 Rejecting initial value:
+## Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 2   Stan can&#39;t start sampling from this initial value.
+## Chain 2 Rejecting initial value:
+## Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 2   Stan can&#39;t start sampling from this initial value.
+## Chain 2 Rejecting initial value:
+## Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 2   Stan can&#39;t start sampling from this initial value.
+## Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+## Chain 2 Exception: Exception: Phi: x is nan, but must be not nan! (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 12, column 16 to column 89) (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 84, column 19 to column 88)
+## Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+## Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+## Chain 2
+## Chain 3 Rejecting initial value:
+## Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 3   Stan can&#39;t start sampling from this initial value.
+## Chain 3 Rejecting initial value:
+## Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 3   Stan can&#39;t start sampling from this initial value.
+## Chain 3 Rejecting initial value:
+## Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 3   Stan can&#39;t start sampling from this initial value.
+## Chain 3 Rejecting initial value:
+## Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 3   Stan can&#39;t start sampling from this initial value.
+## Chain 4 Rejecting initial value:
+## Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 4   Stan can&#39;t start sampling from this initial value.
+## Chain 4 Rejecting initial value:
+## Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+## Chain 4   Stan can&#39;t start sampling from this initial value.
+## Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+## Chain 4 Exception: Exception: Phi: x is nan, but must be not nan! (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 29, column 16 to column 90) (in &#39;C:/Users/rayia/AppData/Local/Temp/RtmpEBrkY5/model-42dc7956511.stan&#39;, line 84, column 19 to column 88)
+## Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+## Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+## Chain 4
+## Running MCMC with 4 chains, at most 2 in parallel...
+## 
+## Chain 1 Iteration:    1 / 4000 [  0%]  (Warmup) 
+## Chain 2 Iteration:    1 / 4000 [  0%]  (Warmup) 
+## Chain 1 Iteration:  100 / 4000 [  2%]  (Warmup) 
+## Chain 2 Iteration:  100 / 4000 [  2%]  (Warmup) 
+## Chain 1 Iteration:  200 / 4000 [  5%]  (Warmup) 
+## Chain 2 Iteration:  200 / 4000 [  5%]  (Warmup) 
+## Chain 2 Iteration:  300 / 4000 [  7%]  (Warmup) 
+## Chain 1 Iteration:  300 / 4000 [  7%]  (Warmup) 
+## Chain 2 Iteration:  400 / 4000 [ 10%]  (Warmup) 
+## Chain 1 Iteration:  400 / 4000 [ 10%]  (Warmup) 
+## Chain 2 Iteration:  500 / 4000 [ 12%]  (Warmup) 
+## Chain 1 Iteration:  500 / 4000 [ 12%]  (Warmup) 
+## Chain 1 Iteration:  600 / 4000 [ 15%]  (Warmup) 
+## Chain 2 Iteration:  600 / 4000 [ 15%]  (Warmup) 
+## Chain 1 Iteration:  700 / 4000 [ 17%]  (Warmup) 
+## Chain 2 Iteration:  700 / 4000 [ 17%]  (Warmup) 
+## Chain 1 Iteration:  800 / 4000 [ 20%]  (Warmup) 
+## Chain 2 Iteration:  800 / 4000 [ 20%]  (Warmup) 
+## Chain 1 Iteration:  900 / 4000 [ 22%]  (Warmup) 
+## Chain 2 Iteration:  900 / 4000 [ 22%]  (Warmup) 
+## Chain 1 Iteration: 1000 / 4000 [ 25%]  (Warmup) 
+## Chain 2 Iteration: 1000 / 4000 [ 25%]  (Warmup) 
+## Chain 1 Iteration: 1100 / 4000 [ 27%]  (Warmup) 
+## Chain 2 Iteration: 1100 / 4000 [ 27%]  (Warmup) 
+## Chain 1 Iteration: 1200 / 4000 [ 30%]  (Warmup) 
+## Chain 2 Iteration: 1200 / 4000 [ 30%]  (Warmup) 
+## Chain 1 Iteration: 1300 / 4000 [ 32%]  (Warmup) 
+## Chain 2 Iteration: 1300 / 4000 [ 32%]  (Warmup) 
+## Chain 1 Iteration: 1400 / 4000 [ 35%]  (Warmup) 
+## Chain 2 Iteration: 1400 / 4000 [ 35%]  (Warmup) 
+## Chain 1 Iteration: 1500 / 4000 [ 37%]  (Warmup) 
+## Chain 2 Iteration: 1500 / 4000 [ 37%]  (Warmup) 
+## Chain 1 Iteration: 1600 / 4000 [ 40%]  (Warmup) 
+## Chain 2 Iteration: 1600 / 4000 [ 40%]  (Warmup) 
+## Chain 1 Iteration: 1700 / 4000 [ 42%]  (Warmup) 
+## Chain 2 Iteration: 1700 / 4000 [ 42%]  (Warmup) 
+## Chain 1 Iteration: 1800 / 4000 [ 45%]  (Warmup) 
+## Chain 2 Iteration: 1800 / 4000 [ 45%]  (Warmup) 
+## Chain 2 Iteration: 1900 / 4000 [ 47%]  (Warmup) 
+## Chain 1 Iteration: 1900 / 4000 [ 47%]  (Warmup) 
+## Chain 2 Iteration: 2000 / 4000 [ 50%]  (Warmup) 
+## Chain 2 Iteration: 2001 / 4000 [ 50%]  (Sampling) 
+## Chain 1 Iteration: 2000 / 4000 [ 50%]  (Warmup) 
+## Chain 1 Iteration: 2001 / 4000 [ 50%]  (Sampling) 
+## Chain 2 Iteration: 2100 / 4000 [ 52%]  (Sampling) 
+## Chain 1 Iteration: 2100 / 4000 [ 52%]  (Sampling) 
+## Chain 2 Iteration: 2200 / 4000 [ 55%]  (Sampling) 
+## Chain 1 Iteration: 2200 / 4000 [ 55%]  (Sampling) 
+## Chain 2 Iteration: 2300 / 4000 [ 57%]  (Sampling) 
+## Chain 1 Iteration: 2300 / 4000 [ 57%]  (Sampling) 
+## Chain 2 Iteration: 2400 / 4000 [ 60%]  (Sampling) 
+## Chain 1 Iteration: 2400 / 4000 [ 60%]  (Sampling) 
+## Chain 2 Iteration: 2500 / 4000 [ 62%]  (Sampling) 
+## Chain 1 Iteration: 2500 / 4000 [ 62%]  (Sampling) 
+## Chain 2 Iteration: 2600 / 4000 [ 65%]  (Sampling) 
+## Chain 1 Iteration: 2600 / 4000 [ 65%]  (Sampling) 
+## Chain 2 Iteration: 2700 / 4000 [ 67%]  (Sampling) 
+## Chain 1 Iteration: 2700 / 4000 [ 67%]  (Sampling) 
+## Chain 2 Iteration: 2800 / 4000 [ 70%]  (Sampling) 
+## Chain 1 Iteration: 2800 / 4000 [ 70%]  (Sampling) 
+## Chain 2 Iteration: 2900 / 4000 [ 72%]  (Sampling) 
+## Chain 1 Iteration: 2900 / 4000 [ 72%]  (Sampling) 
+## Chain 2 Iteration: 3000 / 4000 [ 75%]  (Sampling) 
+## Chain 1 Iteration: 3000 / 4000 [ 75%]  (Sampling) 
+## Chain 2 Iteration: 3100 / 4000 [ 77%]  (Sampling) 
+## Chain 1 Iteration: 3100 / 4000 [ 77%]  (Sampling) 
+## Chain 2 Iteration: 3200 / 4000 [ 80%]  (Sampling) 
+## Chain 1 Iteration: 3200 / 4000 [ 80%]  (Sampling) 
+## Chain 2 Iteration: 3300 / 4000 [ 82%]  (Sampling) 
+## Chain 1 Iteration: 3300 / 4000 [ 82%]  (Sampling) 
+## Chain 2 Iteration: 3400 / 4000 [ 85%]  (Sampling) 
+## Chain 1 Iteration: 3400 / 4000 [ 85%]  (Sampling) 
+## Chain 2 Iteration: 3500 / 4000 [ 87%]  (Sampling) 
+## Chain 1 Iteration: 3500 / 4000 [ 87%]  (Sampling) 
+## Chain 2 Iteration: 3600 / 4000 [ 90%]  (Sampling) 
+## Chain 1 Iteration: 3600 / 4000 [ 90%]  (Sampling) 
+## Chain 2 Iteration: 3700 / 4000 [ 92%]  (Sampling) 
+## Chain 1 Iteration: 3700 / 4000 [ 92%]  (Sampling) 
+## Chain 2 Iteration: 3800 / 4000 [ 95%]  (Sampling) 
+## Chain 1 Iteration: 3800 / 4000 [ 95%]  (Sampling) 
+## Chain 2 Iteration: 3900 / 4000 [ 97%]  (Sampling) 
+## Chain 1 Iteration: 3900 / 4000 [ 97%]  (Sampling) 
+## Chain 2 Iteration: 4000 / 4000 [100%]  (Sampling) 
+## Chain 2 finished in 202.8 seconds.
+## Chain 1 Iteration: 4000 / 4000 [100%]  (Sampling) 
+## Chain 3 Iteration:    1 / 4000 [  0%]  (Warmup) 
+## Chain 1 finished in 202.9 seconds.
+## Chain 4 Iteration:    1 / 4000 [  0%]  (Warmup) 
+## Chain 3 Iteration:  100 / 4000 [  2%]  (Warmup) 
+## Chain 3 Iteration:  200 / 4000 [  5%]  (Warmup) 
+## Chain 4 Iteration:  100 / 4000 [  2%]  (Warmup) 
+## Chain 3 Iteration:  300 / 4000 [  7%]  (Warmup) 
+## Chain 4 Iteration:  200 / 4000 [  5%]  (Warmup) 
+## Chain 3 Iteration:  400 / 4000 [ 10%]  (Warmup) 
+## Chain 4 Iteration:  300 / 4000 [  7%]  (Warmup) 
+## Chain 3 Iteration:  500 / 4000 [ 12%]  (Warmup) 
+## Chain 3 Iteration:  600 / 4000 [ 15%]  (Warmup) 
+## Chain 4 Iteration:  400 / 4000 [ 10%]  (Warmup) 
+## Chain 3 Iteration:  700 / 4000 [ 17%]  (Warmup) 
+## Chain 4 Iteration:  500 / 4000 [ 12%]  (Warmup) 
+## Chain 3 Iteration:  800 / 4000 [ 20%]  (Warmup) 
+## Chain 4 Iteration:  600 / 4000 [ 15%]  (Warmup) 
+## Chain 3 Iteration:  900 / 4000 [ 22%]  (Warmup) 
+## Chain 4 Iteration:  700 / 4000 [ 17%]  (Warmup) 
+## Chain 3 Iteration: 1000 / 4000 [ 25%]  (Warmup) 
+## Chain 4 Iteration:  800 / 4000 [ 20%]  (Warmup) 
+## Chain 3 Iteration: 1100 / 4000 [ 27%]  (Warmup) 
+## Chain 4 Iteration:  900 / 4000 [ 22%]  (Warmup) 
+## Chain 3 Iteration: 1200 / 4000 [ 30%]  (Warmup) 
+## Chain 4 Iteration: 1000 / 4000 [ 25%]  (Warmup) 
+## Chain 3 Iteration: 1300 / 4000 [ 32%]  (Warmup) 
+## Chain 4 Iteration: 1100 / 4000 [ 27%]  (Warmup) 
+## Chain 3 Iteration: 1400 / 4000 [ 35%]  (Warmup) 
+## Chain 4 Iteration: 1200 / 4000 [ 30%]  (Warmup) 
+## Chain 3 Iteration: 1500 / 4000 [ 37%]  (Warmup) 
+## Chain 4 Iteration: 1300 / 4000 [ 32%]  (Warmup) 
+## Chain 3 Iteration: 1600 / 4000 [ 40%]  (Warmup) 
+## Chain 4 Iteration: 1400 / 4000 [ 35%]  (Warmup) 
+## Chain 4 Iteration: 1500 / 4000 [ 37%]  (Warmup) 
+## Chain 3 Iteration: 1700 / 4000 [ 42%]  (Warmup) 
+## Chain 4 Iteration: 1600 / 4000 [ 40%]  (Warmup) 
+## Chain 3 Iteration: 1800 / 4000 [ 45%]  (Warmup) 
+## Chain 4 Iteration: 1700 / 4000 [ 42%]  (Warmup) 
+## Chain 3 Iteration: 1900 / 4000 [ 47%]  (Warmup) 
+## Chain 4 Iteration: 1800 / 4000 [ 45%]  (Warmup) 
+## Chain 3 Iteration: 2000 / 4000 [ 50%]  (Warmup) 
+## Chain 3 Iteration: 2001 / 4000 [ 50%]  (Sampling) 
+## Chain 4 Iteration: 1900 / 4000 [ 47%]  (Warmup) 
+## Chain 3 Iteration: 2100 / 4000 [ 52%]  (Sampling) 
+## Chain 4 Iteration: 2000 / 4000 [ 50%]  (Warmup) 
+## Chain 4 Iteration: 2001 / 4000 [ 50%]  (Sampling) 
+## Chain 3 Iteration: 2200 / 4000 [ 55%]  (Sampling) 
+## Chain 4 Iteration: 2100 / 4000 [ 52%]  (Sampling) 
+## Chain 3 Iteration: 2300 / 4000 [ 57%]  (Sampling) 
+## Chain 4 Iteration: 2200 / 4000 [ 55%]  (Sampling) 
+## Chain 3 Iteration: 2400 / 4000 [ 60%]  (Sampling) 
+## Chain 4 Iteration: 2300 / 4000 [ 57%]  (Sampling) 
+## Chain 3 Iteration: 2500 / 4000 [ 62%]  (Sampling) 
+## Chain 4 Iteration: 2400 / 4000 [ 60%]  (Sampling) 
+## Chain 3 Iteration: 2600 / 4000 [ 65%]  (Sampling) 
+## Chain 4 Iteration: 2500 / 4000 [ 62%]  (Sampling) 
+## Chain 3 Iteration: 2700 / 4000 [ 67%]  (Sampling) 
+## Chain 4 Iteration: 2600 / 4000 [ 65%]  (Sampling) 
+## Chain 3 Iteration: 2800 / 4000 [ 70%]  (Sampling) 
+## Chain 4 Iteration: 2700 / 4000 [ 67%]  (Sampling) 
+## Chain 3 Iteration: 2900 / 4000 [ 72%]  (Sampling) 
+## Chain 4 Iteration: 2800 / 4000 [ 70%]  (Sampling) 
+## Chain 3 Iteration: 3000 / 4000 [ 75%]  (Sampling) 
+## Chain 4 Iteration: 2900 / 4000 [ 72%]  (Sampling) 
+## Chain 3 Iteration: 3100 / 4000 [ 77%]  (Sampling) 
+## Chain 4 Iteration: 3000 / 4000 [ 75%]  (Sampling) 
+## Chain 3 Iteration: 3200 / 4000 [ 80%]  (Sampling) 
+## Chain 4 Iteration: 3100 / 4000 [ 77%]  (Sampling) 
+## Chain 3 Iteration: 3300 / 4000 [ 82%]  (Sampling) 
+## Chain 4 Iteration: 3200 / 4000 [ 80%]  (Sampling) 
+## Chain 3 Iteration: 3400 / 4000 [ 85%]  (Sampling) 
+## Chain 4 Iteration: 3300 / 4000 [ 82%]  (Sampling) 
+## Chain 3 Iteration: 3500 / 4000 [ 87%]  (Sampling) 
+## Chain 4 Iteration: 3400 / 4000 [ 85%]  (Sampling) 
+## Chain 3 Iteration: 3600 / 4000 [ 90%]  (Sampling) 
+## Chain 4 Iteration: 3500 / 4000 [ 87%]  (Sampling) 
+## Chain 3 Iteration: 3700 / 4000 [ 92%]  (Sampling) 
+## Chain 4 Iteration: 3600 / 4000 [ 90%]  (Sampling) 
+## Chain 3 Iteration: 3800 / 4000 [ 95%]  (Sampling) 
+## Chain 4 Iteration: 3700 / 4000 [ 92%]  (Sampling) 
+## Chain 3 Iteration: 3900 / 4000 [ 97%]  (Sampling) 
+## Chain 4 Iteration: 3800 / 4000 [ 95%]  (Sampling) 
+## Chain 3 Iteration: 4000 / 4000 [100%]  (Sampling) 
+## Chain 3 finished in 199.6 seconds.
+## Chain 4 Iteration: 3900 / 4000 [ 97%]  (Sampling) 
+## Chain 4 Iteration: 4000 / 4000 [100%]  (Sampling) 
+## Chain 4 finished in 204.5 seconds.
+## 
+## All 4 chains finished successfully.
+## Mean chain execution time: 202.4 seconds.
+## Total execution time: 407.8 seconds.</code></pre>
 <p>Let’s take a look out some diagnotics to make sure we had adequate posterior sampling:</p>
 <pre class="r"><code>poly_cor$summary(c(paste0(&#39;c_points[1,&#39;, 1:4,&#39;]&#39;), paste0(&#39;c_points[2,&#39;, 1:4,&#39;]&#39;), &#39;Omega[2,1]&#39;)) %&gt;%
   select(-c(median, q5, q95, mad)) %&gt;%
@@ -582,19 +805,19 @@ ess_tail
 c_points[1,1]
 </td>
 <td style="text-align:right;">
--2.76
+-2.46
 </td>
 <td style="text-align:right;">
-0.26
+0.19
 </td>
 <td style="text-align:right;">
 1
 </td>
 <td style="text-align:right;">
-4723.18
+9840.80
 </td>
 <td style="text-align:right;">
-4710.28
+5852.00
 </td>
 </tr>
 <tr>
@@ -602,7 +825,7 @@ c_points[1,1]
 c_points[1,2]
 </td>
 <td style="text-align:right;">
--0.58
+-0.70
 </td>
 <td style="text-align:right;">
 0.06
@@ -611,10 +834,10 @@ c_points[1,2]
 1
 </td>
 <td style="text-align:right;">
-9277.45
+10809.28
 </td>
 <td style="text-align:right;">
-7017.37
+7019.21
 </td>
 </tr>
 <tr>
@@ -622,19 +845,19 @@ c_points[1,2]
 c_points[1,3]
 </td>
 <td style="text-align:right;">
-0.08
+0.09
 </td>
 <td style="text-align:right;">
-0.06
+0.05
 </td>
 <td style="text-align:right;">
 1
 </td>
 <td style="text-align:right;">
-8594.29
+9600.36
 </td>
 <td style="text-align:right;">
-6811.22
+7235.36
 </td>
 </tr>
 <tr>
@@ -642,7 +865,7 @@ c_points[1,3]
 c_points[1,4]
 </td>
 <td style="text-align:right;">
-1.23
+1.17
 </td>
 <td style="text-align:right;">
 0.07
@@ -651,10 +874,10 @@ c_points[1,4]
 1
 </td>
 <td style="text-align:right;">
-10692.97
+11823.80
 </td>
 <td style="text-align:right;">
-6851.62
+6400.34
 </td>
 </tr>
 <tr>
@@ -662,7 +885,7 @@ c_points[1,4]
 c_points[2,1]
 </td>
 <td style="text-align:right;">
--1.27
+-1.31
 </td>
 <td style="text-align:right;">
 0.08
@@ -671,10 +894,10 @@ c_points[2,1]
 1
 </td>
 <td style="text-align:right;">
-6450.56
+10660.58
 </td>
 <td style="text-align:right;">
-6192.26
+6513.94
 </td>
 </tr>
 <tr>
@@ -682,7 +905,7 @@ c_points[2,1]
 c_points[2,2]
 </td>
 <td style="text-align:right;">
-0.54
+0.68
 </td>
 <td style="text-align:right;">
 0.06
@@ -691,10 +914,10 @@ c_points[2,2]
 1
 </td>
 <td style="text-align:right;">
-10000.92
+8662.44
 </td>
 <td style="text-align:right;">
-6378.78
+5863.82
 </td>
 </tr>
 <tr>
@@ -702,7 +925,7 @@ c_points[2,2]
 c_points[2,3]
 </td>
 <td style="text-align:right;">
-1.41
+1.28
 </td>
 <td style="text-align:right;">
 0.08
@@ -711,10 +934,10 @@ c_points[2,3]
 1
 </td>
 <td style="text-align:right;">
-10733.58
+10177.36
 </td>
 <td style="text-align:right;">
-6705.19
+6183.05
 </td>
 </tr>
 <tr>
@@ -722,7 +945,7 @@ c_points[2,3]
 c_points[2,4]
 </td>
 <td style="text-align:right;">
-1.55
+1.59
 </td>
 <td style="text-align:right;">
 0.09
@@ -731,10 +954,10 @@ c_points[2,4]
 1
 </td>
 <td style="text-align:right;">
-11349.10
+11536.31
 </td>
 <td style="text-align:right;">
-6513.72
+6388.87
 </td>
 </tr>
 <tr>
@@ -742,7 +965,7 @@ c_points[2,4]
 Omega[2,1]
 </td>
 <td style="text-align:right;">
-0.51
+0.50
 </td>
 <td style="text-align:right;">
 0.04
@@ -751,15 +974,15 @@ Omega[2,1]
 1
 </td>
 <td style="text-align:right;">
-7878.96
+11065.00
 </td>
 <td style="text-align:right;">
-6320.70
+6189.01
 </td>
 </tr>
 </tbody>
 </table>
-<p>Our <code>Rhat</code>, <code>ess_bulk</code>, and <code>ess_tail</code> look good! Let’s take a look at our posteriors for the <code>c_points</code> parameter:</p>
+<p>Our <code>Rhat</code>, <code>ess_bulk</code>, and <code>ess_tail</code> look good! Let’s take a look at our posteriors for the <code>c_points</code> parameter. The ggplot code that adds line segments to the ridge plot is adapted from this <a href="https://stackoverflow.com/questions/52527229/draw-line-on-geom-density-ridges">stackoverflow post</a>.</p>
 <pre class="r"><code># Function to extract Cut Points from stan model
 get_cut_point &lt;- function(dim, n){
   c_name &lt;- paste0(&#39;c_points[&#39;, dim, &#39;,&#39;, n, &#39;]&#39;)
@@ -797,8 +1020,73 @@ ggplot(cut_point_draws, aes(x=value, y=name)) +
   theme(axis.title.y = element_blank(), axis.title.x = element_blank(), 
         axis.text = element_text(size=20), plot.title = element_text(size=30),
         legend.text = element_text(size=20), legend.title = element_text(size=30))</code></pre>
-<p><img src="polychoric_files/figure-html/unnamed-chunk-13-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-15-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<p>It looks like the actual value of each cut-point is captured within the range of each estimated parameter. Now we can look at our originally requested quantity; the correlation.</p>
+<pre class="r"><code>poly_cor$draws(&#39;Omega[2,1]&#39;) %&gt;% .[,,1,drop=T] %&gt;% as.vector() %&gt;% 
+  {as.data.frame(list(x=.))} %&gt;%
+  ggplot(aes(x=x)) + geom_histogram(aes(y=..density..), fill=&#39;darkblue&#39;, col=&#39;black&#39;, alpha=0.3) + 
+  geom_density(lwd=1.3) +     
+  geom_vline(aes(xintercept=0.5, color=&#39;Actual Value&#39;), size=1.5, linetype=&#39;twodash&#39;) +
+  scale_colour_manual(&quot;&quot;, values=&quot;darkred&quot;) +
+  labs(title=&#39;Correlation Parameter Estimate&#39;) +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size=13),
+        axis.text = element_text(size=13), plot.title = element_text(size=17))</code></pre>
+<p><img src="polychoric_files/figure-html/unnamed-chunk-16-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>It looks like our model fits the data well and is able to adequately identify the parameters. While the polychoric correlation is a little more involved than a simple pearson correlation, it aligns more with our original data generating process philosophy. Since this model was fit using a bayesian framework we have samples from our posterior which we can use to perform decision analysis, generating pseudocustomers, or probabilistic PCA from the posterior of the correlation matrix.</p>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 4.1.1 (2021-08-10)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 19044)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] ggridges_0.5.3   kableExtra_1.3.4 knitr_1.36       cmdstanr_0.5.3  
+##  [5] forcats_0.5.1    stringr_1.4.0    dplyr_1.0.9      purrr_0.3.4     
+##  [9] readr_2.1.2      tidyr_1.2.0      tibble_3.1.6     ggplot2_3.3.5   
+## [13] tidyverse_1.3.1 
+## 
+## loaded via a namespace (and not attached):
+##  [1] httr_1.4.3           sass_0.4.0           jsonlite_1.7.2      
+##  [4] viridisLite_0.4.0    modelr_0.1.8         bslib_0.3.1         
+##  [7] assertthat_0.2.1     posterior_1.3.1      distributional_0.3.1
+## [10] highr_0.9            tensorA_0.36.2       cellranger_1.1.0    
+## [13] yaml_2.2.1           pillar_1.6.4         backports_1.4.1     
+## [16] glue_1.6.2           digest_0.6.28        checkmate_2.0.0     
+## [19] rvest_1.0.2          colorspace_2.0-2     htmltools_0.5.2     
+## [22] plyr_1.8.6           pkgconfig_2.0.3      broom_1.0.0         
+## [25] haven_2.5.0          mvtnorm_1.1-3        scales_1.1.1        
+## [28] webshot_0.5.4        processx_3.5.2       svglite_2.1.0       
+## [31] tzdb_0.3.0           generics_0.1.1       farver_2.1.0        
+## [34] ellipsis_0.3.2       withr_2.5.0          cli_3.3.0           
+## [37] magrittr_2.0.1       crayon_1.4.2         readxl_1.4.0        
+## [40] evaluate_0.14        ps_1.6.0             fs_1.5.2            
+## [43] fansi_0.5.0          xml2_1.3.3           data.table_1.14.2   
+## [46] tools_4.1.1          hms_1.1.1            matrixStats_0.61.0  
+## [49] lifecycle_1.0.1      munsell_0.5.0        reprex_2.0.1        
+## [52] compiler_4.1.1       jquerylib_0.1.4      systemfonts_1.0.4   
+## [55] rlang_1.0.3          grid_4.1.1           rstudioapi_0.13     
+## [58] labeling_0.4.2       rmarkdown_2.11       gtable_0.3.0        
+## [61] codetools_0.2-18     abind_1.4-5          DBI_1.1.3           
+## [64] R6_2.5.1             lubridate_1.8.0      fastmap_1.1.0       
+## [67] utf8_1.2.2           stringi_1.7.5        Rcpp_1.0.7          
+## [70] vctrs_0.4.1          dbplyr_2.2.1         tidyselect_1.1.1    
+## [73] xfun_0.27</code></pre>
 </div>
 
 

@@ -21,6 +21,10 @@ Where the available choices are:
 There are of course limitations to this kind of survey design. For one, most people have a hard time discretizing their feelings or emotions into a single bucket. Perhaps the more appropriate question response would feature a slider that allows respondents to freely select their agreement on a continuous scale. Regardless, as this is the design chosen by thousands of companies and organizations, we'll choose it as well. Though, we'll recognize that agreement or sentiment in general is better categorized as a spectrum.
 
 Enough philosophy, now to the actual data. I'm going to show how the data is generated further down, but for now let's say that we ran the survey and collected 1,000 responses. First, let's start by loading in all the packages we'll need for this analysis.
+```{r, echo=F}
+knitr::opts_chunk$set(cache = T)
+```
+
 ```{r, results='hide', warning=FALSE, message=FALSE}
 library(tidyverse)
 library(cmdstanr)
@@ -72,7 +76,7 @@ table(discrete_data[,1], discrete_data[,2]) %>%
   column_spec(column = 1, bold=T)
 ```
 
-From the table above, we can already see that there is a high degree of positive correlation between the questions. If we wanted to quantifying this correlation, we might naively use the `cor`, but this produces biased results as our provided data is not continuous, which is assumed by the default Pearson correlation measure. There are other measures of correlation such as Spearman or Kendall which are non-parametric, but neither take into account the data generating process that aligns with our philosophy.
+From the table above, we can already see that there is a high degree of positive correlation between the questions. If we wanted to quantifying this correlation, we might naively use the `cor` function, but this produces biased results as our provided data is not continuous, which is assumed by the default Pearson correlation measure. There are other measures of correlation such as Spearman or Kendall which are non-parametric, but neither take into account the data generating process that aligns with our philosophy. For that, we will need to employ the polychoric correlation which we will further define below.
 
 
 ## Data Generating Process
@@ -105,16 +109,16 @@ $$
 $$
 If we plot the latent variables with the cut-points we obtain:
 ```{r, fig.align='center'}
-plot(dat,pch='.', xlab = 'Question 1', ylab='Question 2', main='Latent Space Representation')
+plot(dat,pch=16, xlab = 'Question 1', ylab='Question 2', main='Latent Space Representation')
 for (i in 1:length(c_points[[1]])){
   abline(v=c_points[[1]][i], lwd=2, col='darkred')
   abline(h=c_points[[2]][i], lwd=2, col='darkblue')
 }
 ```
-So a respondent that answered `3` for the first question and `2` for the second question would have had their latent representation in the below region: 
+So a customer that answered `3` for the first question and `2` for the second question would have had their latent representation in the below region: 
 
 ```{r, fig.align='center', echo=F}
-plot(dat,pch='.', xlab = 'Question 1', ylab='Question 2', main='Latent Space Representation')
+plot(dat, pch=16, xlab = 'Question 1', ylab='Question 2', main='Latent Space Representation')
 polygon(x=c(c_points[[1]][2], c_points[[1]][3], c_points[[1]][3], c_points[[1]][2]),
         y=c(c_points[[2]][1], c_points[[2]][1], c_points[[2]][2], c_points[[2]][2]),
         col=adjustcolor('purple', 0.5))
@@ -177,7 +181,7 @@ real induced_dirichlet_lpdf(vector c, vector alpha, real gamma){
 ```
 The stan code is a bit more involved, and includes the Jacobian calculations since we are specifying a prior on the transformed parameters. For more detail about the reparametrization and Jacobian calculations I suggest reading [Michael Betancourt's ordinal regression tutorial](https://betanalpha.github.io/assets/case_studies/ordinal_regression.html). Be aware that his model uses a latent logistic distribution (different than our standard normal).
 
-Finally, we need to consider the likelihood of the data, conditioned on our parameters. To model this, we will extend the multivariate probit model to the case where an arbitrary number of ordinal categories are observed. Without going into too much detail, the multivariate probit is used to model a bernoulli distributed random vector, where the data is assumed to have been generated from a latent multivariate normal distribution. For example, if you consider our data generating process above but instead only have one cut-point per dimension, then the data generated would be a bernoulli random vector. The stan code used to define this extenstion of the multivariate probit likelihood is here, along with the full stan code for the model.
+Finally, we need to consider the likelihood of the data, conditioned on our parameters. To model this, we will extend the multivariate probit model to the case where an arbitrary number of ordinal categories are observed. Without going into too much detail, the multivariate probit is used to model a bernoulli distributed random vector, where the data is assumed to have been generated from a latent multivariate normal distribution. For example, if you consider our data generating process above but instead only have one cut-point per dimension, then the data generated would be a bernoulli random vector. The stan code used to define this extenstion of the multivariate probit likelihood is [here](https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan), along with the full stan code for the model.
 
 The full derivation for the likelihood, and therefore stan code, is beyond the scope of this blog post, but I refer you to these two other resources to learn more if you are interested:
 
@@ -206,7 +210,7 @@ The parameters of interest here are `L_Omega`, which will give us the correlatio
 
 
 ### Sampling and Posterior Exploration
-Now that are model is fully defined, we can used the `cmdstanr` package to sample our posterior. The full stan code can found [here](https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan).
+Now that are model is fully defined, we can used the `cmdstanr` package to sample our posterior. The full stan code can found [here](https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/polychoric/model.stan). Note, during model fitting we are expecting some rejected samples due to the highly constrained values of the correlation matrix. When fitting this model with a higher dimension latent 
 
 ```{r, echo=F}
 fp <- file.path('C:\\Users\\rayia\\Documents\\Website\\Website_2.0\\blog\\pages\\polychoric\\model.stan')
@@ -214,7 +218,7 @@ fp <- file.path('C:\\Users\\rayia\\Documents\\Website\\Website_2.0\\blog\\pages\
 
 
 
-```{r}
+```{r, eval=F}
 # fp <- file.path('PATH TO YOUR STAN MODEL CODE')
 mod <- cmdstan_model(fp)
 data <- list(
@@ -225,11 +229,24 @@ data <- list(
   y_max = max(discrete_data)
 )
 
-# poly_cor <- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,
-#                        iter_warmup = 2000,iter_sampling = 2000)
-# saveRDS(poly_cor, 'poly_cor.Rds')
-poly_cor <- readRDS('poly_cor.Rds')
+poly_cor <- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,
+                       iter_warmup = 2000,iter_sampling = 2000)
 ```
+```{r, results='hold', collapse=TRUE, echo=FALSE}
+# fp <- file.path('PATH TO YOUR STAN MODEL CODE')
+mod <- cmdstan_model(fp)
+data <- list(
+  D = ncol(discrete_data),
+  N = nrow(discrete_data),
+  y = discrete_data,
+  y_min = min(discrete_data),
+  y_max = max(discrete_data)
+)
+
+poly_cor <- mod$sample(data = data, seed = 1234, chains = 4, parallel_chains = 2,
+                       iter_warmup = 2000,iter_sampling = 2000)
+```
+
 Let's take a look out some diagnotics to make sure we had adequate posterior sampling:
 ```{r}
 poly_cor$summary(c(paste0('c_points[1,', 1:4,']'), paste0('c_points[2,', 1:4,']'), 'Omega[2,1]')) %>%
@@ -238,7 +255,7 @@ poly_cor$summary(c(paste0('c_points[1,', 1:4,']'), paste0('c_points[2,', 1:4,']'
   kbl() %>% kable_styling()
 
 ```
-Our `Rhat`, `ess_bulk`, and `ess_tail` look good! Let's take a look at our posteriors for the `c_points` parameter:
+Our `Rhat`, `ess_bulk`, and `ess_tail` look good! Let's take a look at our posteriors for the `c_points` parameter. The ggplot code that adds line segments to the ridge plot is adapted from this [stackoverflow post](https://stackoverflow.com/questions/52527229/draw-line-on-geom-density-ridges). 
 
 
 ```{r, results='hide',message=FALSE, warning=FALSE, fig.align='center', fig.width=15, fig.height=10}
@@ -281,4 +298,24 @@ ggplot(cut_point_draws, aes(x=value, y=name)) +
         legend.text = element_text(size=20), legend.title = element_text(size=30))
 ```
 
+It looks like the actual value of each cut-point is captured within the range of each estimated parameter. Now we can look at our originally requested quantity; the correlation.
 
+```{r, results='hide',message=FALSE, warning=FALSE, fig.align='center'}
+poly_cor$draws('Omega[2,1]') %>% .[,,1,drop=T] %>% as.vector() %>% 
+  {as.data.frame(list(x=.))} %>%
+  ggplot(aes(x=x)) + geom_histogram(aes(y=..density..), fill='darkblue', col='black', alpha=0.3) + 
+  geom_density(lwd=1.3) +     
+  geom_vline(aes(xintercept=0.5, color='Actual Value'), size=1.5, linetype='twodash') +
+  scale_colour_manual("", values="darkred") +
+  labs(title='Correlation Parameter Estimate') +
+  theme_minimal() +
+  theme(axis.title.y = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size=13),
+        axis.text = element_text(size=13), plot.title = element_text(size=17))
+```
+
+## Conclusion
+It looks like our model fits the data well and is able to adequately identify the parameters. While the polychoric correlation is a little more involved than a simple pearson correlation, it aligns more with our original data generating process philosophy. Since this model was fit using a bayesian framework we have samples from our posterior which we can use to perform decision analysis, generating pseudocustomers, or probabilistic PCA from the posterior of the correlation matrix. 
+
+```{r}
+sessionInfo()
+```
