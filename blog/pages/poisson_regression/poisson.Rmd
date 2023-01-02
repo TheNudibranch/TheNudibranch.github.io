@@ -282,9 +282,26 @@ mean(pond_b - pond_a)
 
 Hence, after our extensive analysis we can come to the conclusion that it is best to choose Pond B over A. Although, maybe your friend Danny has left by now!
 
+```{r}
+sessionInfo()
+```
 
+```{css, echo=FALSE}
+pre {
+  max-height: 200px;
+  overflow-y: auto;
+}
 
+pre[class] {
+  max-height: 400px;
+}
 
+.scroll-100 {
+  max-height: 100px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+```
 
 
 
