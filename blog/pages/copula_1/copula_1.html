@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Gaussian Copula for Censored Multivariate Beta STAN</title>
+
+<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+	<a class="navbar-brand" href="../../../index.html">Ian Costley Homepage</a>
+  <div class="container">
+  	<!-- <a class="navbar-brand" href="../../../index.html">Ian Costley Homepage</a> -->
+    <div class="navbar-header">
+      <!-- NOTE: add "navbar-inverse" class for an alternate navbar background -->
+      <!-- <a class="navbar-brand" href="../../../index.html">Ian Costley Homepage</a> -->
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="https://github.com/TheNudibranch">GitHub</a></li>
+        <li><a href="https://www.linkedin.com/in/ian-s-costley/">LinkedIn</a></li>
+        <li><a href="../../blog.html">B<sub>natural</sub>LOG</a></li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Gaussian Copula for Censored Multivariate
+Beta STAN</h1>
+
+</div>
+
+
+<div id="motivation-share-the-market-please" class="section level2">
+<h2>Motivation: Share the Market Please</h2>
+<p>Let’s say you work for a drinkware company, we’ll call it something
+generic, maybe “<strong>L</strong>arge bi-p<strong>E</strong>dal
+s<strong>N</strong>ow crypt<strong>I</strong>d”? Or LENI for short. LENI
+sells mugs, wine glasses, water glasses, and thermoses. Now, LENI has
+pretty much cornered the drinkware market, but it does have some stiff
+competition. Being a good business, you want to understand your share of
+the market amongst drinkware consumers. You also want to capture the
+correlation structure between your different products to better
+understand how an advertising campaign for one product might help boost
+market share for another.</p>
+<p>As with everything, the cost of gathering information is expensive.
+Since you don’t want to bug your customers too much, you only ask them
+about a couple of their purchasing behaviors as their walking in. For
+example, you ask a customer:</p>
+<p>“Approximately, how much have you spent on wine glasses in the past
+year”</p>
+<p>They respond, “About $500”</p>
+<p>Without showing any judgement, you follow with “And how much did you
+spend on wine glasses at LENI’s?”</p>
+<p>Reluctantly they say “$50”, and make up some story about how
+<em>Abominable Snowman</em>, your main competitor, is closer to their
+home. You ask them about their mug purchasing as well and welcome them
+into the store.</p>
+<p>Now, let’s look at some data that we’ve collected from interviewing
+our customers, but first let’s load in the necessary libraries for our
+analysis. We’ll also read in some helper functions that we’ve created
+for this specific analysis. You can find the code here <strong>INSERT
+LINK TO GITHUB</strong> for those if you are interested</p>
+<style type="text/css">
+pre {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 500px;
+}
+
+.scroll-100 {
+  max-height: 100px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+</style>
+<pre class="r"><code>library(tidyverse)
+library(cmdstanr)
+library(knitr)
+library(kableExtra)
+library(ggridges)
+
+utils &lt;- new.env()
+source(&#39;helper_funcs.R&#39;, utils)</code></pre>
+<pre class="r"><code>utils$pair_w_hist(cenc_marg, names=c(&#39;Mugs&#39;, &#39;Wine Glasses&#39; ,&#39;Water Glasses&#39;, &#39;Thermoses&#39;), cex.axis=1.2, cex=1.2, cex.main=2.3)</code></pre>
+<p><img src="copula_1_files/figure-html/unnamed-chunk-5-1.png" width="1440" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 4.1.1 (2021-08-10)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 19044)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] ggridges_0.5.3   kableExtra_1.3.4 knitr_1.36       cmdstanr_0.5.3  
+##  [5] forcats_0.5.1    stringr_1.4.0    dplyr_1.0.9      purrr_0.3.4     
+##  [9] readr_2.1.2      tidyr_1.2.0      tibble_3.1.6     ggplot2_3.3.5   
+## [13] tidyverse_1.3.1 
+## 
+## loaded via a namespace (and not attached):
+##  [1] Rcpp_1.0.7           svglite_2.1.0        lubridate_1.8.0     
+##  [4] assertthat_0.2.1     digest_0.6.28        utf8_1.2.2          
+##  [7] plyr_1.8.6           R6_2.5.1             cellranger_1.1.0    
+## [10] backports_1.4.1      reprex_2.0.1         evaluate_0.14       
+## [13] highr_0.9            httr_1.4.3           pillar_1.6.4        
+## [16] rlang_1.0.3          readxl_1.4.0         rstudioapi_0.13     
+## [19] jquerylib_0.1.4      checkmate_2.0.0      rmarkdown_2.11      
+## [22] webshot_0.5.4        munsell_0.5.0        broom_1.0.0         
+## [25] compiler_4.1.1       modelr_0.1.8         xfun_0.27           
+## [28] systemfonts_1.0.4    pkgconfig_2.0.3      htmltools_0.5.2     
+## [31] tidyselect_1.1.1     tensorA_0.36.2       viridisLite_0.4.0   
+## [34] fansi_0.5.0          crayon_1.4.2         tzdb_0.3.0          
+## [37] dbplyr_2.2.1         withr_2.5.0          MASS_7.3-54         
+## [40] grid_4.1.1           distributional_0.3.1 jsonlite_1.7.2      
+## [43] gtable_0.3.0         lifecycle_1.0.1      DBI_1.1.3           
+## [46] magrittr_2.0.1       posterior_1.3.1      scales_1.1.1        
+## [49] cli_3.3.0            stringi_1.7.5        farver_2.1.0        
+## [52] fs_1.5.2             xml2_1.3.3           bslib_0.3.1         
+## [55] ellipsis_0.3.2       generics_0.1.1       vctrs_0.4.1         
+## [58] tools_4.1.1          glue_1.6.2           hms_1.1.1           
+## [61] abind_1.4-5          fastmap_1.1.0        yaml_2.2.1          
+## [64] colorspace_2.0-2     rvest_1.0.2          haven_2.5.0         
+## [67] sass_0.4.0</code></pre>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
