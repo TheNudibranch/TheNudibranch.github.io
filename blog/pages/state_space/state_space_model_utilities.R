@@ -77,21 +77,21 @@ gen_Q_mat <- function(var_vec){
 }
 
 forward_backward_pass <- function(y, a_1, P_1, var_vec, noise_var, params = list()){
-  if ('const_mats' %in% names(params))
-  Z_list <- gen_Z_list(length(y), include_slope = include_slope, 
-                       x_mat=x_mat, n_seasons=n_seasons)
-  T_mat <- gen_T_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
-                     n_seasons = n_seasons)
-  R_mat <- gen_R_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
-                     n_seasons = n_seasons)
-  Q_mat <- gen_Q_mat(var_vec=var_vec)
-  
-  const_mats <- list(
-    'Z' = Z_list,
-    'T' = T_mat,
-    'R' = R_mat,
-    'Q' = Q_mat
-  )
+  if ('const_mats' %in% names(params)) {
+    c(Z_list, T_mat, R_mat, Q_mat) %<-% params[['const_mats']]
+  }
+  else{
+    if (sum(c('include_slope', 'x_mat', 'n_seasons') %in% names(params)) != 3) 
+      stop('Need to supply all 3 arguments to params if `const_mats not supplied')
+    c('include_slope', 'x_mat', 'n_seasons') %<-% params[c('include_slope', 'x_mat', 'n_seasons')]
+    Z_list <- gen_Z_list(length(y), include_slope = include_slope, 
+                         x_mat=x_mat, n_seasons=n_seasons)
+    T_mat <- gen_T_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
+                       n_seasons = n_seasons)
+    R_mat <- gen_R_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
+                       n_seasons = n_seasons)
+    Q_mat <- gen_Q_mat(var_vec=var_vec)
+  }
   
   forw_list <- list(
     'F' = list(),
@@ -132,25 +132,74 @@ forward_backward_pass <- function(y, a_1, P_1, var_vec, noise_var, params = list
     back_list[['alpha_smth']][[i]] <- forw_list[['a']][[n]] + 
       forw_list[['P']][[i]] %*% back_list[['r']][[i]]
   }
-  list('back' = back_list, 'mats' = const_mats, 'forw' = forw_list)
+  list('back' = back_list, 
+       'const_mats' = list(
+         'Z' = Z_list,
+         'T' = T_mat,
+         'R' = R_mat,
+         'Q' = Q_mat
+       ), 
+       'forw' = forw_list)
 }
 
-simulate_state <- function(smoothed_state, const_matrices, )
+evolve_from_start <- function(alpha_1, n, var_vec, noise_var, params = list()){
+  if ('const_mats' %in% names(params)) {
+    c(Z_list, T_mat, R_mat, Q_mat) %<-% params[['const_mats']]
+  }
+  else{
+    if (sum(c('include_slope', 'x_mat', 'n_seasons') %in% names(params)) != 3) 
+      stop('Need to supply all 3 arguments to params if `const_mats not supplied')
+    c('include_slope', 'x_mat', 'n_seasons') %<-% params[c('include_slope', 'x_mat', 'n_seasons')]
+    Z_list <- gen_Z_list(n, include_slope = include_slope, 
+                         x_mat=x_mat, n_seasons=n_seasons)
+    T_mat <- gen_T_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
+                       n_seasons = n_seasons)
+    R_mat <- gen_R_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
+                       n_seasons = n_seasons)
+    Q_mat <- gen_Q_mat(var_vec=var_vec)
+  }
+  
+  evolve_state <- list(
+    'y' = list(),
+    'alpha' = list(alpha_1),
+    'q_samps' = lapply(1:n, \(x) MASS::mvrnorm(1, rep(0, length(var_vec)), Q_mat)),
+    'noise_samps' = lapply(1:n, \(x) rnorm(1,0,sqrt(noise_var)))
+  )
+  for (i in 1:n){
+    evolve_state[['y']][[i]] <- Z_list[[i]] %*% evolve_state[['alpha']][[i]] + evolve_state[['noise_samps']][[i]]
+    evolve_state[['alpha']][[i + 1]] <- T_mat %*% evolve_state[['alpha']][[i]] + 
+      R_mat %*% evolve_state[['q_samps']][[i]]
+  }
+  list('evolve_state' = evolve_state, 'const_mats' = list(
+    'Z' = Z_list,
+    'T' = T_mat,
+    'R' = R_mat,
+    'Q' = Q_mat
+  ))
+  
+}
+
+MASS::mvrnorm(1, rep(0,3), iden(3)) |> is.vector()
+
+simulate_state <- function(smoothed_state, )
 
 a <- forward_backward_pass(y_vec, a_1=rep(0,7), P_1=iden(7), var_vec=rep(1,3),
-                           noise_var=1, x_mat=x_mat, include_slope=TRUE, n_seasons=4)
-a[[1]]$alpha_smth
-P_1 <- iden(3)
-# P_1[3,3] <- 1e-
+                           noise_var=1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=4))
+a <- forward_backward_pass(y_vec, a_1=rep(0,3), P_1=P_1, var_vec=c(1),
+                           noise_var=0.1, params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
+y_forw <- evolve_from_start(alpha_1 = a$back$alpha_smth[[300]], n=length(y_vec), var_vec = rep(1,1),
+                  noise_var = 1, params = list(const_mats = a$const_mats))
+
+plot(x1, type='l', col='blue', ylim=c(min(x1,x2, y_vec), max(x1,x2, y_vec))); lines(x2, col='red')
+lines(y_vec, lwd=3)
+y_forw$evolve_state$y |> unlist() |> lines(lwd=3, lty=2)
+
+
 
 a <- forward_backward_pass(y_vec, a_1=rep(0,3), P_1=P_1, var_vec=c(1),
                            noise_var=0.1, x_mat=x_mat, include_slope=FALSE)
 
-a[[1]]$r
-a[[1]]$alpha_smth
-a[[3]]$P
-
-a[[1]]$alpha_smth |> lapply(\(x) x[2]) |> unlist() |> plot()
-
-
-rnorm(12) |> plot()
+a <- list('a' = 2, 'b' = 'a', 'c' = list(1))
+a[c('a', 'b')]
+a['a', 'b']
+  
