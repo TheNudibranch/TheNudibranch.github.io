@@ -179,27 +179,29 @@ evolve_from_start <- function(alpha_1, n, var_vec, noise_var, params = list()){
   
 }
 
-MASS::mvrnorm(1, rep(0,3), iden(3)) |> is.vector()
-
-simulate_state <- function(smoothed_state, )
+simulate_state <- function(smoothed_state, a_1, P_1, var_vec, noise_var, params){
+  alpha_1 <- MASS::mvrnorm(1, mu=a_1, Sigma=P_1)
+  plus_system <- evolve_from_start(alpha_1, length(smoothed_state), var_vec=var_vec, noise_var=noise_var,
+                              params = params)
+  plus_system_smoothed <- forward_backward_pass(unlist(plus_system$evolve_state$y), a_1=a_1, P_1=P_1,
+                                                var_vec=var_vec, noise_var=noise_var, params=plus_system)
+  lapply(1:length(smoothed_state), 
+         \(x) plus_system$evolve_state$alpha[[x]] - plus_system_smoothed$back$alpha_smth[[x]] +  smoothed_state[[x]])
+}
 
 a <- forward_backward_pass(y_vec, a_1=rep(0,7), P_1=iden(7), var_vec=rep(1,3),
                            noise_var=1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=4))
-a <- forward_backward_pass(y_vec, a_1=rep(0,3), P_1=P_1, var_vec=c(1),
+a <- forward_backward_pass(y_vec, a_1=rep(0,3), P_1=iden(3), var_vec=c(1),
                            noise_var=0.1, params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
-y_forw <- evolve_from_start(alpha_1 = a$back$alpha_smth[[300]], n=length(y_vec), var_vec = rep(1,1),
-                  noise_var = 1, params = list(const_mats = a$const_mats))
+
+simulate_state(a$back$alpha_smth, a_1=rep(0,3), P_1=iden(3), var_vec=c(1), noise_var=0.1,
+               params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
+
+
 
 plot(x1, type='l', col='blue', ylim=c(min(x1,x2, y_vec), max(x1,x2, y_vec))); lines(x2, col='red')
 lines(y_vec, lwd=3)
 y_forw$evolve_state$y |> unlist() |> lines(lwd=3, lty=2)
 
 
-
-a <- forward_backward_pass(y_vec, a_1=rep(0,3), P_1=P_1, var_vec=c(1),
-                           noise_var=0.1, x_mat=x_mat, include_slope=FALSE)
-
-a <- list('a' = 2, 'b' = 'a', 'c' = list(1))
-a[c('a', 'b')]
-a['a', 'b']
-  
+matrix(5,1,1) |> det()
