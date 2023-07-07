@@ -25,12 +25,12 @@ gen_Z_list <- function(n, include_slope=FALSE, x_mat=NULL, n_seasons=NULL){
   if(.coalesce(n_seasons, 3) <= 2) stop('`n_seasons` must be greater than 2')
   
   season_pad <- if (.coalesce(n_seasons, 2) <= 2) NULL else c(1, rep(0,n_seasons-2))
-  slope <- if(!include_slope) NULL else 1
+  slope <- if(!include_slope) NULL else 0
   z_list <- lapply(1:n, \(x) c(1, slope, season_pad, x_mat[x,]))
   z_list
 }
 
-gen_Z_list(n = 50, x_mat = x_mat, include_slope = TRUE,n_seasons=NULL)
+gen_Z_list(n = 50, x_mat = x_mat, include_slope = TRUE,n_seasons=3)
 
 gen_T_mat <- function(include_slope=FALSE, n_regress=NULL, n_seasons=NULL){
   if(.coalesce(n_seasons, 3) <= 2) stop('`n_seasons` must be greater than 2')
@@ -111,7 +111,7 @@ forward_backward_pass <- function(y, a_1, P_1, var_vec, noise_var, params = list
     forw_list[['L']][[n]] <- T_mat - forw_list[['K']][[n]] %*% Z_list[[n]]
     
     forw_list[['P']][[n + 1]] <- (T_mat %*% forw_list[['P']][[n]] %*%
-      t(T_mat - (forw_list[['K']][[n]] %*% Z_list[[n]])) ) + R_mat %*% Q_mat %*% t(R_mat)
+      t(forw_list[['L']][[n]])) + R_mat %*% Q_mat %*% t(R_mat)
     
     forw_list[['a']][[n + 1]] <- T_mat %*% forw_list[['a']][[n]] + 
       (forw_list[['K']][[n]] * forw_list[['v']][[n]])
@@ -191,8 +191,12 @@ simulate_state <- function(smoothed_state, a_1, P_1, var_vec, noise_var, params)
 
 a <- forward_backward_pass(y_vec, a_1=rep(0,7), P_1=iden(7), var_vec=rep(1,3),
                            noise_var=1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=4))
-a <- forward_backward_pass(y_vec, a_1=rep(0,3), P_1=iden(3), var_vec=c(1),
-                           noise_var=0.1, params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
+a$back$alpha_smth
+P_1 <- iden(4)
+P_1[2,2] <- 1e-15
+a <- forward_backward_pass(y_vec, a_1=rep(0,4), P_1=P_1, var_vec=c(1,1e-15),
+                           noise_var=0.1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=NULL))
+a$back$alpha_smth[[40]]
 
 simulate_state(a$back$alpha_smth, a_1=rep(0,3), P_1=iden(3), var_vec=c(1), noise_var=0.1,
                params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
@@ -205,3 +209,5 @@ y_forw$evolve_state$y |> unlist() |> lines(lwd=3, lty=2)
 
 
 matrix(5,1,1) |> det()
+
+
