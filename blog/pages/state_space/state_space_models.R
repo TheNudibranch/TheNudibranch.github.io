@@ -1,4 +1,4 @@
-library(rstan)
+library(cmdstanr)
 library(tidyverse)
 rstudioapi::getActiveDocumentContext()$path |> dirname() |> setwd()
 
@@ -7,14 +7,14 @@ rstan_options(auto_write = TRUE)
 #################
 ## Generate some data
 #################
-season_length <- 10; number_seasons <- 6
+season_length <- 15; number_seasons <- 10
 n_tot <- season_length * number_seasons
 x1 <- cumsum(rnorm(n_tot, 0,2)) + rnorm(n_tot, 0,1)
 x2 <- cumsum(rnorm(n_tot, 0,1)) + rnorm(n_tot, 0,1)
 x_mat <- cbind(x1,x2)
 beta_vec <- c(-2,2)
 
-ss <- cos(seq(0,2*pi, length.out=season_length)) * 20 + rnorm(season_length, 0, 4)
+ss <- cos(seq(0,2*pi, length.out=season_length)) * 30 + rnorm(season_length, 0, 4)
 ss <- ss - mean(ss)
 ss_vec <- c(ss)[-length(ss)]
 ss_var <- 0.3;
@@ -38,24 +38,27 @@ lines(y_vec, lwd=3)
 #################
 ## State Space Models
 #################
-mod <- stan_model('state_space.stan')
+mod <- cmdstan_model('state_space.stan')
 
 data <- list(
   N=n_tot,
   y = y_vec,
   has_slope=1,
-  n_seasons=10,
+  n_seasons=season_length,
   n_covar=2,
   X_mat = x_mat
   # X_mat=matrix(1,n_tot,1)
 )
 
+fit <- mod$sample(data=data)
 
-a <- sampling(mod, data=data)
-b <- summary(a)$summary %>% as.data.frame() %>% rownames_to_column() %>% filter(!grepl('k_obj', rowname))
+
+b <- fit$summary() %>% filter(!grepl('k_obj', variable))
+b %>% filter(grepl('alpha_sim\\[1,', variable))
+b %>% filter(grepl(paste0('alpha_sim\\[', n_tot, ','), variable))
 
 plot(y_vec, type='l', lwd=3)
-b %>% filter(grepl('trend_comp\\[1,', rowname)) %>% .$mean %>% lines()
-b %>% filter(grepl('trend_comp\\[2,', rowname)) %>% .$mean %>% lines()
-b %>% filter(grepl('trend_comp\\[3,', rowname)) %>% .$mean %>% lines()
+b %>% filter(grepl('trend_comp\\[1,', variable)) %>% .$mean %>% lines()
+b %>% filter(grepl('trend_comp\\[2,', variable)) %>% .$mean %>% lines()
+b %>% filter(grepl('trend_comp\\[3,', variable)) %>% .$mean %>% lines()
 

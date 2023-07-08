@@ -149,7 +149,7 @@ vector kalman_filter_smooth(int n, vector y, vector a_1, vector P_1_diag, real n
   vector[num_elements(alpha_smooth) + num_elements(F) + num_elements(v)] rag_arr;
 
     // Alpha Smooth
-  array[2] int alpha_dim = dims(alpha_smooth);
+  array[3] int alpha_dim = dims(alpha_smooth);
   int cnt = 1;
 
   for (i in 1:alpha_dim[1]){
@@ -308,6 +308,7 @@ array[] vector extract_trends(array[] vector alpha_sim, int n, array[] row_vecto
   int season_cont = n_seasons > 2 ? n_seasons - 1 : 0;
   int has_season =  n_seasons > 2 ? 1 : 0;
   int has_regress = n_covar > 0 ? 1 : 0;
+  int a_size = num_elements(alpha_sim[1]);
   
   array[1 + has_season + has_regress] vector[n] trend_comp_arr;
   for (i in 1:n){
@@ -316,8 +317,8 @@ array[] vector extract_trends(array[] vector alpha_sim, int n, array[] row_vecto
       trend_comp_arr[2,i] = alpha_sim[i,2 + include_slope];
       
     if (has_regress == 1){
-      vector[n_covar] reg_vec = Z_arr[i]' .* alpha_sim[i];
-      trend_comp_arr[2 + has_season, i] = sum(reg_vec[(1 + include_slope + season_cont + 1):num_elements(Z_arr[i])]);
+      vector[a_size] reg_vec = Z_arr[i]' .* alpha_sim[i];
+      trend_comp_arr[2 + has_season, i] = sum(reg_vec[(1 + include_slope + season_cont + 1):a_size]);
     }
   }
   return trend_comp_arr;
