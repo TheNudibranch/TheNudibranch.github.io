@@ -1,0 +1,84 @@
+---
+title: "An Unhinged Introduction to State Space Models with STAN"
+output: html_document
+---
+```{r, echo=F}
+knitr::opts_chunk$set(cache = F)
+```
+
+```{css, echo=FALSE}
+pre {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 500px;
+}
+
+.scroll-100 {
+  max-height: 100px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+```
+
+```{r, echo=F, results='hide'}
+season_length <- 5; number_seasons <- 10
+n_tot <- season_length * number_seasons
+x1 <- (cumsum(rnorm(n_tot, 0,2)) + rnorm(n_tot, 0,1)) |> abs()
+x2 <- (cumsum(rnorm(n_tot, 0,1)) + rnorm(n_tot, 0,1)) |> abs()
+x_mat <- cbind(x1,x2)
+beta_vec <- c(-1,2)
+
+ss <- cos(seq(0,2*pi, length.out=season_length)) * 10 + rnorm(season_length, 0, 2)
+ss <- ss - mean(ss)
+ss_vec <- c(ss)[-length(ss)]
+ss_var <- 0.3;
+
+slope_start <- 0.5; slope_var <- 1e-15; slope_vec <- c(slope_start)
+
+mu_start <- rnorm(1,100,1); mu_var <- 1; mu_vec <- c(mu_start)
+
+y_vec <- c()
+# i <- 1
+for (i in 1:n_tot){
+  y_vec <- c(y_vec, mu_vec[i] + (x_mat %*% beta_vec)[i] + ss_vec[1])
+  ss_vec <- c(-sum(ss_vec) + rnorm(1, 0, sqrt(ss_var)), ss_vec[-length(ss_vec)])
+  slope_vec <- c(slope_vec, slope_vec[i] + rnorm(1, 0, sqrt(slope_var)))
+  mu_vec <- c(mu_vec, mu_vec[i] + slope_vec[i] + rnorm(1, 0,sqrt(mu_var)))
+}
+
+# Add 20% of series mean to the last 10 iterations
+y_vec[(length(y_vec)-9):length(y_vec)] <- y_vec[(length(y_vec)-9):length(y_vec)] + 10
+```
+
+
+## Motivation: More Ice Please
+Let's say you work for a drinkware company, we'll call it something generic, maybe "**L**arge bi-p**E**dal s**N**ow crypt**I**d"? Or LENI for short. LENI sells mugs, wine glasses, water glasses, and tumblers. The recent lack of innovation in the tumbler market has led to public outcry. As a response, you release Tumbler v2™. This exciting new technology features the same size tumblers you know an love, but with double the ice capacity. You even come up with a catchy slogan:
+
+<center>
+*"Double the ice, for the exact same price." - LENI*
+</center>
+
+As a result of your genius ideas, your tumbler sales being to pick up:
+
+```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=6}
+plot(y_vec, type='b', lwd=3, pch=16, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
+     ylab='', xlab='', xaxt='n', yaxt='n')
+axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex=1.2, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels='Sales ($)', cex=1.2, lwd.ticks = 0)
+box(lwd=2)
+abline(v = length(y_vec)-9, lty=2, lwd=3)
+legend('topleft', legend=c('Release of Tumbler v2™'), lty=2, lwd=3)
+```
+
+
+## The final frontier
+Your tumbler sales are putting all your rival drinkware companies, like "Abominable Snowman", to shame. But just how much of your sales are incremental and aren't just due to the usual seasonality, or positive overall industry growth. Can you quantify with some degree of certain the inremental sales you've realized from launchng Tumber v2™?
+
+
+
+```{r}
+sessionInfo()
+```
