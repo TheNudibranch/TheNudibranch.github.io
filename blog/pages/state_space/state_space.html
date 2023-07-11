@@ -56,6 +56,28 @@ if (window.hljs) {
 
 
 
+<style type="text/css">
+/* for pandoc --citeproc since 2.11 */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
 
 
 
@@ -296,7 +318,16 @@ up:</p>
 like “Abominable Snowman”, to shame. But just how much of your sales are
 incremental and aren’t just due to the usual seasonality, or positive
 overall industry growth. Can you quantify with some degree of certain
-the inremental sales you’ve realized from launchng Tumber v2™?</p>
+the incremental sales you’ve realized from launching Tumbler v2™?</p>
+<p>To approach this problem, we will use state space models. A class of
+models that assumes that our data generating process has some underlying
+state that gives rise to our actually observed variables. For instance,
+in the time series plot above, a state space approach would assume that
+each point in the time series is generated from some latent unobserved
+state which has its only distribution. For this time series analysis
+state space problem, we will used the widely adopted and used approach
+of <span class="citation">(Durbin and Koopman 2001)</span>. The
+governing equation for this system</p>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>## R version 4.1.1 (2021-08-10)
 ## Platform: x86_64-w64-mingw32/x64 (64-bit)
@@ -321,6 +352,15 @@ the inremental sales you’ve realized from launchng Tumber v2™?</p>
 ## [13] rmarkdown_2.11  tools_4.1.1     stringr_1.4.0   xfun_0.27      
 ## [17] yaml_2.2.1      fastmap_1.1.0   compiler_4.1.1  htmltools_0.5.2
 ## [21] knitr_1.36      sass_0.4.0</code></pre>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-book" class="csl-entry">
+Durbin, James, and Siem Jan Koopman. 2001. <em>Time Series Analysis by
+State Space Methods</em>.
+</div>
+</div>
 </div>
 
 

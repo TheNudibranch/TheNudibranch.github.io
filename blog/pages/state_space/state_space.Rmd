@@ -1,6 +1,7 @@
 ---
 title: "An Unhinged Introduction to State Space Models with STAN"
 output: html_document
+bibliography: references.bib
 ---
 ```{r, echo=F}
 knitr::opts_chunk$set(cache = F)
@@ -75,10 +76,16 @@ legend('topleft', legend=c('Release of Tumbler v2™'), lty=2, lwd=3)
 
 
 ## The final frontier
-Your tumbler sales are putting all your rival drinkware companies, like "Abominable Snowman", to shame. But just how much of your sales are incremental and aren't just due to the usual seasonality, or positive overall industry growth. Can you quantify with some degree of certain the inremental sales you've realized from launchng Tumber v2™?
+Your tumbler sales are putting all your rival drinkware companies, like "Abominable Snowman", to shame. But just how much of your sales are incremental and aren't just due to the usual seasonality, or positive overall industry growth. Can you quantify with some degree of certain the incremental sales you've realized from launching Tumbler v2™?
+
+To approach this problem, we will use state space models. A class of models that assumes that our data generating process has some underlying state that gives rise to our actually observed variables. For instance, in the time series plot above, a state space approach would assume that each point in the time series is generated from some latent unobserved state which has its only distribution. For this time series analysis state space problem, we will used the widely adopted and used approach of [@book]. The governing equation for this system 
 
 
 
 ```{r}
 sessionInfo()
 ```
+
+## References
+
+<div id="refs"></div>
