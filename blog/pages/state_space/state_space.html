@@ -32,6 +32,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -324,10 +326,160 @@ models that assumes that our data generating process has some underlying
 state that gives rise to our actually observed variables. For instance,
 in the time series plot above, a state space approach would assume that
 each point in the time series is generated from some latent unobserved
-state which has its only distribution. For this time series analysis
+state which has its own distribution. For this time series analysis
 state space problem, we will used the widely adopted and used approach
 of <span class="citation">(Durbin and Koopman 2001)</span>. The
-governing equation for this system</p>
+governing equation for this system is given by:</p>
+<p><span class="math display">\[\begin{align}
+y_t &amp;= Z_t\alpha_t + \varepsilon_t\\
+\alpha_{t+1} &amp;= T_t \alpha_t + R_t \eta_t
+\end{align}\]</span></p>
+<p>where</p>
+<span class="math display">\[\varepsilon_t \sim N(0,H_t) \hspace{2mm}
+\text{and} \hspace{2mm} \eta_t \sim N(0,Q_t)\]</span>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+vec_var
+</th>
+<th style="text-align:left;">
+vec_dim
+</th>
+<th style="text-align:left;">
+vec_desc
+</th>
+<th style="text-align:left;">
+mat_vec
+</th>
+<th style="text-align:left;">
+mat_dim
+</th>
+<th style="text-align:left;">
+mat_desc
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<span class="math inline">\(y_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(p \times 1\)</span>
+</td>
+<td style="text-align:left;">
+Observations
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(Z_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(p \times m\)</span>
+</td>
+<td style="text-align:left;">
+Design Matrix
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<span class="math inline">\(\alpha_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(m \times 1\)</span>
+</td>
+<td style="text-align:left;">
+(Latent) State
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(T_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(m \times m\)</span>
+</td>
+<td style="text-align:left;">
+Transition Matrix
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<span class="math inline">\(\varepsilon_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(p \times 1\)</span>
+</td>
+<td style="text-align:left;">
+Obs. Disturbance
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(H_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(p \times p\)</span>
+</td>
+<td style="text-align:left;">
+Obs. Covariance Matrix
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<span class="math inline">\(\eta_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(r \times 1\)</span>
+</td>
+<td style="text-align:left;">
+State Disturbance
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(R_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(m \times r\)</span>
+</td>
+<td style="text-align:left;">
+State Disturbance Selection Matrix
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+</td>
+<td style="text-align:left;">
+</td>
+<td style="text-align:left;">
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(Q_t\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(r \times r\)</span>
+</td>
+<td style="text-align:left;">
+State Covariance Matrix
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<span class="math inline">\(a_1\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(m \times 1\)</span>
+</td>
+<td style="text-align:left;">
+Initial State Expected Value
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(P_1\)</span>
+</td>
+<td style="text-align:left;">
+<span class="math inline">\(m \times m\)</span>
+</td>
+<td style="text-align:left;">
+Initial State Covariance Matrix
+</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>## R version 4.1.1 (2021-08-10)
 ## Platform: x86_64-w64-mingw32/x64 (64-bit)
@@ -345,13 +497,30 @@ governing equation for this system</p>
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
+## other attached packages:
+## [1] kableExtra_1.3.4 cmdstanr_0.5.3  
+## 
 ## loaded via a namespace (and not attached):
-##  [1] digest_0.6.28   R6_2.5.1        jsonlite_1.7.2  magrittr_2.0.1 
-##  [5] evaluate_0.14   highr_0.9       stringi_1.7.5   rlang_1.0.3    
-##  [9] cli_3.3.0       rstudioapi_0.13 jquerylib_0.1.4 bslib_0.3.1    
-## [13] rmarkdown_2.11  tools_4.1.1     stringr_1.4.0   xfun_0.27      
-## [17] yaml_2.2.1      fastmap_1.1.0   compiler_4.1.1  htmltools_0.5.2
-## [21] knitr_1.36      sass_0.4.0</code></pre>
+##  [1] tidyselect_1.1.1     xfun_0.27            bslib_0.3.1         
+##  [4] purrr_0.3.4          colorspace_2.0-2     vctrs_0.4.1         
+##  [7] generics_0.1.1       htmltools_0.5.2      viridisLite_0.4.0   
+## [10] yaml_2.2.1           utf8_1.2.2           rlang_1.0.3         
+## [13] jquerylib_0.1.4      pillar_1.6.4         glue_1.6.2          
+## [16] DBI_1.1.3            distributional_0.3.1 lifecycle_1.0.1     
+## [19] stringr_1.4.0        posterior_1.3.1      munsell_0.5.0       
+## [22] gtable_0.3.0         rvest_1.0.2          evaluate_0.14       
+## [25] knitr_1.36           fastmap_1.1.0        fansi_0.5.0         
+## [28] highr_0.9            scales_1.1.1         backports_1.4.1     
+## [31] checkmate_2.0.0      webshot_0.5.4        jsonlite_1.7.2      
+## [34] abind_1.4-5          farver_2.1.0         systemfonts_1.0.4   
+## [37] tensorA_0.36.2       ggplot2_3.3.5        digest_0.6.28       
+## [40] stringi_1.7.5        dplyr_1.0.9          grid_4.1.1          
+## [43] cli_3.3.0            tools_4.1.1          magrittr_2.0.1      
+## [46] sass_0.4.0           tibble_3.1.6         crayon_1.4.2        
+## [49] pkgconfig_2.0.3      ellipsis_0.3.2       xml2_1.3.3          
+## [52] assertthat_0.2.1     rmarkdown_2.11       svglite_2.1.0       
+## [55] httr_1.4.3           rstudioapi_0.13      R6_2.5.1            
+## [58] compiler_4.1.1</code></pre>
 </div>
 <div id="references" class="section level2">
 <h2>References</h2>
