@@ -335,28 +335,23 @@ y_t &amp;= Z_t\alpha_t + \varepsilon_t\\
 \alpha_{t+1} &amp;= T_t \alpha_t + R_t \eta_t
 \end{align}\]</span></p>
 <p>where</p>
-<span class="math display">\[\varepsilon_t \sim N(0,H_t) \hspace{2mm}
-\text{and} \hspace{2mm} \eta_t \sim N(0,Q_t)\]</span>
+<p><span class="math display">\[\varepsilon_t \sim N(0,H_t) \hspace{2mm}
+\text{and} \hspace{2mm} \eta_t \sim N(0,Q_t)\]</span> You might only
+recognize <span class="math inline">\(y_t\)</span>, the sales from our
+Tumbler v2, from the equation above. But allow me to introduce the full
+cast of characters:</p>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
-<th style="text-align:left;">
-vec_var
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Vectors
+</div>
 </th>
-<th style="text-align:left;">
-vec_dim
-</th>
-<th style="text-align:left;">
-vec_desc
-</th>
-<th style="text-align:left;">
-mat_vec
-</th>
-<th style="text-align:left;">
-mat_dim
-</th>
-<th style="text-align:left;">
-mat_desc
+<th style="border-bottom:hidden;padding-bottom:0; padding-left:3px;padding-right:3px;text-align: center; " colspan="3">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; ">
+Matricies
+</div>
 </th>
 </tr>
 </thead>
@@ -480,6 +475,142 @@ Initial State Covariance Matrix
 </tr>
 </tbody>
 </table>
+<p>Here <span class="math inline">\(\alpha_t\)</span> is the underlying
+latent state that gives rise to our time series realizations <span
+class="math inline">\(y_t\)</span>. As state before, the latent state
+<span class="math inline">\(\alpha_t\)</span> has its own distribution,
+which we can now deduce from the equation above is given by <span
+class="math inline">\(\alpha_t \sim N(a_t, Q_t)\)</span>. Notice from
+our table above that <span class="math inline">\(\alpha_t\)</span> is
+not the same size as <span class="math inline">\(y_t\)</span>. Our
+observations <span class="math inline">\(y_t\)</span> is a vector of
+length <span class="math inline">\(p\)</span>, which will be one for our
+case here. Conversely, <span class="math inline">\(\alpha_t\)</span> is
+of size <span class="math inline">\(m\)</span>. This is because <span
+class="math inline">\(\alpha_t\)</span> will act as the conduit for all
+the effects and assumptions we impose on the model.</p>
+<p>This is one of the best utilities provided by state space models. We
+have the ability to add smaller effects together and extract them at the
+end of the modeling process to further understand the structure of our
+time series. For example, you might want to impose a 52 week seasonality
+(1 year), positive industry trend growth, additive regression effects,
+and maybe even a AR(n) process to account for now autocorrelation. All
+of this information is packed in <span
+class="math inline">\(\alpha_t\)</span> which we’ll demonstrate
+later.</p>
+<p>The matrix <span class="math inline">\(Z_t\)</span> provides the
+translation from <span class="math inline">\(\mathbb{R}^m\)</span> to
+<span class="math inline">\(\mathbb{R}^p\)</span>, which our case is
+just one dimension. Therefore, <span class="math inline">\(Z_t\)</span>
+reduces down to a vector, but this is not the case in general. Some of
+the data that <span class="math inline">\(Z_t\)</span> might hold is the
+<span class="math inline">\(x_t\)</span> for the regression component of
+our time series. Usually, <span class="math inline">\(Z_t\)</span> is
+filled with 1s and 0s to select different components of <span
+class="math inline">\(\alpha_t\)</span> that are used for <span
+class="math inline">\(y_t\)</span>. As we’ll see later, there are many
+components of <span class="math inline">\(\alpha_t\)</span> that don’t
+directly impact <span class="math inline">\(y_t\)</span>, but are
+strategically placed to help <span
+class="math inline">\(\alpha_t\)</span> itself evolve over time.</p>
+<p>This is a great segue to our transition matrix <span
+class="math inline">\(T_t\)</span>. The transition matrix is what
+evolves <span class="math inline">\(\alpha_t\)</span> to the next state
+<span class="math inline">\(\alpha_{t+1}\)</span>. This again can take
+multiple forms. It might be the stage in the process where a positive
+industry trend is added to the overall series or where we move from
+season to season.</p>
+<p>Finally we have <span class="math inline">\(R_t\)</span>, the state
+disturbance selection matrix. Notice that everything up to this point
+has had a <span class="math inline">\(t\)</span> subscript. While we are
+modeling a time series, it is not true that every element of <span
+class="math inline">\(\alpha_t\)</span> has to vary over time. In fact,
+most of the time the regression coefficients (if included) are usually
+static with respect to time. The way we tell this model to account for
+static elements of <span class="math inline">\(\alpha_t\)</span> is to
+not add any disturbance to them. Lets consider a very simple local
+linear trend model:</p>
+<p><span class="math display">\[\begin{align}
+y_t &amp;= \mu_t + \varepsilon_t\\
+\mu_{t + 1} &amp;= \mu_{t} + \nu_{t} + \eta_{t}\\
+\nu_{t+1} &amp;= \nu_{t}
+\end{align}\]</span></p>
+<p>Our cast of characters now wear the following costumes:</p>
+<p><span class="math display">\[\alpha_t = \begin{bmatrix} \mu_t \\
+\nu_t\end{bmatrix} \hspace{10mm} Z_t = \begin{bmatrix} 1 &amp; 0\\
+\end{bmatrix}\]</span> <span class="math display">\[T_t =
+\begin{bmatrix}1 &amp; 1\\ 0 &amp; 1 \end{bmatrix} \hspace{5mm} R_t =
+\begin{bmatrix}1\\ 0\end{bmatrix}\]</span> Clearly, <span
+class="math inline">\(\eta_t\)</span> is just a 1-D normal with variance
+<span class="math inline">\(Q_t\)</span>, and thus as <span
+class="math inline">\(\alpha_t\)</span> evolves over time its element
+<span class="math inline">\(\nu_{n+1} = \nu_{n}\)</span> for all <span
+class="math inline">\(n\in [1,t]\)</span>. I’m sure you can already see
+the powerful flexibility we’ve been afforded by this modeling
+system.</p>
+<p>Now, the only variables I have yet to mention are <span
+class="math inline">\(a_1\)</span> and <span
+class="math inline">\(P_1\)</span>. These dictate the distribution of
+our starting state. That is <span class="math inline">\(\alpha_1 \sim
+N(a_1, P_1)\)</span>. These initial values are assumed to be known at
+the time of modeling. In reality these are rarely known and there is a
+large amount of theory to approximate the best starting value of these
+based on asymptotics. For more information, check out chapter 5 of <span
+class="citation">(Durbin and Koopman 2001)</span>. But, we are Bayesians
+after all are we not? If we don’t know something we just chuck a prior
+at it. Although we will abide by the suggestion in chapter 5 and set
+<span class="math inline">\(a_1 = \bf{0}\)</span>.</p>
+</div>
+<div id="i-prefer-autumn" class="section level2">
+<h2>I prefer Autumn</h2>
+<p>One of the key components we’ll utilize is seasonality. This means
+that for some repeating point in time, we want to see the same, or
+slightly modified effect. For example, we might observe seasonality in
+consumer purchasing behavior. Big spikes occur during the holidays when
+everyone is purchasing Tumbler v2s to give to their ice enthusiast
+friends at Christmas, but then sales slowly die off. It’s a tale as old
+as time that we’ll see again next Christmas.</p>
+<p>We’ll go about this by considering a 4 season example. This might be
+data that is collected every quarter for a company. We’ll define four
+season parameters denoted by <span
+class="math inline">\(\gamma_j\)</span>, where <span
+class="math inline">\(j \in [1,4]\)</span>. We’ll assume make the
+assumption that all seasonal effects will add to zero. This makes sense
+if we assume that a seasonal effect is just some perturbation against
+the underlying trend. Consider the following:</p>
+<pre class="r"><code>n_ex1 &lt;- 4*5
+ss_comp_ex1 &lt;- cos(seq(0,2*pi, length.out=4))*10
+ss_ex1 &lt;- rep(ss_comp_ex1 - mean(ss_comp_ex1),5)
+trend_ex1 &lt;- cumsum(rnorm(n_ex1) + 0.5)
+par(mfrow=c(1,3))
+plot(ss_ex1, type=&#39;b&#39;, lwd=3, pch=16)</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="mine-is-a-brita" class="section level2">
+<h2>Mine is a Brita</h2>
+<p>For sake of completeness, let’s review the assumptions we made about
+our data generating process by imposing this system of equations:</p>
+<ol style="list-style-type: decimal">
+<li><span class="math inline">\(y_t\)</span> is a linear function of the
+latent state <span class="math inline">\(\alpha_t\)</span></li>
+<li>The disturbances of our data generating process are normally
+distributed</li>
+<li>The disturbances of our latent state are normally distributed.</li>
+</ol>
+<p>These unassuming assumptions allow us to now leverage the power of
+the <a href="https://www.kalmanfilter.net/background.html">Kalman
+filter</a>. Without going into too much detail, filtering is just the
+process of updating what we expect given what we have observed. Assume
+that we have seen the first 4 realizations of some time series process.
+We are not in the dark about. We have <em>some</em> knowledge about what
+the 5th observation might be. If the first 4 had values between 1 and
+10, we can be pretty sure that the 5th realization won’t be 1,000. This
+is of course a gross oversimplification, but if our process follows the
+assumptions outlined above, we can use the Kalman filter to quantify the
+uncertainty and expected value of our 5th observation.</p>
+</div>
+<div id="dont-forget-to-moisturize" class="section level2">
+<h2>Don’t forget to Moisturize</h2>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>## R version 4.1.1 (2021-08-10)
 ## Platform: x86_64-w64-mingw32/x64 (64-bit)
