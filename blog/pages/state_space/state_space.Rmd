@@ -69,8 +69,8 @@ As a result of your genius ideas, your tumbler sales being to pick up:
 ```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=6}
 plot(y_vec, type='b', lwd=3, pch=16, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
      ylab='', xlab='', xaxt='n', yaxt='n')
-axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex=1.2, lwd.ticks = 0)
-axis(side=2, at=mean(y_vec), labels='Sales ($)', cex=1.2, lwd.ticks = 0)
+axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
 box(lwd=2)
 abline(v = length(y_vec)-9, lty=2, lwd=3)
 legend('topleft', legend=c('Release of Tumbler v2™'), lty=2, lwd=3)
@@ -106,11 +106,11 @@ cbind(vec_var, vec_dim, vec_desc, mat_vec, mat_dim, mat_desc) %>%
   add_header_above(c('Vectors'=3, 'Matricies' = 3))
 ```
 
-Here $\alpha_t$ is the underlying latent state that gives rise to our time series realizations $y_t$. As state before, the latent state $\alpha_t$ has its own distribution, which we can now deduce from the equation above is given by $\alpha_t \sim N(a_t, Q_t)$. Notice from our table above that $\alpha_t$ is not the same size as $y_t$. Our observations $y_t$ is a vector of length $p$, which will be one for our case here. Conversely, $\alpha_t$ is of size $m$. This is because $\alpha_t$ will act as the conduit for all the effects and assumptions we impose on the model.
+Here $\alpha_t$ is the underlying latent state that gives rise to our time series realizations $y_t$. As stated before, the latent state $\alpha_t$ has its own distribution, which we can now deduce from the equation above is given by $\alpha_t \sim N(a_t, Q_t)$. Notice from our table above that $\alpha_t$ is not the same size as $y_t$. Our observations $y_t$ is a vector of length $p$, which will be 1 for our case here. Conversely, $\alpha_t$ is of size $m$. This is because $\alpha_t$ will act as the conduit for all the effects and assumptions we impose on the model.
 
-This is one of the best utilities provided by state space models. We have the ability to add smaller effects together and extract them at the end of the modeling process to further understand the structure of our time series. For example, you might want to impose a 52 week seasonality (1 year), positive industry trend growth, additive regression effects, and maybe even a AR(n) process to account for now autocorrelation. All of this information is packed in $\alpha_t$ which we'll demonstrate later.
+This is one of the best utilities provided by state space models. We have the ability to add smaller effects together and extract them at the end of the modeling process to further understand the structure of our time series. For example, you might want to impose a 52 week seasonality (1 year), positive industry trend growth, additive regression effects, and maybe even a AR(n) process to account for autocorrelation. All of this information is packed in $\alpha_t$ which we'll demonstrate later.
 
-The matrix $Z_t$ provides the translation from $\mathbb{R}^m$ to $\mathbb{R}^p$, which our case is just one dimension. Therefore, $Z_t$ reduces down to a vector, but this is not the case in general. Some of the data that $Z_t$ might hold is the $x_t$ for the regression component of our time series. Usually, $Z_t$ is filled with 1s and 0s to select different components of $\alpha_t$ that are used for $y_t$. As we'll see later, there are many components of $\alpha_t$ that don't directly impact $y_t$, but are strategically placed to help $\alpha_t$ itself evolve over time.
+The matrix $Z_t$ provides the translation from $\mathbb{R}^m$ to $\mathbb{R}^p$, which our case is just one dimension. Therefore, $Z_t$ reduces down to a vector of length $m$, but this is not the case in general. Some of the data that $Z_t$ might hold is the $x_t$ for the regression component of our time series. Usually, $Z_t$ is filled with 1s and 0s to select different components of $\alpha_t$ that are used for $y_t$. As we'll see later, there are many components of $\alpha_t$ that don't directly impact $y_t$, but are strategically placed to help $\alpha_t$ itself evolve over time.
 
 This is a great segue to our transition matrix $T_t$. The transition matrix is what evolves $\alpha_t$ to the next state $\alpha_{t+1}$. This again can take multiple forms. It might be the stage in the process where a positive industry trend is added to the overall series or where we move from season to season.
 
@@ -126,24 +126,56 @@ Our cast of characters now wear the following costumes:
 
 $$\alpha_t = \begin{bmatrix} \mu_t \\ \nu_t\end{bmatrix} \hspace{10mm} Z_t = \begin{bmatrix} 1 & 0\\ \end{bmatrix}$$
 $$T_t = \begin{bmatrix}1 & 1\\ 0 & 1 \end{bmatrix} \hspace{5mm} R_t = \begin{bmatrix}1\\ 0\end{bmatrix}$$
-Clearly, $\eta_t$ is just a 1-D normal with variance $Q_t$, and thus as $\alpha_t$ evolves over time its element $\nu_{n+1} = \nu_{n}$ for all $n\in [1,t]$. I'm sure you can already see the powerful flexibility we've been afforded by this modeling system.
+Clearly, $\eta_t$ is just a 1-D normal with variance $Q_t$, and thus as $\alpha_t$ evolves over time its element $\nu_{n+1} = \nu_{n}$ for all $n\in [1,t]$. The variable $\nu$ here could be considered a static industry trend and $\mu_t$ is the random walk it perturbs. I'm sure you can already see the powerful flexibility we've been afforded by this modeling system.
 
 Now, the only variables I have yet to mention are $a_1$ and $P_1$. These dictate the distribution of our starting state. That is $\alpha_1 \sim N(a_1, P_1)$. These initial values are assumed to be known at the time of modeling. In reality these are rarely known and there is a large amount of theory to approximate the best starting value of these based on asymptotics. For more information, check out chapter 5 of [@book]. But, we are Bayesians after all are we not? If we don't know something we just chuck a prior at it. Although we will abide by the suggestion in chapter 5 and set $a_1 = \bf{0}$.
 
 ## I prefer Autumn
 One of the key components we'll utilize is seasonality. This means that for some repeating point in time, we want to see the same, or slightly modified effect. For example, we might observe seasonality in consumer purchasing behavior. Big spikes occur during the holidays when everyone is purchasing Tumbler v2s to give to their ice enthusiast friends at Christmas, but then sales slowly die off. It's a tale as old as time that we'll see again next Christmas.
 
-We'll go about this by considering a 4 season example. This might be data that is collected every quarter for a company. We'll define four season parameters denoted by $\gamma_j$, where $j \in [1,4]$. We'll assume make the assumption that all seasonal effects will add to zero. This makes sense if we assume that a seasonal effect is just some perturbation against the underlying trend. Consider the following:
+We'll go about this by considering a 4 season example. This might be data that is collected every quarter for a company. We'll define four season parameters denoted by $\tau_j$, where $j \in [1,4]$. We'll make the assumption that all seasonal effects will add to zero. This makes sense if we assume that a seasonal effect is just some perturbation against the underlying trend. Consider the following:
 
-```{r}
+```{r, echo=FALSE, fig.align='center', fig.width=12, fig.height=7}
 n_ex1 <- 4*5
-ss_comp_ex1 <- cos(seq(0,2*pi, length.out=4))*10
+ss_comp_ex1 <- cos(seq(0,2*pi, length.out=4))*2
 ss_ex1 <- rep(ss_comp_ex1 - mean(ss_comp_ex1),5)
 trend_ex1 <- cumsum(rnorm(n_ex1) + 0.5)
-par(mfrow=c(1,3))
-plot(ss_ex1, type='b', lwd=3, pch=16)
+
+t_cex <- 1.6
+
+par(mfrow=c(3,1))
+# layout_mat <- matrix(c(1,2,3,3), nrow=2, byrow=T)
+# layout(layout_mat)
+par(mar=c(5,3,2,2)-0.5)
+plot(ss_ex1, type='b', lwd=3, pch=16, xlab='', ylab='',main='Seasonality', xaxt='n', yaxt='n',cex.main=t_cex)
+box(lwd=2)
+plot(trend_ex1, pch=16, type='b', lwd=3, xlab='', ylab='',main='Underlying Trend', xaxt='n', yaxt='n', cex.main=t_cex)
+box(lwd=2)
+plot(ss_ex1 + trend_ex1, lwd=3, pch=16, type='b', xlab='', ylab='', main='Observed Trend', xaxt='n', yaxt='n', cex.main=t_cex)
+box(lwd=2)
 ```
 
+Let's write our system in plain Greek and forget about the matrices for a second:
+
+\begin{align}
+y_t &= \mu_t + \tau_t + \varepsilon_t\\
+\mu_{t + 1} &= \mu_{t} + \eta_{t}^\mu\\
+\tau_{t+1} &= -\sum_{j=1}^{s-1}\tau_{t + 1 - j} + \eta_t^\tau
+\end{align}
+
+For some, that summation might have come out of left field. But recall that we defined our seasonality components to sum to zero. Therefore, for any $s$ length seasonality trend, we only need $s-1$ components to recover the full trend. For example if we have a seasonal trend of length 4 and trying to find the expected seasonal component of time $t+1$, we can use the following:
+
+\begin{align}
+0 &= \tau_{t+1} + \tau_{t} + \tau_{t-1} + \tau_{t-2}\\
+\tau_{t+1} &= -(\tau_{t} + \tau_{t-1} + \tau_{t-2})\\
+\tau_{t+1} &= -\sum_{j=1}^{s-1}\tau_{t + 1 - j}\\
+\end{align}
+
+Since we want to allow our seasonality to vary over time, we add a disturbance $\eta_t^\tau$ every time the next expected seasonality component $\tau_{t+1}$ is calculated. Note, since we want both $\mu_t$ and $\tau_t$ to vary over time, $\eta_t$ will be a vector of length 2. Finally, we can write our state space system matrices as:
+
+$$\alpha_t = \begin{bmatrix} \mu_t \\ \tau_{t} \\ \tau_{t-1} \\ \tau_{t-2}\end{bmatrix} \hspace{10mm} Z_t = \begin{bmatrix} 1 & 1 & 0 & 0\\ \end{bmatrix}$$
+$$T_t = \begin{bmatrix}1 & 0 & 0 & 0\\ 0 & -1 & -1 & -1\\0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{bmatrix} \hspace{5mm} R_t = \begin{bmatrix}1 & 0\\ 0 & 1\\0 &0\\0&0\end{bmatrix}$$
+The 1s in the third and fourth row of $T_t$ ensure that we carry the $s-2$ most recent seasonal components with us to the next state. The 0s in the third and fourth row of $R_t$ *select* our disturbance draw such that no variation will be applied to the $s-2$ carryover seasonal states.
 
 ## Mine is a Brita
 

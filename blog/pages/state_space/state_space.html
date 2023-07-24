@@ -477,14 +477,14 @@ Initial State Covariance Matrix
 </table>
 <p>Here <span class="math inline">\(\alpha_t\)</span> is the underlying
 latent state that gives rise to our time series realizations <span
-class="math inline">\(y_t\)</span>. As state before, the latent state
+class="math inline">\(y_t\)</span>. As stated before, the latent state
 <span class="math inline">\(\alpha_t\)</span> has its own distribution,
 which we can now deduce from the equation above is given by <span
 class="math inline">\(\alpha_t \sim N(a_t, Q_t)\)</span>. Notice from
 our table above that <span class="math inline">\(\alpha_t\)</span> is
 not the same size as <span class="math inline">\(y_t\)</span>. Our
 observations <span class="math inline">\(y_t\)</span> is a vector of
-length <span class="math inline">\(p\)</span>, which will be one for our
+length <span class="math inline">\(p\)</span>, which will be 1 for our
 case here. Conversely, <span class="math inline">\(\alpha_t\)</span> is
 of size <span class="math inline">\(m\)</span>. This is because <span
 class="math inline">\(\alpha_t\)</span> will act as the conduit for all
@@ -494,25 +494,27 @@ have the ability to add smaller effects together and extract them at the
 end of the modeling process to further understand the structure of our
 time series. For example, you might want to impose a 52 week seasonality
 (1 year), positive industry trend growth, additive regression effects,
-and maybe even a AR(n) process to account for now autocorrelation. All
-of this information is packed in <span
+and maybe even a AR(n) process to account for autocorrelation. All of
+this information is packed in <span
 class="math inline">\(\alpha_t\)</span> which we’ll demonstrate
 later.</p>
 <p>The matrix <span class="math inline">\(Z_t\)</span> provides the
 translation from <span class="math inline">\(\mathbb{R}^m\)</span> to
 <span class="math inline">\(\mathbb{R}^p\)</span>, which our case is
 just one dimension. Therefore, <span class="math inline">\(Z_t\)</span>
-reduces down to a vector, but this is not the case in general. Some of
-the data that <span class="math inline">\(Z_t\)</span> might hold is the
-<span class="math inline">\(x_t\)</span> for the regression component of
-our time series. Usually, <span class="math inline">\(Z_t\)</span> is
-filled with 1s and 0s to select different components of <span
-class="math inline">\(\alpha_t\)</span> that are used for <span
-class="math inline">\(y_t\)</span>. As we’ll see later, there are many
-components of <span class="math inline">\(\alpha_t\)</span> that don’t
-directly impact <span class="math inline">\(y_t\)</span>, but are
-strategically placed to help <span
-class="math inline">\(\alpha_t\)</span> itself evolve over time.</p>
+reduces down to a vector of length <span
+class="math inline">\(m\)</span>, but this is not the case in general.
+Some of the data that <span class="math inline">\(Z_t\)</span> might
+hold is the <span class="math inline">\(x_t\)</span> for the regression
+component of our time series. Usually, <span
+class="math inline">\(Z_t\)</span> is filled with 1s and 0s to select
+different components of <span class="math inline">\(\alpha_t\)</span>
+that are used for <span class="math inline">\(y_t\)</span>. As we’ll see
+later, there are many components of <span
+class="math inline">\(\alpha_t\)</span> that don’t directly impact <span
+class="math inline">\(y_t\)</span>, but are strategically placed to help
+<span class="math inline">\(\alpha_t\)</span> itself evolve over
+time.</p>
 <p>This is a great segue to our transition matrix <span
 class="math inline">\(T_t\)</span>. The transition matrix is what
 evolves <span class="math inline">\(\alpha_t\)</span> to the next state
@@ -545,9 +547,11 @@ class="math inline">\(\eta_t\)</span> is just a 1-D normal with variance
 <span class="math inline">\(Q_t\)</span>, and thus as <span
 class="math inline">\(\alpha_t\)</span> evolves over time its element
 <span class="math inline">\(\nu_{n+1} = \nu_{n}\)</span> for all <span
-class="math inline">\(n\in [1,t]\)</span>. I’m sure you can already see
-the powerful flexibility we’ve been afforded by this modeling
-system.</p>
+class="math inline">\(n\in [1,t]\)</span>. The variable <span
+class="math inline">\(\nu\)</span> here could be considered a static
+industry trend and <span class="math inline">\(\mu_t\)</span> is the
+random walk it perturbs. I’m sure you can already see the powerful
+flexibility we’ve been afforded by this modeling system.</p>
 <p>Now, the only variables I have yet to mention are <span
 class="math inline">\(a_1\)</span> and <span
 class="math inline">\(P_1\)</span>. These dictate the distribution of
@@ -573,18 +577,53 @@ as time that we’ll see again next Christmas.</p>
 <p>We’ll go about this by considering a 4 season example. This might be
 data that is collected every quarter for a company. We’ll define four
 season parameters denoted by <span
-class="math inline">\(\gamma_j\)</span>, where <span
-class="math inline">\(j \in [1,4]\)</span>. We’ll assume make the
-assumption that all seasonal effects will add to zero. This makes sense
-if we assume that a seasonal effect is just some perturbation against
-the underlying trend. Consider the following:</p>
-<pre class="r"><code>n_ex1 &lt;- 4*5
-ss_comp_ex1 &lt;- cos(seq(0,2*pi, length.out=4))*10
-ss_ex1 &lt;- rep(ss_comp_ex1 - mean(ss_comp_ex1),5)
-trend_ex1 &lt;- cumsum(rnorm(n_ex1) + 0.5)
-par(mfrow=c(1,3))
-plot(ss_ex1, type=&#39;b&#39;, lwd=3, pch=16)</code></pre>
-<p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+class="math inline">\(\tau_j\)</span>, where <span
+class="math inline">\(j \in [1,4]\)</span>. We’ll make the assumption
+that all seasonal effects will add to zero. This makes sense if we
+assume that a seasonal effect is just some perturbation against the
+underlying trend. Consider the following:</p>
+<p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<p>Let’s write our system in plain Greek and forget about the matrices
+for a second:</p>
+<p><span class="math display">\[\begin{align}
+y_t &amp;= \mu_t + \tau_t + \varepsilon_t\\
+\mu_{t + 1} &amp;= \mu_{t} + \eta_{t}^\mu\\
+\tau_{t+1} &amp;= -\sum_{j=1}^{s-1}\tau_{t + 1 - j} + \eta_t^\tau
+\end{align}\]</span></p>
+<p>For some, that summation might have come out of left field. But
+recall that we defined our seasonality components to sum to zero.
+Therefore, for any <span class="math inline">\(s\)</span> length
+seasonality trend, we only need <span class="math inline">\(s-1\)</span>
+components to recover the full trend. For example if we have a seasonal
+trend of length 4 and trying to find the expected seasonal component of
+time <span class="math inline">\(t+1\)</span>, we can use the
+following:</p>
+<p><span class="math display">\[\begin{align}
+0 &amp;= \tau_{t+1} + \tau_{t} + \tau_{t-1} + \tau_{t-2}\\
+\tau_{t+1} &amp;= -(\tau_{t} + \tau_{t-1} + \tau_{t-2})\\
+\tau_{t+1} &amp;= -\sum_{j=1}^{s-1}\tau_{t + 1 - j}\\
+\end{align}\]</span></p>
+<p>Since we want to allow our seasonality to vary over time, we add a
+disturbance <span class="math inline">\(\eta_t^\tau\)</span> every time
+the next expected seasonality component <span
+class="math inline">\(\tau_{t+1}\)</span> is calculated. Note, since we
+want both <span class="math inline">\(\mu_t\)</span> and <span
+class="math inline">\(\tau_t\)</span> to vary over time, <span
+class="math inline">\(\eta_t\)</span> will be a vector of length 2.
+Finally, we can write our state space system matrices as:</p>
+<p><span class="math display">\[\alpha_t = \begin{bmatrix} \mu_t \\
+\tau_{t} \\ \tau_{t-1} \\ \tau_{t-2}\end{bmatrix} \hspace{10mm} Z_t =
+\begin{bmatrix} 1 &amp; 1 &amp; 0 &amp; 0\\ \end{bmatrix}\]</span> <span
+class="math display">\[T_t = \begin{bmatrix}1 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; -1 &amp; -1 &amp; -1\\0 &amp; 1 &amp; 0 &amp; 0\\0 &amp; 0 &amp;
+1 &amp; 0\end{bmatrix} \hspace{5mm} R_t = \begin{bmatrix}1 &amp; 0\\ 0
+&amp; 1\\0 &amp;0\\0&amp;0\end{bmatrix}\]</span> The 1s in the third and
+fourth row of <span class="math inline">\(T_t\)</span> ensure that we
+carry the <span class="math inline">\(s-2\)</span> most recent seasonal
+components with us to the next state. The 0s in the third and fourth row
+of <span class="math inline">\(R_t\)</span> <em>select</em> our
+disturbance draw such that no variation will be applied to the <span
+class="math inline">\(s-2\)</span> carryover seasonal states.</p>
 </div>
 <div id="mine-is-a-brita" class="section level2">
 <h2>Mine is a Brita</h2>
