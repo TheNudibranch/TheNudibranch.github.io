@@ -188,15 +188,21 @@ array[] vector get_alpha_smooth(vector kalman_object, array[] int s, int n, int 
   return alpha_smooth;
 }
 
+// F_t = Var(v_t | Y_{t-1})
+  // Will need to take sqrt for likelihood since it expects the std not var
 vector get_F(vector kalman_object, array[] int s){
   // F is stored in the second segment
   return segment(kalman_object, 1 + s[1], s[2]);
 }
 
+// v_t = E[y_t|Y_{t-1}]
+  // Can use this as the derived measure for likelihood function
+  // Refer to page 87 & 171
 vector get_v(vector kalman_object, array[] int s){
   return segment(kalman_object, 1 + sum(s[1:2]), s[3]);
 }
 
+// No longer in use, but keep it for reference
 real state_space_lpdf(vector kalman_object, array[] int s, int n){
   vector[n] F = get_F(kalman_object, s);
   vector[n] v = get_v(kalman_object, s);
@@ -258,6 +264,7 @@ array[] vector get_alpha_from_evolve(vector evolve_object, array[] int s_evolve,
   for (i in 1:n){
     for (j in 1:a_size){
       alpha[i,j] = alpha_store[cnt];
+      cnt += 1;
     }
   }
   return alpha;
