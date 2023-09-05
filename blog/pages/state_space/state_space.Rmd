@@ -56,7 +56,7 @@ for (i in 1:n_tot){
 y_vec[(length(y_vec)-9):length(y_vec)] <- y_vec[(length(y_vec)-9):length(y_vec)] + 10
 ```
 
-
+# Casting Calls
 ## Motivation: More Ice Please
 Let's say you work for a drinkware company, we'll call it something generic, maybe "**L**arge bi-p**E**dal s**N**ow crypt**I**d"? Or LENI for short. LENI sells mugs, wine glasses, water glasses, and tumblers. The recent lack of innovation in the tumbler market has led to public outcry. As a response, you release Tumbler v2™. This exciting new technology features the same size tumblers you know an love, but with double the ice capacity. You even come up with a catchy slogan:
 
@@ -89,7 +89,7 @@ y_t &= Z_t\alpha_t + \varepsilon_t\\
 
 where
 
-$$\varepsilon_t \sim N(0,H_t) \hspace{2mm} \text{and} \hspace{2mm} \eta_t \sim N(0,Q_t)$$
+$$\varepsilon_t \sim \mathcal{N}(0,H_t) \hspace{2mm} \text{and} \hspace{2mm} \eta_t \sim \mathcal{N}(0,Q_t)$$
 You might only recognize $y_t$, the sales from our Tumbler v2, from the equation above. But allow me to introduce the full cast of characters:
 
 ```{r, echo=FALSE}
@@ -106,7 +106,7 @@ cbind(vec_var, vec_dim, vec_desc, mat_vec, mat_dim, mat_desc) %>%
   add_header_above(c('Vectors'=3, 'Matricies' = 3))
 ```
 
-Here $\alpha_t$ is the underlying latent state that gives rise to our time series realizations $y_t$. As stated before, the latent state $\alpha_t$ has its own distribution, which we can now deduce from the equation above is given by $\alpha_t \sim N(a_t, Q_t)$. Notice from our table above that $\alpha_t$ is not the same size as $y_t$. Our observations $y_t$ is a vector of length $p$, which will be 1 for our case here. Conversely, $\alpha_t$ is of size $m$. This is because $\alpha_t$ will act as the conduit for all the effects and assumptions we impose on the model.
+Here $\alpha_t$ is the underlying latent state that gives rise to our time series realizations $y_t$. As stated before, the latent state $\alpha_t$ has its own distribution, which we can now deduce from the equation above is given by $\alpha_t \sim \mathcal{N}(a_t, Q_t)$. Notice from our table above that $\alpha_t$ is not the same size as $y_t$. Our observations $y_t$ is a vector of length $p$, which will be 1 for our case here. Conversely, $\alpha_t$ is of size $m$. This is because $\alpha_t$ will act as the conduit for all the effects and assumptions we impose on the model.
 
 This is one of the best utilities provided by state space models. We have the ability to add smaller effects together and extract them at the end of the modeling process to further understand the structure of our time series. For example, you might want to impose a 52 week seasonality (1 year), positive industry trend growth, additive regression effects, and maybe even a AR(n) process to account for autocorrelation. All of this information is packed in $\alpha_t$ which we'll demonstrate later.
 
@@ -128,7 +128,7 @@ $$\alpha_t = \begin{bmatrix} \mu_t \\ \nu_t\end{bmatrix} \hspace{10mm} Z_t = \be
 $$T_t = \begin{bmatrix}1 & 1\\ 0 & 1 \end{bmatrix} \hspace{5mm} R_t = \begin{bmatrix}1\\ 0\end{bmatrix}$$
 Clearly, $\eta_t$ is just a 1-D normal with variance $Q_t$, and thus as $\alpha_t$ evolves over time its element $\nu_{n+1} = \nu_{n}$ for all $n\in [1,t]$. The variable $\nu$ here could be considered a static industry trend and $\mu_t$ is the random walk it perturbs. I'm sure you can already see the powerful flexibility we've been afforded by this modeling system.
 
-Now, the only variables I have yet to mention are $a_1$ and $P_1$. These dictate the distribution of our starting state. That is $\alpha_1 \sim N(a_1, P_1)$. These initial values are assumed to be known at the time of modeling. In reality these are rarely known and there is a large amount of theory to approximate the best starting value of these based on asymptotics. For more information, check out chapter 5 of [@book]. But, we are Bayesians after all are we not? If we don't know something we just chuck a prior at it. Although we will abide by the suggestion in chapter 5 and set $a_1 = \bf{0}$.
+Now, the only variables I have yet to mention are $a_1$ and $P_1$. These dictate the distribution of our starting state. That is $\alpha_1 \sim \mathcal{N}(a_1, P_1)$. These initial values are assumed to be known at the time of modeling. In reality these are rarely known and there is a large amount of theory to approximate the best starting value of these based on asymptotics. For more information, check out chapter 5 of [@book]. But, we are Bayesians after all are we not? If we don't know something we just chuck a prior at it. Although we will abide by the suggestion in chapter 5 and set $a_1 = \bf{0}$.
 
 ## I prefer Autumn
 One of the key components we'll utilize is seasonality. This means that for some repeating point in time, we want to see the same, or slightly modified effect. For example, we might observe seasonality in consumer purchasing behavior. Big spikes occur during the holidays when everyone is purchasing Tumbler v2s to give to their ice enthusiast friends at Christmas, but then sales slowly die off. It's a tale as old as time that we'll see again next Christmas.
@@ -177,19 +177,55 @@ $$\alpha_t = \begin{bmatrix} \mu_t \\ \tau_{t} \\ \tau_{t-1} \\ \tau_{t-2}\end{b
 $$T_t = \begin{bmatrix}1 & 0 & 0 & 0\\ 0 & -1 & -1 & -1\\0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{bmatrix} \hspace{5mm} R_t = \begin{bmatrix}1 & 0\\ 0 & 1\\0 &0\\0&0\end{bmatrix}$$
 The 1s in the third and fourth row of $T_t$ ensure that we carry the $s-2$ most recent seasonal components with us to the next state. The 0s in the third and fourth row of $R_t$ *select* our disturbance draw such that no variation will be applied to the $s-2$ carryover seasonal states.
 
+# Setting the Stage
 ## Mine is a Brita
+The first step of our modeling process is **filtering**.
 
-For sake of completeness, let's review the assumptions we made about our data generating process by imposing this system of equations:
+For sake of completeness, let's review the assumptions^[You can actually drop the normality assumptions of the disturbances if you're willing to work with the *minimum variance linear unbiased estimate* (MVLUE) instead] we made about our data generating process by imposing this system of equations:
 
 1. $y_t$ is a linear function of the latent state $\alpha_t$
 2. The disturbances of our data generating process are normally distributed
 3. The disturbances of our latent state are normally distributed. 
 
-These unassuming assumptions allow us to now leverage the power of the [Kalman filter](https://www.kalmanfilter.net/background.html). Without going into too much detail, filtering is just the process of updating what we expect given what we have observed. Assume that we have seen the first 4 realizations of some time series process. We are not in the dark about. We have *some* knowledge about what the 5th observation might be. If the first 4 had values between 1 and 10, we can be pretty sure that the 5th realization won't be 1,000. This is of course a gross oversimplification, but if our process follows the assumptions outlined above, we can use the Kalman filter to quantify the uncertainty and expected value of our 5th observation.  
+These unassuming^[Or incredibly assuming] assumptions allow us to now leverage the power of the [Kalman filter](https://www.kalmanfilter.net/background.html). Without going into too much detail, filtering is just the process of updating what we expect given what we have observed. Assume that we have seen the first 4 realizations of some time series process. We are not in the dark about. We have *some* knowledge about what the 5th observation might be. If the first 4 had values between 1 and 10, we can be pretty sure that the 5th realization won't be 1,000. This is of course a gross oversimplification, but if our process follows the assumptions outlined above, we can use the Kalman filter to quantify the uncertainty and expected value of our 5th observation.
+
+If we had the time I would write out the derivation for you, but I already feel like I'm going to write too much. Instead, I refer you to page 82-85 of [@book] or this [cool blog post](https://nrotella.github.io/journal/kalman-filter-derivation-interpretation.html). Now, you've met the star cast but do you know their origin story:
+
+$$
+\begin{align*}
+v_t &= y_t - Z_ta_t & F_t &= Z_t P_t Z^\prime_t + H_t \\
+a_{t|t} &= a_t + P_t Z^\prime_t F^{-1}_t v_t & P_{t|t} &= P_t - P_t Z^\prime_t F^{-1}_t Z_t P_t \\
+a_{t+1} &= T_t a_t + K_t v_t & P_{t+1} &= T_t P_t (T_t - K_t Z_t)^\prime + R_t Q_t R^\prime_t
+\end{align*}
+$$
+Looks like we picked up some side characters on the way. The matrix $K_t$ is referred to as the Kalman Gain and is given by $K_t = T_tP_tZ^\prime_tF^{-1}_t$. It encodes how much we should trust a given observation $y_t$. If the gain is high, then the observation uncertainty is low and the next predicted state has a high dependence on the previous observation. If the gain is low, there is high uncertainty in the observation and thus we put most of our faith in the previous predicted state $a_t$. For a more detailed inerpretation, take a look at this [stackoverflow post](https://dsp.stackexchange.com/questions/2347/how-to-understand-kalman-gain-intuitively).
+
+The matrix $F_t$ is defined as $\textrm{Var}[v_t|Y_{t-1}]$ and the conditional expected value and variance of the state is defined as:
+
+$$
+\begin{align*}
+a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|P_t] \\
+\end{align*}
+$$
+In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. 
+
 
 ## Don't forget to Moisturize
+So you've done your filtering, but we don't want dry flaky equations. For that you're going to need to moisturize, or as the mathematicians call it: **smoothing**. You can think of filtering as the forward pass and smoothing as the backward pass. Filtering helped us get the finish line and find the next expected quantity given what we have seen so far. But now that we are at the final time step, we can go backwards and update our states with the entire series of observations, $Y_n$. There are smoothing equations for the smoothed disturbances of $\varepsilon_t$ and $\eta_t$, which we will denote $\hat{\varepsilon}_t$ and $\hat{\eta}_t$ respectively, but we will omit those since we are only concerned with the smoothed state $\hat{\alpha}_t$ inference.
 
+We define $\hat{\alpha}_t = \mathbb{E}[\alpha_t|Y_n]$. Note, this is different from $a_{t|t}$ in filtering due to the condition. The series $Y_t$ is defined as the series of observations up to time $t$ given by $Y_t = \{y_0, y_1, \dots,y_t\}$, but $Y_n$ is the entire series of $n$ observations. As with filtering, I omit the proof of the smoothing equations and instead refer you to pages 88-91 of [@book]. The smoothing equations are relatively simpler, given by
 
+$$
+\begin{align*}
+r_{t-1} &= Z_t^\prime F_t^{-1} v_t + L_t^\prime r_t & \hat{\alpha_t} &= a_t + P_t r_{t-1}
+\end{align*}
+$$
+What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$.
+
+## Kinda like Understudies
+Alright, so we went forward, we went backward, what's left before show time? **Simulating**. I'm not one for point estimates. If given the option I'd rather work with a distribution, which works nicely with our chosen Bayesian workflow. Our distribution of interest is $P(\alpha_t|Y_n)$, with individual draws denoted as $\tilde{\alpha}_t$. How do we go about sampling this? Luckily, Durbin and Koopman have us covered once again [@sim_paper]. 
+
+# Its Showtime!
 ```{r}
 sessionInfo()
 ```

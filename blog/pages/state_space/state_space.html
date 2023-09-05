@@ -297,6 +297,8 @@ pre[class] {
   background-color: inherit;
 }
 </style>
+<div id="casting-calls" class="section level1">
+<h1>Casting Calls</h1>
 <div id="motivation-more-ice-please" class="section level2">
 <h2>Motivation: More Ice Please</h2>
 <p>Let’s say you work for a drinkware company, we’ll call it something
@@ -328,18 +330,19 @@ in the time series plot above, a state space approach would assume that
 each point in the time series is generated from some latent unobserved
 state which has its own distribution. For this time series analysis
 state space problem, we will used the widely adopted and used approach
-of <span class="citation">(Durbin and Koopman 2001)</span>. The
+of <span class="citation">(James Durbin and Koopman 2012)</span>. The
 governing equation for this system is given by:</p>
 <p><span class="math display">\[\begin{align}
 y_t &amp;= Z_t\alpha_t + \varepsilon_t\\
 \alpha_{t+1} &amp;= T_t \alpha_t + R_t \eta_t
 \end{align}\]</span></p>
 <p>where</p>
-<p><span class="math display">\[\varepsilon_t \sim N(0,H_t) \hspace{2mm}
-\text{and} \hspace{2mm} \eta_t \sim N(0,Q_t)\]</span> You might only
-recognize <span class="math inline">\(y_t\)</span>, the sales from our
-Tumbler v2, from the equation above. But allow me to introduce the full
-cast of characters:</p>
+<p><span class="math display">\[\varepsilon_t \sim \mathcal{N}(0,H_t)
+\hspace{2mm} \text{and} \hspace{2mm} \eta_t \sim
+\mathcal{N}(0,Q_t)\]</span> You might only recognize <span
+class="math inline">\(y_t\)</span>, the sales from our Tumbler v2, from
+the equation above. But allow me to introduce the full cast of
+characters:</p>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -480,13 +483,14 @@ latent state that gives rise to our time series realizations <span
 class="math inline">\(y_t\)</span>. As stated before, the latent state
 <span class="math inline">\(\alpha_t\)</span> has its own distribution,
 which we can now deduce from the equation above is given by <span
-class="math inline">\(\alpha_t \sim N(a_t, Q_t)\)</span>. Notice from
-our table above that <span class="math inline">\(\alpha_t\)</span> is
-not the same size as <span class="math inline">\(y_t\)</span>. Our
-observations <span class="math inline">\(y_t\)</span> is a vector of
-length <span class="math inline">\(p\)</span>, which will be 1 for our
-case here. Conversely, <span class="math inline">\(\alpha_t\)</span> is
-of size <span class="math inline">\(m\)</span>. This is because <span
+class="math inline">\(\alpha_t \sim \mathcal{N}(a_t, Q_t)\)</span>.
+Notice from our table above that <span
+class="math inline">\(\alpha_t\)</span> is not the same size as <span
+class="math inline">\(y_t\)</span>. Our observations <span
+class="math inline">\(y_t\)</span> is a vector of length <span
+class="math inline">\(p\)</span>, which will be 1 for our case here.
+Conversely, <span class="math inline">\(\alpha_t\)</span> is of size
+<span class="math inline">\(m\)</span>. This is because <span
 class="math inline">\(\alpha_t\)</span> will act as the conduit for all
 the effects and assumptions we impose on the model.</p>
 <p>This is one of the best utilities provided by state space models. We
@@ -556,14 +560,14 @@ flexibility we’ve been afforded by this modeling system.</p>
 class="math inline">\(a_1\)</span> and <span
 class="math inline">\(P_1\)</span>. These dictate the distribution of
 our starting state. That is <span class="math inline">\(\alpha_1 \sim
-N(a_1, P_1)\)</span>. These initial values are assumed to be known at
-the time of modeling. In reality these are rarely known and there is a
-large amount of theory to approximate the best starting value of these
-based on asymptotics. For more information, check out chapter 5 of <span
-class="citation">(Durbin and Koopman 2001)</span>. But, we are Bayesians
-after all are we not? If we don’t know something we just chuck a prior
-at it. Although we will abide by the suggestion in chapter 5 and set
-<span class="math inline">\(a_1 = \bf{0}\)</span>.</p>
+\mathcal{N}(a_1, P_1)\)</span>. These initial values are assumed to be
+known at the time of modeling. In reality these are rarely known and
+there is a large amount of theory to approximate the best starting value
+of these based on asymptotics. For more information, check out chapter 5
+of <span class="citation">(James Durbin and Koopman 2012)</span>. But,
+we are Bayesians after all are we not? If we don’t know something we
+just chuck a prior at it. Although we will abide by the suggestion in
+chapter 5 and set <span class="math inline">\(a_1 = \bf{0}\)</span>.</p>
 </div>
 <div id="i-prefer-autumn" class="section level2">
 <h2>I prefer Autumn</h2>
@@ -625,10 +629,16 @@ of <span class="math inline">\(R_t\)</span> <em>select</em> our
 disturbance draw such that no variation will be applied to the <span
 class="math inline">\(s-2\)</span> carryover seasonal states.</p>
 </div>
+</div>
+<div id="setting-the-stage" class="section level1">
+<h1>Setting the Stage</h1>
 <div id="mine-is-a-brita" class="section level2">
 <h2>Mine is a Brita</h2>
-<p>For sake of completeness, let’s review the assumptions we made about
-our data generating process by imposing this system of equations:</p>
+<p>The first step of our modeling process is
+<strong>filtering</strong>.</p>
+<p>For sake of completeness, let’s review the assumptions<a href="#fn1"
+class="footnote-ref" id="fnref1"><sup>1</sup></a> we made about our data
+generating process by imposing this system of equations:</p>
 <ol style="list-style-type: decimal">
 <li><span class="math inline">\(y_t\)</span> is a linear function of the
 latent state <span class="math inline">\(\alpha_t\)</span></li>
@@ -636,20 +646,118 @@ latent state <span class="math inline">\(\alpha_t\)</span></li>
 distributed</li>
 <li>The disturbances of our latent state are normally distributed.</li>
 </ol>
-<p>These unassuming assumptions allow us to now leverage the power of
-the <a href="https://www.kalmanfilter.net/background.html">Kalman
-filter</a>. Without going into too much detail, filtering is just the
-process of updating what we expect given what we have observed. Assume
-that we have seen the first 4 realizations of some time series process.
-We are not in the dark about. We have <em>some</em> knowledge about what
-the 5th observation might be. If the first 4 had values between 1 and
-10, we can be pretty sure that the 5th realization won’t be 1,000. This
-is of course a gross oversimplification, but if our process follows the
+<p>These unassuming<a href="#fn2" class="footnote-ref"
+id="fnref2"><sup>2</sup></a> assumptions allow us to now leverage the
+power of the <a
+href="https://www.kalmanfilter.net/background.html">Kalman filter</a>.
+Without going into too much detail, filtering is just the process of
+updating what we expect given what we have observed. Assume that we have
+seen the first 4 realizations of some time series process. We are not in
+the dark about. We have <em>some</em> knowledge about what the 5th
+observation might be. If the first 4 had values between 1 and 10, we can
+be pretty sure that the 5th realization won’t be 1,000. This is of
+course a gross oversimplification, but if our process follows the
 assumptions outlined above, we can use the Kalman filter to quantify the
 uncertainty and expected value of our 5th observation.</p>
+<p>If we had the time I would write out the derivation for you, but I
+already feel like I’m going to write too much. Instead, I refer you to
+page 82-85 of <span class="citation">(James Durbin and Koopman
+2012)</span> or this <a
+href="https://nrotella.github.io/journal/kalman-filter-derivation-interpretation.html">cool
+blog post</a>. Now, you’ve met the star cast but do you know their
+origin story:</p>
+<p><span class="math display">\[
+\begin{align*}
+v_t &amp;= y_t - Z_ta_t &amp; F_t &amp;= Z_t P_t Z^\prime_t + H_t \\
+a_{t|t} &amp;= a_t + P_t Z^\prime_t F^{-1}_t v_t &amp; P_{t|t} &amp;=
+P_t - P_t Z^\prime_t F^{-1}_t Z_t P_t \\
+a_{t+1} &amp;= T_t a_t + K_t v_t &amp; P_{t+1} &amp;= T_t P_t (T_t - K_t
+Z_t)^\prime + R_t Q_t R^\prime_t
+\end{align*}
+\]</span> Looks like we picked up some side characters on the way. The
+matrix <span class="math inline">\(K_t\)</span> is referred to as the
+Kalman Gain and is given by <span class="math inline">\(K_t =
+T_tP_tZ^\prime_tF^{-1}_t\)</span>. It encodes how much we should trust a
+given observation <span class="math inline">\(y_t\)</span>. If the gain
+is high, then the observation uncertainty is low and the next predicted
+state has a high dependence on the previous observation. If the gain is
+low, there is high uncertainty in the observation and thus we put most
+of our faith in the previous predicted state <span
+class="math inline">\(a_t\)</span>. For a more detailed inerpretation,
+take a look at this <a
+href="https://dsp.stackexchange.com/questions/2347/how-to-understand-kalman-gain-intuitively">stackoverflow
+post</a>.</p>
+<p>The matrix <span class="math inline">\(F_t\)</span> is defined as
+<span class="math inline">\(\textrm{Var}[v_t|Y_{t-1}]\)</span> and the
+conditional expected value and variance of the state is defined as:</p>
+<p><span class="math display">\[
+\begin{align*}
+a_{t|t}&amp;=\mathbb{E}[\alpha_t|Y_t] &amp;
+P_{t|t}&amp;=\textrm{Var}[\alpha_t|P_t] \\
+\end{align*}
+\]</span> In practice, you can actually ignore the middle row (<span
+class="math inline">\(*_{t|t}\)</span>) but we include it for
+completeness.</p>
 </div>
 <div id="dont-forget-to-moisturize" class="section level2">
 <h2>Don’t forget to Moisturize</h2>
+<p>So you’ve done your filtering, but we don’t want dry flaky equations.
+For that you’re going to need to moisturize, or as the mathematicians
+call it: <strong>smoothing</strong>. You can think of filtering as the
+forward pass and smoothing as the backward pass. Filtering helped us get
+the finish line and find the next expected quantity given what we have
+seen so far. But now that we are at the final time step, we can go
+backwards and update our states with the entire series of observations,
+<span class="math inline">\(Y_n\)</span>. There are smoothing equations
+for the smoothed disturbances of <span
+class="math inline">\(\varepsilon_t\)</span> and <span
+class="math inline">\(\eta_t\)</span>, which we will denote <span
+class="math inline">\(\hat{\varepsilon}_t\)</span> and <span
+class="math inline">\(\hat{\eta}_t\)</span> respectively, but we will
+omit those since we are only concerned with the smoothed state <span
+class="math inline">\(\hat{\alpha}_t\)</span> inference.</p>
+<p>We define <span class="math inline">\(\hat{\alpha}_t =
+\mathbb{E}[\alpha_t|Y_n]\)</span>. Note, this is different from <span
+class="math inline">\(a_{t|t}\)</span> in filtering due to the
+condition. The series <span class="math inline">\(Y_t\)</span> is
+defined as the series of observations up to time <span
+class="math inline">\(t\)</span> given by <span
+class="math inline">\(Y_t = \{y_0, y_1, \dots,y_t\}\)</span>, but <span
+class="math inline">\(Y_n\)</span> is the entire series of <span
+class="math inline">\(n\)</span> observations. As with filtering, I omit
+the proof of the smoothing equations and instead refer you to pages
+88-91 of <span class="citation">(James Durbin and Koopman 2012)</span>.
+The smoothing equations are relatively simpler, given by</p>
+<p><span class="math display">\[
+\begin{align*}
+r_{t-1} &amp;= Z_t^\prime F_t^{-1} v_t + L_t^\prime r_t &amp;
+\hat{\alpha_t} &amp;= a_t + P_t r_{t-1}
+\end{align*}
+\]</span> What fresh hell is this? We just keep getting more and more
+cast members? I promise, this was the last audition, they’ll be no more
+late additions. The matrix <span class="math inline">\(L_t\)</span> is
+present only for convenience and is defined as <span
+class="math inline">\(L_t = T_t - K_t Z_t\)</span>. As I said before,
+this is the backward pass. When we start to compute our smoothed states,
+we will go in reverse following <span
+class="math inline">\(t=n,\dots,1\)</span>, with <span
+class="math inline">\(r_n = 0\)</span>.</p>
+</div>
+<div id="kinda-like-understudies" class="section level2">
+<h2>Kinda like Understudies</h2>
+<p>Alright, so we went forward, we went backward, what’s left before
+show time? <strong>Simulating</strong>. I’m not one for point estimates.
+If given the option I’d rather work with a distribution, which works
+nicely with our chosen Bayesian workflow. Our distribution of interest
+is <span class="math inline">\(P(\alpha_t|Y_n)\)</span>, with individual
+draws denoted as <span class="math inline">\(\tilde{\alpha}_t\)</span>.
+How do we go about sampling this? Luckily, Durbin and Koopman have us
+covered once again <span class="citation">(J. Durbin and Koopman
+2002)</span>.</p>
+</div>
+</div>
+<div id="its-showtime" class="section level1">
+<h1>Its Showtime!</h1>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>## R version 4.1.1 (2021-08-10)
 ## Platform: x86_64-w64-mingw32/x64 (64-bit)
@@ -691,15 +799,34 @@ uncertainty and expected value of our 5th observation.</p>
 ## [52] assertthat_0.2.1     rmarkdown_2.11       svglite_2.1.0       
 ## [55] httr_1.4.3           rstudioapi_0.13      R6_2.5.1            
 ## [58] compiler_4.1.1</code></pre>
-</div>
 <div id="references" class="section level2">
 <h2>References</h2>
 <div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-book" class="csl-entry">
-Durbin, James, and Siem Jan Koopman. 2001. <em>Time Series Analysis by
-State Space Methods</em>.
+Durbin, James, and Siem Jan Koopman. 2012. <em><span class="nocase">Time
+Series Analysis by State Space Methods</span></em>. Oxford University
+Press. <a
+href="https://doi.org/10.1093/acprof:oso/9780199641178.001.0001">https://doi.org/10.1093/acprof:oso/9780199641178.001.0001</a>.
+</div>
+<div id="ref-sim_paper" class="csl-entry">
+Durbin, J., and S. J. Koopman. 2002. <span>“A Simple and Efficient
+Simulation Smoother for State Space Time Series Analysis.”</span>
+<em>Biometrika</em> 89 (3): 603–15. <a
+href="http://www.jstor.org/stable/4140605">http://www.jstor.org/stable/4140605</a>.
 </div>
 </div>
+</div>
+</div>
+<div class="footnotes footnotes-end-of-document">
+<hr />
+<ol>
+<li id="fn1"><p>You can actually drop the normality assumptions of the
+disturbances if you’re willing to work with the <em>minimum variance
+linear unbiased estimate</em> (MVLUE) instead<a href="#fnref1"
+class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>Or incredibly assuming<a href="#fnref2"
+class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
 
 
