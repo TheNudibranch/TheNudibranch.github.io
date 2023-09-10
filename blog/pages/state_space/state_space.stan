@@ -18,7 +18,7 @@ transformed data{
 
   array[N] row_vector[a_size] Z_arr = gen_z_arr(N, has_slope, X_mat, n_seasons);
   matrix[a_size, a_size] T_mat = gen_T_mat(has_slope, n_covar, n_seasons);
-  matrix[a_size, 1 + has_season + has_regress] R_mat = gen_R_mat(has_slope, n_covar, n_seasons);
+  matrix[a_size, 1 + has_slope + has_season] R_mat = gen_R_mat(has_slope, n_covar, n_seasons);
   
   array[3] int s = {a_size*(N), N, N};
   array[2] int s_evolve = {a_size*(N), N};

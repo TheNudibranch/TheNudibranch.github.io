@@ -629,6 +629,52 @@ of <span class="math inline">\(R_t\)</span> <em>select</em> our
 disturbance draw such that no variation will be applied to the <span
 class="math inline">\(s-2\)</span> carryover seasonal states.</p>
 </div>
+<div id="who-got-a-call-back" class="section level2">
+<h2>Who got a call back?</h2>
+<p>So now that we’ve hosted the auditions, who should we call back to
+comprise our final ensemble? Looking at the sales trend line, we see
+that there are two main competitors: “Abominable Snowman” and “Bigfoot”.
+We’ll use those two trends as covariates for our state space model. We
+can omit the slope <span class="math inline">\(\nu_t\)</span> with our
+reasoning being that any industry trend will already be captured by
+including the covariates. Finally, a 7 day seasonality trend will be
+considered to account for any within week variation. In practice, this
+can usually be also be omitted if we assume that the covariates can
+explain this variation as well, but we’ll keep seasonality for
+demonstration.</p>
+<p>Now, let me introduce the stars of the play:</p>
+<p><span class="math display">\[\alpha_t = \begin{bmatrix} \mu_t \\
+\tau_{t} \\ \tau_{t-1} \\ \tau_{t-2}\\ \tau_{t-3}\\ \tau_{t-4}\\
+\tau_{t-5}\\ \beta_a\\ \beta_b\end{bmatrix} \hspace{10mm} Z_t =
+\begin{bmatrix} 1 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp;
+x_{a} &amp; x_b\\ \end{bmatrix}\]</span> where <span
+class="math inline">\((\beta_a, \beta_b)\)</span> and <span
+class="math inline">\((x_a, x_b)\)</span> are the regression
+coefficients and observed sales trend for “Abominable Snowman” and
+“Bigfoot”, respectively.</p>
+<p><span class="math display">\[T_t = \begin{bmatrix}1 &amp; 0 &amp; 0
+&amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; -1 &amp; -1 &amp; -1 &amp; -1 &amp; -1 &amp; -1 &amp; 0 &amp;
+0\\
+0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp;
+1\\\end{bmatrix} \hspace{5mm}
+R_t = \begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\\0
+&amp;0\\0&amp;0\\0&amp;0\\0&amp;0\\0&amp;0\\0&amp;0\\0&amp;0\end{bmatrix}\]</span></p>
+<p>Since we are only varying the seasonality and <span
+class="math inline">\(\mu\)</span> over time, our disturbance <span
+class="math inline">\(\eta_t\)</span> covariance matrix is given by
+<span class="math inline">\(Q_t = \text{diag}(\sigma_{\mu},
+\sigma_{\tau})\)</span>. Furthermore, since <span
+class="math inline">\(y_t\)</span> is univariate, our disturbance <span
+class="math inline">\(\varepsilon_t\)</span> has scalar variance <span
+class="math inline">\(H_t = \sigma_y\)</span>.</p>
+</div>
 </div>
 <div id="setting-the-stage" class="section level1">
 <h1>Setting the Stage</h1>
@@ -682,7 +728,7 @@ given observation <span class="math inline">\(y_t\)</span>. If the gain
 is high, then the observation uncertainty is low and the next predicted
 state has a high dependence on the previous observation. If the gain is
 low, there is high uncertainty in the observation and thus we put most
-of our faith in the previous predicted state <span
+of our weight in the previous predicted state <span
 class="math inline">\(a_t\)</span>. For a more detailed inerpretation,
 take a look at this <a
 href="https://dsp.stackexchange.com/questions/2347/how-to-understand-kalman-gain-intuitively">stackoverflow
@@ -693,7 +739,7 @@ conditional expected value and variance of the state is defined as:</p>
 <p><span class="math display">\[
 \begin{align*}
 a_{t|t}&amp;=\mathbb{E}[\alpha_t|Y_t] &amp;
-P_{t|t}&amp;=\textrm{Var}[\alpha_t|P_t] \\
+P_{t|t}&amp;=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
 \]</span> In practice, you can actually ignore the middle row (<span
 class="math inline">\(*_{t|t}\)</span>) but we include it for
@@ -722,7 +768,7 @@ class="math inline">\(a_{t|t}\)</span> in filtering due to the
 condition. The series <span class="math inline">\(Y_t\)</span> is
 defined as the series of observations up to time <span
 class="math inline">\(t\)</span> given by <span
-class="math inline">\(Y_t = \{y_0, y_1, \dots,y_t\}\)</span>, but <span
+class="math inline">\(Y_t = \{y_1, y_2, \dots,y_t\}\)</span>, but <span
 class="math inline">\(Y_n\)</span> is the entire series of <span
 class="math inline">\(n\)</span> observations. As with filtering, I omit
 the proof of the smoothing equations and instead refer you to pages

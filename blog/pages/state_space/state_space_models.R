@@ -62,3 +62,5 @@ b %>% filter(grepl('trend_comp\\[1,', variable)) %>% .$mean %>% lines()
 b %>% filter(grepl('trend_comp\\[2,', variable)) %>% .$mean %>% lines()
 b %>% filter(grepl('trend_comp\\[3,', variable)) %>% .$mean %>% lines()
 
+
+c(1,NULL,2)

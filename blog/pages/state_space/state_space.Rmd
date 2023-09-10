@@ -7,6 +7,10 @@ bibliography: references.bib
 library(cmdstanr)
 library(kableExtra)
 knitr::opts_chunk$set(cache = F)
+options(mc.cores = parallel::detectCores())
+
+state_space_utils <- new.env()
+source('state_space_model_utilities.R', state_space_utils)
 ```
 
 ```{css, echo=FALSE}
@@ -26,34 +30,37 @@ pre[class] {
 }
 ```
 
-```{r, echo=F, results='hide'}
-season_length <- 5; number_seasons <- 10
+```{r, echo=F, results='hide', fig.align='center', fig.width=10, fig.height=6}
+season_length <- 7; number_seasons <- 15
 n_tot <- season_length * number_seasons
-x1 <- (cumsum(rnorm(n_tot, 0,2)) + rnorm(n_tot, 0,1)) |> abs()
-x2 <- (cumsum(rnorm(n_tot, 0,1)) + rnorm(n_tot, 0,1)) |> abs()
+x1 <- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |> abs()
+x2 <- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |> abs()
 x_mat <- cbind(x1,x2)
-beta_vec <- c(-1,2)
+beta_vec <- c(-1,1)
 
-ss <- cos(seq(0,2*pi, length.out=season_length)) * 10 + rnorm(season_length, 0, 2)
+ss <- cos(seq(0,2*pi, length.out=season_length))*1
 ss <- ss - mean(ss)
 ss_vec <- c(ss)[-length(ss)]
-ss_var <- 0.3;
+ss_var <- 0.01^2;
 
-slope_start <- 0.5; slope_var <- 1e-15; slope_vec <- c(slope_start)
+slope_start <- 0; slope_var <- 1e-15; slope_vec <- c(slope_start)
 
-mu_start <- rnorm(1,100,1); mu_var <- 1; mu_vec <- c(mu_start)
+mu_start <- rnorm(1,0,); mu_var <- 0.01^2; mu_vec <- c(mu_start)
 
-y_vec <- c()
+noise_var <- 0.5
+
+y_vec <- ss_comp <-  c()
 # i <- 1
 for (i in 1:n_tot){
-  y_vec <- c(y_vec, mu_vec[i] + (x_mat %*% beta_vec)[i] + ss_vec[1])
+  ss_comp <- c(ss_vec[1], ss_comp)
+  y_vec <- c(y_vec, mu_vec[i] + (x_mat %*% beta_vec)[i] + ss_vec[1] + rnorm(1,0,sqrt(noise_var)))
   ss_vec <- c(-sum(ss_vec) + rnorm(1, 0, sqrt(ss_var)), ss_vec[-length(ss_vec)])
   slope_vec <- c(slope_vec, slope_vec[i] + rnorm(1, 0, sqrt(slope_var)))
   mu_vec <- c(mu_vec, mu_vec[i] + slope_vec[i] + rnorm(1, 0,sqrt(mu_var)))
 }
 
 # Add 20% of series mean to the last 10 iterations
-y_vec[(length(y_vec)-9):length(y_vec)] <- y_vec[(length(y_vec)-9):length(y_vec)] + 10
+y_vec[(length(y_vec)-9):length(y_vec)] <- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.2 + y_vec[(length(y_vec)-9):length(y_vec)]
 ```
 
 # Casting Calls
@@ -67,10 +74,14 @@ Let's say you work for a drinkware company, we'll call it something generic, may
 As a result of your genius ideas, your tumbler sales being to pick up:
 
 ```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=6}
-plot(y_vec, type='b', lwd=3, pch=16, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
-     ylab='', xlab='', xaxt='n', yaxt='n')
+plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp)))
 axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
+lines(x1, lwd=3, col=adjustcolor('darkgoldenrod1', 0.5))
+lines(x2, lwd=3, col=adjustcolor('violet', 0.5))
+lines(y_vec, lwd=3)
+# lines(ss_comp, lwd=3, pch=16, col='gold')
 box(lwd=2)
 abline(v = length(y_vec)-9, lty=2, lwd=3)
 legend('topleft', legend=c('Release of Tumbler v2™'), lty=2, lwd=3)
@@ -177,6 +188,27 @@ $$\alpha_t = \begin{bmatrix} \mu_t \\ \tau_{t} \\ \tau_{t-1} \\ \tau_{t-2}\end{b
 $$T_t = \begin{bmatrix}1 & 0 & 0 & 0\\ 0 & -1 & -1 & -1\\0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{bmatrix} \hspace{5mm} R_t = \begin{bmatrix}1 & 0\\ 0 & 1\\0 &0\\0&0\end{bmatrix}$$
 The 1s in the third and fourth row of $T_t$ ensure that we carry the $s-2$ most recent seasonal components with us to the next state. The 0s in the third and fourth row of $R_t$ *select* our disturbance draw such that no variation will be applied to the $s-2$ carryover seasonal states.
 
+## Who got a call back?
+So now that we've hosted the auditions, who should we call back to comprise our final ensemble? Looking at the sales trend line, we see that there are two main competitors: "Abominable Snowman" and "Bigfoot". We'll use those two trends as covariates for our state space model. We can omit the slope $\nu_t$ with our reasoning being that any industry trend will already be captured by including the covariates. Finally, a 7 day seasonality trend will be considered to account for any within week variation. In practice, this can usually be also be omitted if we assume that the covariates can explain this variation as well, but we'll keep seasonality for demonstration.
+
+Now, let me introduce the stars of the play:
+
+$$\alpha_t = \begin{bmatrix} \mu_t \\ \tau_{t} \\ \tau_{t-1} \\ \tau_{t-2}\\ \tau_{t-3}\\ \tau_{t-4}\\ \tau_{t-5}\\ \beta_a\\ \beta_b\end{bmatrix} \hspace{10mm} Z_t = \begin{bmatrix} 1 & 1 & 0 & 0 & 0 & 0 & 0 & x_{a} & x_b\\ \end{bmatrix}$$
+where $(\beta_a, \beta_b)$ and $(x_a, x_b)$ are the regression coefficients and observed sales trend for "Abominable Snowman" and "Bigfoot", respectively. 
+
+$$T_t = \begin{bmatrix}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\ 
+0 & -1 & -1 & -1 & -1 & -1 & -1 & 0 & 0\\
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\\end{bmatrix} \hspace{5mm} 
+R_t = \begin{bmatrix}1 & 0\\ 0 & 1\\0 &0\\0&0\\0&0\\0&0\\0&0\\0&0\\0&0\end{bmatrix}$$
+
+Since we are only varying the seasonality and $\mu$ over time, our disturbance $\eta_t$ covariance matrix is given by $Q_t = \text{diag}(\sigma_{\mu}, \sigma_{\tau})$. Furthermore, since $y_t$ is univariate, our disturbance $\varepsilon_t$ has scalar variance $H_t = \sigma_y$.
+
 # Setting the Stage
 ## Mine is a Brita
 The first step of our modeling process is **filtering**.
@@ -198,22 +230,97 @@ a_{t|t} &= a_t + P_t Z^\prime_t F^{-1}_t v_t & P_{t|t} &= P_t - P_t Z^\prime_t F
 a_{t+1} &= T_t a_t + K_t v_t & P_{t+1} &= T_t P_t (T_t - K_t Z_t)^\prime + R_t Q_t R^\prime_t
 \end{align*}
 $$
-Looks like we picked up some side characters on the way. The matrix $K_t$ is referred to as the Kalman Gain and is given by $K_t = T_tP_tZ^\prime_tF^{-1}_t$. It encodes how much we should trust a given observation $y_t$. If the gain is high, then the observation uncertainty is low and the next predicted state has a high dependence on the previous observation. If the gain is low, there is high uncertainty in the observation and thus we put most of our faith in the previous predicted state $a_t$. For a more detailed inerpretation, take a look at this [stackoverflow post](https://dsp.stackexchange.com/questions/2347/how-to-understand-kalman-gain-intuitively).
+Looks like we picked up some side characters on the way. The matrix $K_t$ is referred to as the Kalman Gain and is given by $K_t = T_tP_tZ^\prime_tF^{-1}_t$. It encodes how much we should trust a given observation $y_t$. If the gain is high, then the observation uncertainty is low and the next predicted state has a high dependence on the previous observation. If the gain is low, there is high uncertainty in the observation and thus we put most of our weight in the previous predicted state $a_t$. For a more detailed inerpretation, take a look at this [stackoverflow post](https://dsp.stackexchange.com/questions/2347/how-to-understand-kalman-gain-intuitively).
 
 The matrix $F_t$ is defined as $\textrm{Var}[v_t|Y_{t-1}]$ and the conditional expected value and variance of the state is defined as:
 
 $$
 \begin{align*}
-a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|P_t] \\
+a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
 $$
 In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. 
 
+```{r, echo=FALSE, fig.align='center', fig.width=12, fig.height=7}
+k_obj <- state_space_utils$forward_backward_pass(y_vec, a_1=rep(0,9), P_1 = state_space_utils$iden(9)*0.5,
+                                                    var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+                                                    params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7))
+filtered <- y_vec - (k_obj$forw$v |> unlist())
+smoothed <- y_vec - (k_obj$back$v_smth |> unlist())
+
+k_obj$forw$a[[4]]
+k_obj$back$alpha_smth[[2]]
+k_obj$back$alpha_smth[[50]]
+k_obj$const_mats$Q
+
+sim <- state_space_utils$simulate_state(k_obj$back$alpha_smth, a_1=rep(0,9), P_1 = state_space_utils$iden(9)*0.5,
+                                                    var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+             params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7))
+
+cbind(sim[[4]],sim[[5]], sim[[6]])
+
+
+k_obj$const_mats$Q
+
+y_vec[[1]] - k_obj$const_mats$Z[[1]] %*% k_obj$forw$a[[1]]
+k_obj$const_mats$Z[[1]] %*% k_obj$forw$P[[1]] %*% k_obj$const_mats$Z[[1]] + noise_var
+k_obj$const_mats$T %*% k_obj$forw$P[[1]] %*% k_obj$const_mats$Z[[1]] * (1/k_obj$forw$F[[1]])
+k_obj$forw$K[[1]]
+k_obj$const_mats$T - k_obj$forw$K[[1]] %*% k_obj$const_mats$Z[[1]] 
+k_obj$forw$L[[1]]
+k_obj$const_mats$T %*% k_obj$forw$P[[1]] %*% t(k_obj$forw$L[[1]]) + k_obj$const_mats$R %*% k_obj$const_mats$Q %*% t(k_obj$const_mats$R)
+k_obj$forw$P[[2]]
+k_obj$const_mats$T %*% k_obj$forw$a[[1]] + (k_obj$forw$K[[1]] * k_obj$forw$v[[1]])
+k_obj$forw$a[[2]]
+
+k_obj$const_mats$Z[[105]] * (1/k_obj$forw$F[[105]]) * k_obj$forw$v[[105]] + t(k_obj$forw$L[[105]]) %*% k_obj$back$r[[106]]
+k_obj$forw$a[[105]] + k_obj$forw$P[[105]] %*% k_obj$back$r[[15]]
+k_obj$back$alpha_smth[[105]]
+
+    r[i] = Z_arr[i]' * (1/F[i]) * v[i] + L[i]' * r[i + 1];
+    alpha_smooth[i] = a[i] + P[i] * r[i];
+
+
+plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp)))
+axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec, lwd=3)
+lines(filtered, lwd=3, col='darkred')
+lines(smoothed, lwd=3, col='darkblue')
+# lines(ss_comp, lwd=3, pch=16, col='gold')
+box(lwd=2)
+abline(v = length(y_vec)-9, lty=2, lwd=3)
+```
+
+```{r}
+m <- cmdstan_model('state_space.stan')
+data <- list(
+  N=length(x1),
+  y = y_vec,
+  has_slope=0,
+  n_seasons=7,
+  n_covar=2,
+  X_mat = cbind(x1,x2)
+)
+
+fit <- m$sample(data)
+
+a <- fit$draws('alpha_sim', format='df')
+a[1,1:9]
+colnames(a) |> grepl('alpha_sim[1,')
+a[1,grepl('alpha_sim\\[10,', colnames(a))] |> unlist() |> unname()
+a[10,grepl(',8\\]', colnames(a))] |> unlist()
+
+a <- fit$draws('k_obj', format='df')
+paste0('k_obj[', 8*(1:105),']')
+a[,paste0('k_obj[', 8*(1:105)+(1:105-1),']')]
+```
 
 ## Don't forget to Moisturize
 So you've done your filtering, but we don't want dry flaky equations. For that you're going to need to moisturize, or as the mathematicians call it: **smoothing**. You can think of filtering as the forward pass and smoothing as the backward pass. Filtering helped us get the finish line and find the next expected quantity given what we have seen so far. But now that we are at the final time step, we can go backwards and update our states with the entire series of observations, $Y_n$. There are smoothing equations for the smoothed disturbances of $\varepsilon_t$ and $\eta_t$, which we will denote $\hat{\varepsilon}_t$ and $\hat{\eta}_t$ respectively, but we will omit those since we are only concerned with the smoothed state $\hat{\alpha}_t$ inference.
 
-We define $\hat{\alpha}_t = \mathbb{E}[\alpha_t|Y_n]$. Note, this is different from $a_{t|t}$ in filtering due to the condition. The series $Y_t$ is defined as the series of observations up to time $t$ given by $Y_t = \{y_0, y_1, \dots,y_t\}$, but $Y_n$ is the entire series of $n$ observations. As with filtering, I omit the proof of the smoothing equations and instead refer you to pages 88-91 of [@book]. The smoothing equations are relatively simpler, given by
+We define $\hat{\alpha}_t = \mathbb{E}[\alpha_t|Y_n]$. Note, this is different from $a_{t|t}$ in filtering due to the condition. The series $Y_t$ is defined as the series of observations up to time $t$ given by $Y_t = \{y_1, y_2, \dots,y_t\}$, but $Y_n$ is the entire series of $n$ observations. As with filtering, I omit the proof of the smoothing equations and instead refer you to pages 88-91 of [@book]. The smoothing equations are relatively simpler, given by
 
 $$
 \begin{align*}

@@ -30,8 +30,6 @@ gen_Z_list <- function(n, include_slope=FALSE, x_mat=NULL, n_seasons=NULL){
   z_list
 }
 
-gen_Z_list(n = 50, x_mat = x_mat, include_slope = TRUE,n_seasons=3)
-
 gen_T_mat <- function(include_slope=FALSE, n_regress=NULL, n_seasons=NULL){
   if(.coalesce(n_seasons, 3) <= 2) stop('`n_seasons` must be greater than 2')
   
@@ -53,7 +51,7 @@ gen_T_mat <- function(include_slope=FALSE, n_regress=NULL, n_seasons=NULL){
   T_mat
 }
 
-gen_T_mat(FALSE, n_seasons = 3, n_regress = 2)
+
 
 ## Assume that slope and season is allowed to vary with time, not regression coef
 gen_R_mat <- function(include_slope=FALSE, n_regress=NULL, n_seasons=NULL){
@@ -68,7 +66,6 @@ gen_R_mat <- function(include_slope=FALSE, n_regress=NULL, n_seasons=NULL){
   R_mat
 }
 
-gen_R_mat(TRUE, n_regress=2, n_seasons=3)
 
 gen_Q_mat <- function(var_vec){
   Q_mat <- matrix(0,nrow=length(var_vec), ncol=length(var_vec))
@@ -119,7 +116,8 @@ forward_backward_pass <- function(y, a_1, P_1, var_vec, noise_var, params = list
   
   back_list <- list(
     'alpha_smth' = list(),
-    'r' = list()
+    'r' = list(),
+    'v_smth'=list()
   )
   # r goes from 0 to n, not 1 to n + 1 (like a)
   back_list[['r']] <- lapply(1:(n+1), \(x) rep(0, length(a_1)))
@@ -129,8 +127,10 @@ forward_backward_pass <- function(y, a_1, P_1, var_vec, noise_var, params = list
     back_list[['r']][[i]] <- Z_list[[i]] * (1 / forw_list[['F']][[i]]) * forw_list[['v']][[i]] + 
       t(forw_list[['L']][[i]]) %*% back_list[['r']][[i + 1]]
     
-    back_list[['alpha_smth']][[i]] <- forw_list[['a']][[n]] + 
+    back_list[['alpha_smth']][[i]] <- forw_list[['a']][[i]] + 
       forw_list[['P']][[i]] %*% back_list[['r']][[i]]
+    
+    back_list[['v_smth']][[i]] <- c(y[[i]] - Z_list[[i]] %*% back_list[['alpha_smth']][[i]])
   }
   list('back' = back_list, 
        'const_mats' = list(
@@ -188,26 +188,16 @@ simulate_state <- function(smoothed_state, a_1, P_1, var_vec, noise_var, params)
   lapply(1:length(smoothed_state), 
          \(x) plus_system$evolve_state$alpha[[x]] - plus_system_smoothed$back$alpha_smth[[x]] +  smoothed_state[[x]])
 }
-
-a <- forward_backward_pass(y_vec, a_1=rep(0,7), P_1=iden(7), var_vec=rep(1,3),
-                           noise_var=1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=4))
-a$back$alpha_smth
-P_1 <- iden(4)
-P_1[2,2] <- 1e-15
-a <- forward_backward_pass(y_vec, a_1=rep(0,4), P_1=P_1, var_vec=c(1,1e-15),
-                           noise_var=0.1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=NULL))
-a$back$alpha_smth[[40]]
-
-simulate_state(a$back$alpha_smth, a_1=rep(0,3), P_1=iden(3), var_vec=c(1), noise_var=0.1,
-               params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
+# 
+# a <- forward_backward_pass(y_vec, a_1=rep(0,7), P_1=iden(7), var_vec=rep(1,3),
+#                            noise_var=1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=4))
+# 
+# a <- forward_backward_pass(y_vec, a_1=rep(0,4), P_1=P_1, var_vec=c(1,1e-15),
+#                            noise_var=0.1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=NULL))
+# 
+# simulate_state(a$back$alpha_smth, a_1=rep(0,3), P_1=iden(3), var_vec=c(1), noise_var=0.1,
+#                params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
 
 
-
-plot(x1, type='l', col='blue', ylim=c(min(x1,x2, y_vec), max(x1,x2, y_vec))); lines(x2, col='red')
-lines(y_vec, lwd=3)
-y_forw$evolve_state$y |> unlist() |> lines(lwd=3, lty=2)
-
-
-matrix(5,1,1) |> det()
 
 
