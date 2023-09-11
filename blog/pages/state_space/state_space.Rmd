@@ -60,7 +60,7 @@ for (i in 1:n_tot){
 }
 
 # Add 20% of series mean to the last 10 iterations
-y_vec[(length(y_vec)-9):length(y_vec)] <- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.2 + y_vec[(length(y_vec)-9):length(y_vec)]
+y_vec[(length(y_vec)-9):length(y_vec)] <- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.5 + y_vec[(length(y_vec)-9):length(y_vec)]
 ```
 
 # Casting Calls
@@ -84,7 +84,8 @@ lines(y_vec, lwd=3)
 # lines(ss_comp, lwd=3, pch=16, col='gold')
 box(lwd=2)
 abline(v = length(y_vec)-9, lty=2, lwd=3)
-legend('topleft', legend=c('Release of Tumbler v2™'), lty=2, lwd=3)
+legend('topleft', legend=c('LENI', 'Abominable Snowman', 'Bigfoot', 'Release of Tumbler v2™'), lty=c(1,1,1,2), lwd=rep(3,4),
+       col=c('black', 'darkgoldenrod', 'violet', 'black'))
 ```
 
 
@@ -248,38 +249,9 @@ k_obj <- state_space_utils$forward_backward_pass(y_vec, a_1=rep(0,9), P_1 = stat
 filtered <- y_vec - (k_obj$forw$v |> unlist())
 smoothed <- y_vec - (k_obj$back$v_smth |> unlist())
 
-k_obj$forw$a[[4]]
-k_obj$back$alpha_smth[[2]]
-k_obj$back$alpha_smth[[50]]
-k_obj$const_mats$Q
-
 sim <- state_space_utils$simulate_state(k_obj$back$alpha_smth, a_1=rep(0,9), P_1 = state_space_utils$iden(9)*0.5,
                                                     var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
              params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7))
-
-cbind(sim[[4]],sim[[5]], sim[[6]])
-
-
-k_obj$const_mats$Q
-
-y_vec[[1]] - k_obj$const_mats$Z[[1]] %*% k_obj$forw$a[[1]]
-k_obj$const_mats$Z[[1]] %*% k_obj$forw$P[[1]] %*% k_obj$const_mats$Z[[1]] + noise_var
-k_obj$const_mats$T %*% k_obj$forw$P[[1]] %*% k_obj$const_mats$Z[[1]] * (1/k_obj$forw$F[[1]])
-k_obj$forw$K[[1]]
-k_obj$const_mats$T - k_obj$forw$K[[1]] %*% k_obj$const_mats$Z[[1]] 
-k_obj$forw$L[[1]]
-k_obj$const_mats$T %*% k_obj$forw$P[[1]] %*% t(k_obj$forw$L[[1]]) + k_obj$const_mats$R %*% k_obj$const_mats$Q %*% t(k_obj$const_mats$R)
-k_obj$forw$P[[2]]
-k_obj$const_mats$T %*% k_obj$forw$a[[1]] + (k_obj$forw$K[[1]] * k_obj$forw$v[[1]])
-k_obj$forw$a[[2]]
-
-k_obj$const_mats$Z[[105]] * (1/k_obj$forw$F[[105]]) * k_obj$forw$v[[105]] + t(k_obj$forw$L[[105]]) %*% k_obj$back$r[[106]]
-k_obj$forw$a[[105]] + k_obj$forw$P[[105]] %*% k_obj$back$r[[15]]
-k_obj$back$alpha_smth[[105]]
-
-    r[i] = Z_arr[i]' * (1/F[i]) * v[i] + L[i]' * r[i + 1];
-    alpha_smooth[i] = a[i] + P[i] * r[i];
-
 
 plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
      ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp)))
@@ -287,34 +259,34 @@ axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks =
 axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
 lines(y_vec, lwd=3)
 lines(filtered, lwd=3, col='darkred')
-lines(smoothed, lwd=3, col='darkblue')
+# lines(smoothed, lwd=3, col='darkblue')
 # lines(ss_comp, lwd=3, pch=16, col='gold')
 box(lwd=2)
 abline(v = length(y_vec)-9, lty=2, lwd=3)
 ```
 
 ```{r}
-m <- cmdstan_model('state_space.stan')
-data <- list(
-  N=length(x1),
-  y = y_vec,
-  has_slope=0,
-  n_seasons=7,
-  n_covar=2,
-  X_mat = cbind(x1,x2)
-)
-
-fit <- m$sample(data)
-
-a <- fit$draws('alpha_sim', format='df')
-a[1,1:9]
-colnames(a) |> grepl('alpha_sim[1,')
-a[1,grepl('alpha_sim\\[10,', colnames(a))] |> unlist() |> unname()
-a[10,grepl(',8\\]', colnames(a))] |> unlist()
-
-a <- fit$draws('k_obj', format='df')
-paste0('k_obj[', 8*(1:105),']')
-a[,paste0('k_obj[', 8*(1:105)+(1:105-1),']')]
+# m <- cmdstan_model('state_space.stan')
+# data <- list(
+#   N=length(x1),
+#   y = y_vec,
+#   has_slope=0,
+#   n_seasons=7,
+#   n_covar=2,
+#   X_mat = cbind(x1,x2)
+# )
+# 
+# fit <- m$sample(data)
+# 
+# a <- fit$draws('alpha_sim', format='df')
+# a[1,1:9]
+# colnames(a) |> grepl('alpha_sim[1,')
+# a[1,grepl('alpha_sim\\[10,', colnames(a))] |> unlist() |> unname()
+# a[10,grepl(',8\\]', colnames(a))] |> unlist()
+# 
+# a <- fit$draws('k_obj', format='df')
+# paste0('k_obj[', 8*(1:105),']')
+# a[,paste0('k_obj[', 8*(1:105)+(1:105-1),']')]
 ```
 
 ## Don't forget to Moisturize
