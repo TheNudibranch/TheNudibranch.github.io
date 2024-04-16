@@ -1,17 +1,10 @@
 ---
 title: "An Unhinged Introduction to State Space Models with STAN"
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
 bibliography: references.bib
 ---
-```{r, echo=F, results='hide', warning=FALSE, message=FALSE}
-library(cmdstanr)
-library(kableExtra)
-knitr::opts_chunk$set(cache = F)
-options(mc.cores = parallel::detectCores())
-
-state_space_utils <- new.env()
-source('state_space_model_utilities.R', state_space_utils)
-```
 
 ```{css, echo=FALSE}
 pre {
@@ -30,7 +23,16 @@ pre[class] {
 }
 ```
 
-```{r, echo=F, results='hide', fig.align='center', fig.width=10, fig.height=6}
+```{r, results='hide', fig.align='center', fig.width=10, fig.height=6, warning=FALSE, message=FALSE}
+library(cmdstanr)
+library(kableExtra)
+knitr::opts_chunk$set(cache = F)
+options(mc.cores = parallel::detectCores())
+
+state_space_utils <- new.env()
+source('state_space_model_utilities.R', state_space_utils)
+
+
 season_length <- 7; number_seasons <- 15
 n_tot <- season_length * number_seasons
 x1 <- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |> abs()
@@ -60,7 +62,8 @@ for (i in 1:n_tot){
 }
 
 # Add 20% of series mean to the last 10 iterations
-y_vec[(length(y_vec)-9):length(y_vec)] <- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.5 + y_vec[(length(y_vec)-9):length(y_vec)]
+y_vec[(length(y_vec)-9):length(y_vec)] <- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.5 + 
+  y_vec[(length(y_vec)-9):length(y_vec)]
 ```
 
 # Casting Calls
@@ -73,8 +76,8 @@ Let's say you work for a drinkware company, we'll call it something generic, may
 
 As a result of your genius ideas, your tumbler sales being to pick up:
 
-```{r, echo=FALSE, fig.align='center', fig.width=10, fig.height=6}
-plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
+```{r, fig.align='center', fig.width=10, fig.height=6}
+plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Drinkware Company Sales',
      ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp)))
 axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
@@ -84,7 +87,8 @@ lines(y_vec, lwd=3)
 # lines(ss_comp, lwd=3, pch=16, col='gold')
 box(lwd=2)
 abline(v = length(y_vec)-9, lty=2, lwd=3)
-legend('topleft', legend=c('LENI', 'Abominable Snowman', 'Bigfoot', 'Release of Tumbler v2™'), lty=c(1,1,1,2), lwd=rep(3,4),
+legend('topleft', legend=c('LENI', 'Abominable Snowman', 'Bigfoot', 'Release of Tumbler v2™'), 
+       lty=c(1,1,1,2), lwd=rep(3,4),
        col=c('black', 'darkgoldenrod', 'violet', 'black'))
 ```
 
@@ -104,7 +108,7 @@ where
 $$\varepsilon_t \sim \mathcal{N}(0,H_t) \hspace{2mm} \text{and} \hspace{2mm} \eta_t \sim \mathcal{N}(0,Q_t)$$
 You might only recognize $y_t$, the sales from our Tumbler v2, from the equation above. But allow me to introduce the full cast of characters:
 
-```{r, echo=FALSE}
+```{r}
 vec_var <- c('$y_t$', '$\\alpha_t$', '$\\varepsilon_t$', '$\\eta_t$', '', '$a_1$')
 vec_dim <- c('$p \\times 1$', '$m \\times 1$', '$p \\times 1$', '$r \\times 1$', '', '$m \\times 1$')
 vec_desc <- c('Observations', '(Latent) State', 'Obs. Disturbance', 'State Disturbance', '', 'Initial State Expected Value')
@@ -147,7 +151,7 @@ One of the key components we'll utilize is seasonality. This means that for some
 
 We'll go about this by considering a 4 season example. This might be data that is collected every quarter for a company. We'll define four season parameters denoted by $\tau_j$, where $j \in [1,4]$. We'll make the assumption that all seasonal effects will add to zero. This makes sense if we assume that a seasonal effect is just some perturbation against the underlying trend. Consider the following:
 
-```{r, echo=FALSE, fig.align='center', fig.width=12, fig.height=7}
+```{r, fig.align='center', fig.width=12, fig.height=7}
 n_ex1 <- 4*5
 ss_comp_ex1 <- cos(seq(0,2*pi, length.out=4))*2
 ss_ex1 <- rep(ss_comp_ex1 - mean(ss_comp_ex1),5)
@@ -159,11 +163,14 @@ par(mfrow=c(3,1))
 # layout_mat <- matrix(c(1,2,3,3), nrow=2, byrow=T)
 # layout(layout_mat)
 par(mar=c(5,3,2,2)-0.5)
-plot(ss_ex1, type='b', lwd=3, pch=16, xlab='', ylab='',main='Seasonality', xaxt='n', yaxt='n',cex.main=t_cex)
+plot(ss_ex1, type='b', lwd=3, pch=16, xlab='', ylab='',
+     main='Seasonality', xaxt='n', yaxt='n',cex.main=t_cex)
 box(lwd=2)
-plot(trend_ex1, pch=16, type='b', lwd=3, xlab='', ylab='',main='Underlying Trend', xaxt='n', yaxt='n', cex.main=t_cex)
+plot(trend_ex1, pch=16, type='b', lwd=3, xlab='', ylab='',
+     main='Underlying Trend', xaxt='n', yaxt='n', cex.main=t_cex)
 box(lwd=2)
-plot(ss_ex1 + trend_ex1, lwd=3, pch=16, type='b', xlab='', ylab='', main='Observed Trend', xaxt='n', yaxt='n', cex.main=t_cex)
+plot(ss_ex1 + trend_ex1, lwd=3, pch=16, type='b', xlab='', ylab='', 
+     main='Observed Trend', xaxt='n', yaxt='n', cex.main=t_cex)
 box(lwd=2)
 ```
 
@@ -240,29 +247,37 @@ $$
 a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
 $$
-In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. 
+where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered states $\alpha_{t|t}$.
 
-```{r, echo=FALSE, fig.align='center', fig.width=12, fig.height=7}
-k_obj <- state_space_utils$forward_backward_pass(y_vec, a_1=rep(0,9), P_1 = state_space_utils$iden(9)*0.5,
-                                                    var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
-                                                    params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7))
+```{r, fig.align='center', fig.width=10, fig.height=6}
+k_obj <- state_space_utils$forward_backward_pass(
+  y_vec, a_1=rep(0,9), 
+  P_1 = state_space_utils$iden(9)*0.5,
+  var_vec = c(mu_var, ss_var), 
+  noise_var = c(noise_var),
+  params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7)
+)
+
 filtered <- y_vec - (k_obj$forw$v |> unlist())
 smoothed <- y_vec - (k_obj$back$v_smth |> unlist())
 
-sim <- state_space_utils$simulate_state(k_obj$back$alpha_smth, a_1=rep(0,9), P_1 = state_space_utils$iden(9)*0.5,
-                                                    var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
-             params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7))
+sim <- state_space_utils$simulate_state(
+  k_obj$back$alpha_smth, a_1=rep(0,9), 
+  P_1 = state_space_utils$iden(9)*0.5,
+  var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+  params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7)
+)
 
-plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='Tumbler v2™ Trend',
-     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp)))
+plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
 lines(y_vec, lwd=3)
-lines(filtered, lwd=3, col='darkred')
+lines(filtered, lwd=3, col='darkred', lty=2)
 # lines(smoothed, lwd=3, col='darkblue')
-# lines(ss_comp, lwd=3, pch=16, col='gold')
 box(lwd=2)
 abline(v = length(y_vec)-9, lty=2, lwd=3)
+legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered'), lwd=3,col=c('black', 'darkred'), lty=c(1,2))
 ```
 
 ```{r}
@@ -299,7 +314,24 @@ $$
 r_{t-1} &= Z_t^\prime F_t^{-1} v_t + L_t^\prime r_t & \hat{\alpha_t} &= a_t + P_t r_{t-1}
 \end{align*}
 $$
-What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$.
+What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$. Let's see how our smoothed trend compares to our filtered trend:
+
+```{r, fig.align='center', fig.width=10, fig.height=6}
+plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec, lwd=3)
+lines(filtered, lwd=3, col='darkred', lty=2)
+lines(smoothed, lwd=3, col='darkblue', lty=2)
+box(lwd=2)
+abline(v = length(y_vec)-9, lty=2, lwd=3)
+legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered', 'LENI Sales Smoothed'), 
+       lwd=3,col=c('black', 'darkred', 'darkblue'), lty=c(1,2,2))
+```
+
+You'll notice that the largest deviations from filtered to smooth are towards the beginning of the series when the system has the least amount of information.
+
 
 ## Kinda like Understudies
 Alright, so we went forward, we went backward, what's left before show time? **Simulating**. I'm not one for point estimates. If given the option I'd rather work with a distribution, which works nicely with our chosen Bayesian workflow. Our distribution of interest is $P(\alpha_t|Y_n)$, with individual draws denoted as $\tilde{\alpha}_t$. How do we go about sampling this? Luckily, Durbin and Koopman have us covered once again [@sim_paper]. 

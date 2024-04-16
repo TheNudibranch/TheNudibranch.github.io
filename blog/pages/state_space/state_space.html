@@ -30,6 +30,7 @@
        code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
        pre:not([class]) { background-color: white }</style>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
@@ -239,6 +240,9 @@ $(document).ready(function () {
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
 
 
@@ -273,6 +277,14 @@ $(document).ready(function () {
 
 <div id="header">
 
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
 
 
 <h1 class="title toc-ignore">An Unhinged Introduction to State Space
@@ -297,6 +309,46 @@ pre[class] {
   background-color: inherit;
 }
 </style>
+<pre class="r"><code>library(cmdstanr)
+library(kableExtra)
+knitr::opts_chunk$set(cache = F)
+options(mc.cores = parallel::detectCores())
+
+state_space_utils &lt;- new.env()
+source(&#39;state_space_model_utilities.R&#39;, state_space_utils)
+
+
+season_length &lt;- 7; number_seasons &lt;- 15
+n_tot &lt;- season_length * number_seasons
+x1 &lt;- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |&gt; abs()
+x2 &lt;- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |&gt; abs()
+x_mat &lt;- cbind(x1,x2)
+beta_vec &lt;- c(-1,1)
+
+ss &lt;- cos(seq(0,2*pi, length.out=season_length))*1
+ss &lt;- ss - mean(ss)
+ss_vec &lt;- c(ss)[-length(ss)]
+ss_var &lt;- 0.01^2;
+
+slope_start &lt;- 0; slope_var &lt;- 1e-15; slope_vec &lt;- c(slope_start)
+
+mu_start &lt;- rnorm(1,0,); mu_var &lt;- 0.01^2; mu_vec &lt;- c(mu_start)
+
+noise_var &lt;- 0.5
+
+y_vec &lt;- ss_comp &lt;-  c()
+# i &lt;- 1
+for (i in 1:n_tot){
+  ss_comp &lt;- c(ss_vec[1], ss_comp)
+  y_vec &lt;- c(y_vec, mu_vec[i] + (x_mat %*% beta_vec)[i] + ss_vec[1] + rnorm(1,0,sqrt(noise_var)))
+  ss_vec &lt;- c(-sum(ss_vec) + rnorm(1, 0, sqrt(ss_var)), ss_vec[-length(ss_vec)])
+  slope_vec &lt;- c(slope_vec, slope_vec[i] + rnorm(1, 0, sqrt(slope_var)))
+  mu_vec &lt;- c(mu_vec, mu_vec[i] + slope_vec[i] + rnorm(1, 0,sqrt(mu_var)))
+}
+
+# Add 20% of series mean to the last 10 iterations
+y_vec[(length(y_vec)-9):length(y_vec)] &lt;- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.5 + 
+  y_vec[(length(y_vec)-9):length(y_vec)]</code></pre>
 <div id="casting-calls" class="section level1">
 <h1>Casting Calls</h1>
 <div id="motivation-more-ice-please" class="section level2">
@@ -314,7 +366,20 @@ capacity. You even come up with a catchy slogan:</p>
 </center>
 <p>As a result of your genius ideas, your tumbler sales being to pick
 up:</p>
-<p><img src="state_space_files/figure-html/unnamed-chunk-4-1.png" width="960" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;Drinkware Company Sales&#39;,
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp)))
+axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
+lines(x1, lwd=3, col=adjustcolor(&#39;darkgoldenrod1&#39;, 0.5))
+lines(x2, lwd=3, col=adjustcolor(&#39;violet&#39;, 0.5))
+lines(y_vec, lwd=3)
+# lines(ss_comp, lwd=3, pch=16, col=&#39;gold&#39;)
+box(lwd=2)
+abline(v = length(y_vec)-9, lty=2, lwd=3)
+legend(&#39;topleft&#39;, legend=c(&#39;LENI&#39;, &#39;Abominable Snowman&#39;, &#39;Bigfoot&#39;, &#39;Release of Tumbler v2™&#39;), 
+       lty=c(1,1,1,2), lwd=rep(3,4),
+       col=c(&#39;black&#39;, &#39;darkgoldenrod&#39;, &#39;violet&#39;, &#39;black&#39;))</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-3-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 <div id="the-final-frontier" class="section level2">
 <h2>The final frontier</h2>
@@ -343,6 +408,17 @@ y_t &amp;= Z_t\alpha_t + \varepsilon_t\\
 class="math inline">\(y_t\)</span>, the sales from our Tumbler v2, from
 the equation above. But allow me to introduce the full cast of
 characters:</p>
+<pre class="r"><code>vec_var &lt;- c(&#39;$y_t$&#39;, &#39;$\\alpha_t$&#39;, &#39;$\\varepsilon_t$&#39;, &#39;$\\eta_t$&#39;, &#39;&#39;, &#39;$a_1$&#39;)
+vec_dim &lt;- c(&#39;$p \\times 1$&#39;, &#39;$m \\times 1$&#39;, &#39;$p \\times 1$&#39;, &#39;$r \\times 1$&#39;, &#39;&#39;, &#39;$m \\times 1$&#39;)
+vec_desc &lt;- c(&#39;Observations&#39;, &#39;(Latent) State&#39;, &#39;Obs. Disturbance&#39;, &#39;State Disturbance&#39;, &#39;&#39;, &#39;Initial State Expected Value&#39;)
+mat_vec &lt;- c(&#39;$Z_t$&#39;, &#39;$T_t$&#39;, &#39;$H_t$&#39;, &#39;$R_t$&#39;, &#39;$Q_t$&#39;, &#39;$P_1$&#39;)
+mat_dim &lt;- c(&#39;$p \\times m$&#39;, &#39;$m \\times m$&#39;, &#39;$p \\times p$&#39;, &#39;$m \\times r$&#39;, &#39;$r \\times r$&#39;,
+             &#39;$m \\times m$&#39;)
+mat_desc &lt;- c(&#39;Design Matrix&#39;, &#39;Transition Matrix&#39;, &#39;Obs. Covariance Matrix&#39;, &#39;State Disturbance Selection Matrix&#39;,
+              &#39;State Covariance Matrix&#39;, &#39;Initial State Covariance Matrix&#39;)
+cbind(vec_var, vec_dim, vec_desc, mat_vec, mat_dim, mat_desc) %&gt;%
+  kable(col.names=NULL) %&gt;% kable_styling(position=&#39;center&#39;) %&gt;%
+  add_header_above(c(&#39;Vectors&#39;=3, &#39;Matricies&#39; = 3))</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -586,7 +662,27 @@ class="math inline">\(j \in [1,4]\)</span>. We’ll make the assumption
 that all seasonal effects will add to zero. This makes sense if we
 assume that a seasonal effect is just some perturbation against the
 underlying trend. Consider the following:</p>
-<p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="1152" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>n_ex1 &lt;- 4*5
+ss_comp_ex1 &lt;- cos(seq(0,2*pi, length.out=4))*2
+ss_ex1 &lt;- rep(ss_comp_ex1 - mean(ss_comp_ex1),5)
+trend_ex1 &lt;- cumsum(rnorm(n_ex1) + 0.5)
+
+t_cex &lt;- 1.6
+
+par(mfrow=c(3,1))
+# layout_mat &lt;- matrix(c(1,2,3,3), nrow=2, byrow=T)
+# layout(layout_mat)
+par(mar=c(5,3,2,2)-0.5)
+plot(ss_ex1, type=&#39;b&#39;, lwd=3, pch=16, xlab=&#39;&#39;, ylab=&#39;&#39;,
+     main=&#39;Seasonality&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;,cex.main=t_cex)
+box(lwd=2)
+plot(trend_ex1, pch=16, type=&#39;b&#39;, lwd=3, xlab=&#39;&#39;, ylab=&#39;&#39;,
+     main=&#39;Underlying Trend&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, cex.main=t_cex)
+box(lwd=2)
+plot(ss_ex1 + trend_ex1, lwd=3, pch=16, type=&#39;b&#39;, xlab=&#39;&#39;, ylab=&#39;&#39;, 
+     main=&#39;Observed Trend&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, cex.main=t_cex)
+box(lwd=2)</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-5-1.png" width="1152" style="display: block; margin: auto;" /></p>
 <p>Let’s write our system in plain Greek and forget about the matrices
 for a second:</p>
 <p><span class="math display">\[\begin{align}
@@ -741,10 +837,40 @@ conditional expected value and variance of the state is defined as:</p>
 a_{t|t}&amp;=\mathbb{E}[\alpha_t|Y_t] &amp;
 P_{t|t}&amp;=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
-\]</span> In practice, you can actually ignore the middle row (<span
-class="math inline">\(*_{t|t}\)</span>) but we include it for
-completeness.</p>
-<p><img src="state_space_files/figure-html/unnamed-chunk-7-1.png" width="1152" style="display: block; margin: auto;" /></p>
+\]</span> where <span class="math inline">\(Y_t =
+\{y_1,y_2,\dots,y_t\}\)</span>. In practice, you can actually ignore the
+middle row (<span class="math inline">\(*_{t|t}\)</span>) but we include
+it for completeness. Now, let’s apply the above equations to produce the
+filtered states <span class="math inline">\(\alpha_{t|t}\)</span>.</p>
+<pre class="r"><code>k_obj &lt;- state_space_utils$forward_backward_pass(
+  y_vec, a_1=rep(0,9), 
+  P_1 = state_space_utils$iden(9)*0.5,
+  var_vec = c(mu_var, ss_var), 
+  noise_var = c(noise_var),
+  params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2), n_seasons=7)
+)
+
+filtered &lt;- y_vec - (k_obj$forw$v |&gt; unlist())
+smoothed &lt;- y_vec - (k_obj$back$v_smth |&gt; unlist())
+
+sim &lt;- state_space_utils$simulate_state(
+  k_obj$back$alpha_smth, a_1=rep(0,9), 
+  P_1 = state_space_utils$iden(9)*0.5,
+  var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+  params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2), n_seasons=7)
+  )
+
+plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec, lwd=3)
+lines(filtered, lwd=3, col=&#39;darkred&#39;, lty=2)
+# lines(smoothed, lwd=3, col=&#39;darkblue&#39;)
+box(lwd=2)
+abline(v = length(y_vec)-9, lty=2, lwd=3)
+legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;), lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;), lty=c(1,2))</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
 <pre class="r"><code># m &lt;- cmdstan_model(&#39;state_space.stan&#39;)
 # data &lt;- list(
 #   N=length(x1),
@@ -809,7 +935,23 @@ class="math inline">\(L_t = T_t - K_t Z_t\)</span>. As I said before,
 this is the backward pass. When we start to compute our smoothed states,
 we will go in reverse following <span
 class="math inline">\(t=n,\dots,1\)</span>, with <span
-class="math inline">\(r_n = 0\)</span>.</p>
+class="math inline">\(r_n = 0\)</span>. Let’s see how our smoothed trend
+compares to our filtered trend:</p>
+<pre class="r"><code>plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec, lwd=3)
+lines(filtered, lwd=3, col=&#39;darkred&#39;, lty=2)
+lines(smoothed, lwd=3, col=&#39;darkblue&#39;, lty=2)
+box(lwd=2)
+abline(v = length(y_vec)-9, lty=2, lwd=3)
+legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;, &#39;LENI Sales Smoothed&#39;), 
+       lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;, &#39;darkblue&#39;), lty=c(1,2,2))</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;" /></p>
+<p>You’ll notice that the largest deviations from filtered to smooth are
+towards the beginning of the series when the system has the least amount
+of information.</p>
 </div>
 <div id="kinda-like-understudies" class="section level2">
 <h2>Kinda like Understudies</h2>
@@ -930,6 +1072,11 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
