@@ -858,7 +858,7 @@ sim &lt;- state_space_utils$simulate_state(
   P_1 = state_space_utils$iden(9)*0.5,
   var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
   params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2), n_seasons=7)
-  )
+)
 
 plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
      ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
