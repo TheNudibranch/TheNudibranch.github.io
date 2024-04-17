@@ -247,7 +247,7 @@ $$
 a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
 $$
-where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered states $\alpha_{t|t}$.
+where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered expected states $\a_{t|t}$.
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
 k_obj <- state_space_utils$forward_backward_pass(
@@ -314,7 +314,7 @@ $$
 r_{t-1} &= Z_t^\prime F_t^{-1} v_t + L_t^\prime r_t & \hat{\alpha_t} &= a_t + P_t r_{t-1}
 \end{align*}
 $$
-What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$. Let's see how our smoothed trend compares to our filtered trend:
+What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$. Let's see how our smoothed trend $\hat{\alpha}_t$ compares to our filtered trend:
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
 plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
@@ -333,9 +333,10 @@ legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered', 'LENI Sales Smoot
 You'll notice that the largest deviations from filtered to smooth are towards the beginning of the series when the system has the least amount of information.
 
 
-## Kinda like Understudies
+## Lots and Lots of Understudies
 Alright, so we went forward, we went backward, what's left before show time? **Simulating**. I'm not one for point estimates. If given the option I'd rather work with a distribution, which works nicely with our chosen Bayesian workflow. Our distribution of interest is $P(\alpha_t|Y_n)$, with individual draws denoted as $\tilde{\alpha}_t$. How do we go about sampling this? Luckily, Durbin and Koopman have us covered once again [@sim_paper]. 
 
+The first step in simulating is realizing that we have the blueprints to play the system forward from some starting state $\alpha_1$
 # Its Showtime!
 ```{r}
 sessionInfo()
