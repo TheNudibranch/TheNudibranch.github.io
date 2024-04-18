@@ -397,10 +397,10 @@ state which has its own distribution. For this time series analysis
 state space problem, we will used the widely adopted and used approach
 of <span class="citation">(James Durbin and Koopman 2012)</span>. The
 governing equation for this system is given by:</p>
-<p><span class="math display">\[\begin{align}
-y_t &amp;= Z_t\alpha_t + \varepsilon_t\\
-\alpha_{t+1} &amp;= T_t \alpha_t + R_t \eta_t
-\end{align}\]</span></p>
+<span class="math display">\[\begin{aligned}
+y_t &amp;= Z_t\alpha_t + \varepsilon_t \label{eq:1} \\
+\alpha_{t+1} &amp;= T_t \alpha_t + R_t \eta_t \label{eq:2}
+\end{aligned}\]</span>
 <p>where</p>
 <p><span class="math display">\[\varepsilon_t \sim \mathcal{N}(0,H_t)
 \hspace{2mm} \text{and} \hspace{2mm} \eta_t \sim
@@ -410,7 +410,7 @@ the equation above. But allow me to introduce the full cast of
 characters:</p>
 <pre class="r"><code>vec_var &lt;- c(&#39;$y_t$&#39;, &#39;$\\alpha_t$&#39;, &#39;$\\varepsilon_t$&#39;, &#39;$\\eta_t$&#39;, &#39;&#39;, &#39;$a_1$&#39;)
 vec_dim &lt;- c(&#39;$p \\times 1$&#39;, &#39;$m \\times 1$&#39;, &#39;$p \\times 1$&#39;, &#39;$r \\times 1$&#39;, &#39;&#39;, &#39;$m \\times 1$&#39;)
-vec_desc &lt;- c(&#39;Observations&#39;, &#39;(Latent) State&#39;, &#39;Obs. Disturbance&#39;, &#39;State Disturbance&#39;, &#39;&#39;, &#39;Initial State Expected Value&#39;)
+vec_desc &lt;- c(&#39;Observations&#39;, &#39;State&#39;, &#39;Obs. Disturbance&#39;, &#39;State Disturbance&#39;, &#39;&#39;, &#39;Initial State Expected Value&#39;)
 mat_vec &lt;- c(&#39;$Z_t$&#39;, &#39;$T_t$&#39;, &#39;$H_t$&#39;, &#39;$R_t$&#39;, &#39;$Q_t$&#39;, &#39;$P_1$&#39;)
 mat_dim &lt;- c(&#39;$p \\times m$&#39;, &#39;$m \\times m$&#39;, &#39;$p \\times p$&#39;, &#39;$m \\times r$&#39;, &#39;$r \\times r$&#39;,
              &#39;$m \\times m$&#39;)
@@ -463,7 +463,7 @@ Design Matrix
 <span class="math inline">\(m \times 1\)</span>
 </td>
 <td style="text-align:left;">
-(Latent) State
+State
 </td>
 <td style="text-align:left;">
 <span class="math inline">\(T_t\)</span>
@@ -644,6 +644,16 @@ of <span class="citation">(James Durbin and Koopman 2012)</span>. But,
 we are Bayesians after all are we not? If we don’t know something we
 just chuck a prior at it. Although we will abide by the suggestion in
 chapter 5 and set <span class="math inline">\(a_1 = \bf{0}\)</span>.</p>
+<p>I don’t know if you can tell, but this notation is incredibly loaded,
+and unfortunately it is only going to get worse before it gets better.
+The most loaded of them all is understanding when we are talking about a
+state vector <span class="math inline">\(\alpha_t\)</span> or the
+expected value of a state, denoted by <span
+class="math inline">\(a_t\)</span>. To hopefully alleviate some of
+notation burden, here is a footnote that shows the definition for all
+<span class="math inline">\(\alpha_t\)</span> or <span
+class="math inline">\(a_t\)</span> variations we might encounter.<a
+href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
 </div>
 <div id="i-prefer-autumn" class="section level2">
 <h2>I prefer Autumn</h2>
@@ -778,8 +788,8 @@ class="math inline">\(H_t = \sigma_y\)</span>.</p>
 <h2>Mine is a Brita</h2>
 <p>The first step of our modeling process is
 <strong>filtering</strong>.</p>
-<p>For sake of completeness, let’s review the assumptions<a href="#fn1"
-class="footnote-ref" id="fnref1"><sup>1</sup></a> we made about our data
+<p>For sake of completeness, let’s review the assumptions<a href="#fn2"
+class="footnote-ref" id="fnref2"><sup>2</sup></a> we made about our data
 generating process by imposing this system of equations:</p>
 <ol style="list-style-type: decimal">
 <li><span class="math inline">\(y_t\)</span> is a linear function of the
@@ -788,8 +798,8 @@ latent state <span class="math inline">\(\alpha_t\)</span></li>
 distributed</li>
 <li>The disturbances of our latent state are normally distributed.</li>
 </ol>
-<p>These unassuming<a href="#fn2" class="footnote-ref"
-id="fnref2"><sup>2</sup></a> assumptions allow us to now leverage the
+<p>These unassuming<a href="#fn3" class="footnote-ref"
+id="fnref3"><sup>3</sup></a> assumptions allow us to now leverage the
 power of the <a
 href="https://www.kalmanfilter.net/background.html">Kalman filter</a>.
 Without going into too much detail, filtering is just the process of
@@ -841,7 +851,8 @@ P_{t|t}&amp;=\textrm{Var}[\alpha_t|Y_t] \\
 \{y_1,y_2,\dots,y_t\}\)</span>. In practice, you can actually ignore the
 middle row (<span class="math inline">\(*_{t|t}\)</span>) but we include
 it for completeness. Now, let’s apply the above equations to produce the
-filtered states <span class="math inline">\(\alpha_{t|t}\)</span>.</p>
+filtered expected states <span
+class="math inline">\(a_{t|t}\)</span>.</p>
 <pre class="r"><code>k_obj &lt;- state_space_utils$forward_backward_pass(
   y_vec, a_1=rep(0,9), 
   P_1 = state_space_utils$iden(9)*0.5,
@@ -936,7 +947,8 @@ this is the backward pass. When we start to compute our smoothed states,
 we will go in reverse following <span
 class="math inline">\(t=n,\dots,1\)</span>, with <span
 class="math inline">\(r_n = 0\)</span>. Let’s see how our smoothed trend
-compares to our filtered trend:</p>
+<span class="math inline">\(\hat{\alpha}_t\)</span> compares to our
+filtered trend:</p>
 <pre class="r"><code>plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
      ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
@@ -953,8 +965,8 @@ legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered
 towards the beginning of the series when the system has the least amount
 of information.</p>
 </div>
-<div id="kinda-like-understudies" class="section level2">
-<h2>Kinda like Understudies</h2>
+<div id="lots-and-lots-of-understudies" class="section level2">
+<h2>Lots and Lots of Understudies</h2>
 <p>Alright, so we went forward, we went backward, what’s left before
 show time? <strong>Simulating</strong>. I’m not one for point estimates.
 If given the option I’d rather work with a distribution, which works
@@ -964,6 +976,27 @@ draws denoted as <span class="math inline">\(\tilde{\alpha}_t\)</span>.
 How do we go about sampling this? Luckily, Durbin and Koopman have us
 covered once again <span class="citation">(J. Durbin and Koopman
 2002)</span>.</p>
+<p>The first step in simulating is realizing that we have the blueprints
+to play the system forward from some starting state <span
+class="math inline">\(\alpha_1\)</span> if we are given <span
+class="math inline">\(H_t\)</span>, <span
+class="math inline">\(Q_t\)</span>, <span
+class="math inline">\(a_1\)</span>, and <span
+class="math inline">\(P_1\)</span> (we’ll get to estimating those
+later). We’ll use the <span class="math inline">\(*^+\)</span> notation
+for describing draws that have been simulated from evol:</p>
+<ol style="list-style-type: decimal">
+<li>Draw <span class="math inline">\(\alpha^\prime_1\)</span> from the
+distribution <span class="math inline">\(\mathcal{N}(a_1,
+P_1)\)</span></li>
+<li>Set <span class="math inline">\(t=1\)</span></li>
+<li>Draw <span class="math inline">\(\varepsilon_t\)</span> from <span
+class="math inline">\(\mathcal{N}(0, H_t)\)</span> and <span
+class="math inline">\(\nu_t\)</span> from <span
+class="math inline">\(\mathcal{N}(0, Q_t)\)</span></li>
+<li>Simulate the observation <span
+class="math inline">\(y^\prime_1\)</span> using</li>
+</ol>
 </div>
 </div>
 <div id="its-showtime" class="section level1">
@@ -1030,11 +1063,35 @@ href="http://www.jstor.org/stable/4140605">http://www.jstor.org/stable/4140605</
 <div class="footnotes footnotes-end-of-document">
 <hr />
 <ol>
-<li id="fn1"><p>You can actually drop the normality assumptions of the
-disturbances if you’re willing to work with the <em>minimum variance
-linear unbiased estimate</em> (MVLUE) instead<a href="#fnref1"
+<li id="fn1"><p><span class="math inline">\(\alpha_t\)</span>: defined
+as the state as time t <br /><span class="math inline">\(a_t =
+\mathbb{E}[\alpha_t|Y_{t-1}]\)</span> <br /> <span
+class="math inline">\(a_{t|t} = \mathbb{E}[\alpha_t|Y_t]\)</span> <br />
+<span
+class="math inline">\(\hat{\alpha}_t=\mathbb{E}[\alpha_t|Y_n]\)</span>.
+This one irks me a bit. I’d prefer it be <span
+class="math inline">\(a_{t|n}\)</span> or <span
+class="math inline">\(\hat{a}_t\)</span>, but it makes sense if they
+wanted to be consistent with the sampling notation. <br /> <span
+class="math inline">\(\tilde{\alpha}_t\)</span>: a draw from the
+distribution <span class="math inline">\(P(\alpha|Y_n)\)</span>, where
+<span class="math inline">\(\alpha = \{\alpha_1^\prime,
+\dots,\alpha_n^\prime\}^\prime\)</span>. Here <span
+class="math inline">\(\prime\)</span> is used to denote a draw <br />
+<span class="math inline">\(\alpha^+\)</span>: a draw from the
+distribution <span class="math inline">\(P(\alpha)\)</span>, the
+unconditional distribution <br /> <span
+class="math inline">\(\hat{\alpha}^+ = \mathbb{E}[\alpha|y^+]\)</span>,
+where <span class="math inline">\(y^+\)</span> are the observations from
+evolving the system forward given a random initialization drawn from the
+known disturbance variances and <span
+class="math inline">\(\alpha_1\)</span> distribution.<a href="#fnref1"
 class="footnote-back">↩︎</a></p></li>
-<li id="fn2"><p>Or incredibly assuming<a href="#fnref2"
+<li id="fn2"><p>You can actually drop the normality assumptions of the
+disturbances if you’re willing to work with the <em>minimum variance
+linear unbiased estimate</em> (MVLUE) instead<a href="#fnref2"
+class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>Or incredibly assuming<a href="#fnref3"
 class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
