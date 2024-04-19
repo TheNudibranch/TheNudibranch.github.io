@@ -62,8 +62,9 @@ for (i in 1:n_tot){
 }
 
 # Add 20% of series mean to the last 10 iterations
-y_vec[(length(y_vec)-9):length(y_vec)] <- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.5 + 
-  y_vec[(length(y_vec)-9):length(y_vec)]
+is_new_prod_live <- seq_along(y_vec) >= length(y_vec) - 9 
+y_vec[is_new_prod_live] <- abs(y_vec[is_new_prod_live])*0.5 + 
+  y_vec[is_new_prod_live]
 ```
 
 # Casting Calls
@@ -98,11 +99,12 @@ Your tumbler sales are putting all your rival drinkware companies, like "Abomina
 
 To approach this problem, we will use state space models. A class of models that assumes that our data generating process has some underlying state that gives rise to our actually observed variables. For instance, in the time series plot above, a state space approach would assume that each point in the time series is generated from some latent unobserved state which has its own distribution. For this time series analysis state space problem, we will used the widely adopted and used approach of [@book]. The governing equation for this system is given by:
 
-
-\begin{aligned}
-y_t &= Z_t\alpha_t + \varepsilon_t \label{eq:1} \\
-\alpha_{t+1} &= T_t \alpha_t + R_t \eta_t \label{eq:2}
-\end{aligned}
+\begin{equation}
+y_t = Z_t\alpha_t + \varepsilon_t \hspace{10mm} \text{(1)}
+\end{equation}
+\begin{equation}
+\alpha_{t+1} = T_t \alpha_t + R_t \eta_t \hspace{6mm} \text{(2)}
+\end{equation}
 
 where
 
@@ -250,36 +252,36 @@ $$
 a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
 $$
-where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered expected states $a_{t|t}$.
+where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered expected states $a_{t|t}$. Since we are trying to understand the state of the system prior to our launch of the Tumbler v2™, we will exclude the data post launch from our analysis.
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
+y_vec_no_prod <- y_vec[!is_new_prod_live]
 k_obj <- state_space_utils$forward_backward_pass(
-  y_vec, a_1=rep(0,9), 
+  y_vec_no_prod, a_1=rep(0,9), 
   P_1 = state_space_utils$iden(9)*0.5,
   var_vec = c(mu_var, ss_var), 
   noise_var = c(noise_var),
-  params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7)
+  params = list('include_slope'=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 )
 
-filtered <- y_vec - (k_obj$forw$v |> unlist())
-smoothed <- y_vec - (k_obj$back$v_smth |> unlist())
+filtered <- y_vec_no_prod - (k_obj$forw$v |> unlist())
+smoothed <- y_vec_no_prod - (k_obj$back$v_smth |> unlist())
 
 sim <- state_space_utils$simulate_state(
   k_obj$back$alpha_smth, a_1=rep(0,9), 
   P_1 = state_space_utils$iden(9)*0.5,
   var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
-  params = list('include_slope'=F, x_mat=cbind(x1,x2), n_seasons=7)
+  params = list('include_slope'=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 )
 
-plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
-     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
-axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
-axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec, lwd=3)
+plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec_no_prod, lwd=3)
 lines(filtered, lwd=3, col='darkred', lty=2)
 # lines(smoothed, lwd=3, col='darkblue')
 box(lwd=2)
-abline(v = length(y_vec)-9, lty=2, lwd=3)
 legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered'), lwd=3,col=c('black', 'darkred'), lty=c(1,2))
 ```
 
@@ -320,15 +322,14 @@ $$
 What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$. Let's see how our smoothed trend $\hat{\alpha}_t$ compares to our filtered trend:
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
-plot(y_vec, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
-     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
-axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
-axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec, lwd=3)
+plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec_no_prod, lwd=3)
 lines(filtered, lwd=3, col='darkred', lty=2)
 lines(smoothed, lwd=3, col='darkblue', lty=2)
 box(lwd=2)
-abline(v = length(y_vec)-9, lty=2, lwd=3)
 legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered', 'LENI Sales Smoothed'), 
        lwd=3,col=c('black', 'darkred', 'darkblue'), lty=c(1,2,2))
 ```
@@ -337,14 +338,35 @@ You'll notice that the largest deviations from filtered to smooth are towards th
 
 
 ## Lots and Lots of Understudies
-Alright, so we went forward, we went backward, what's left before show time? **Simulating**. I'm not one for point estimates. If given the option I'd rather work with a distribution, which works nicely with our chosen Bayesian workflow. Our distribution of interest is $P(\alpha_t|Y_n)$, with individual draws denoted as $\tilde{\alpha}_t$. How do we go about sampling this? Luckily, Durbin and Koopman have us covered once again [@sim_paper]. 
+Alright, so we went forward, we went backward, what's left before show time? **Simulating**. I'm not one for point estimates. If given the option I'd rather work with a distribution, which works nicely with our chosen Bayesian workflow. Our distribution of interest is $P(\alpha|Y_n)$, with individual draws denoted as $\tilde{\alpha}$. How do we go about sampling this? Luckily, Durbin and Koopman have us covered once again [@sim_paper]. 
 
-The first step in simulating is realizing that we have the blueprints to play the system forward from some starting state $\alpha_1$ if we are given $H_t$, $Q_t$, $a_1$, and $P_1$ (we'll get to estimating those later). We'll use the $*^+$ notation for describing draws that have been simulated from evol:
+The first step in simulating is realizing that we have the blueprints to play the system forward from some starting state $\alpha_1$ if we are given $H_t$, $Q_t$, $a_1$, and $P_1$ (we'll get to estimating those later). We'll use the $*^+$ notation for describing draws that have been generated from evolving our system forward with random initializations. For example, $\alpha^+ = [\alpha_1^+, \alpha_2^+,\dots,\alpha_n^+]$, where $\alpha_1^+$ was drawn from $\mathcal{N}(a_1, P_1)$ and the rest of the states simulated from recursively applying equations $\text{(1)}$ and $\text{(2)}$.^[Durbin & Koopman actually using $\prime$ when describing individual draws within the $*^+$ vector, I have chosen to use $*^+_t$ to keep the notation less overwhelming] Here are the steps fully laid out for simulating $*^+$:
 
-1. Draw $\alpha^\prime_1$ from the distribution $\mathcal{N}(a_1, P_1)$
+1. Draw $\alpha^+_1$ from the distribution $\mathcal{N}(a_1, P_1)$
 2. Set $t=1$
 3. Draw $\varepsilon_t$ from $\mathcal{N}(0, H_t)$ and $\nu_t$ from $\mathcal{N}(0, Q_t)$
-4. Simulate the observation $y^\prime_1$ using  
+4. Simulate the observation $y^+_t$ using equation $\text{(1)}$
+5. Simulate the next state $\alpha^+_{t+1}$ using equation $\text{(2)}$
+6. Set $t = t+1$
+7. Return to step 3
+
+Now that we have $y^+$,  we can calculate $\hat{\alpha}^+$ defined by $E[\alpha|y^+]$. The equations used for finding $\hat{\alpha}^+$ are the same ones we used for filtering and smoothing above. Finally, we may use the culmination of the [@sim_paper] paper to yield $\tilde{\alpha}$, given by:
+
+$$\tilde{\alpha} = \alpha^+ - \hat{\alpha}^+ + \hat{\alpha}$$
+```{r, fig.align='center', fig.width=10, fig.height=6}
+# state_space_utils <- new.env()
+# source('state_space_model_utilities.R', state_space_utils)
+# 
+# a <- state_space_utils$simulate_n_obs(3, 
+#   k_obj$back$alpha_smth, a_1=rep(0,9), 
+#   P_1 = state_space_utils$iden(9)*0.5,
+#   var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+#   params = list('include_slope'=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
+# )
+# 
+# 
+# sim_mat <- sim |> unlist() |> matrix(nrow=length(y_vec_no_prod), byrow = T)
+```
 
 # Its Showtime!
 ```{r}
@@ -354,3 +376,4 @@ sessionInfo()
 ## References
 
 <div id="refs"></div>
+

@@ -347,8 +347,9 @@ for (i in 1:n_tot){
 }
 
 # Add 20% of series mean to the last 10 iterations
-y_vec[(length(y_vec)-9):length(y_vec)] &lt;- abs(y_vec[(length(y_vec)-9):length(y_vec)])*0.5 + 
-  y_vec[(length(y_vec)-9):length(y_vec)]</code></pre>
+is_new_prod_live &lt;- seq_along(y_vec) &gt;= length(y_vec) - 9 
+y_vec[is_new_prod_live] &lt;- abs(y_vec[is_new_prod_live])*0.5 + 
+  y_vec[is_new_prod_live]</code></pre>
 <div id="casting-calls" class="section level1">
 <h1>Casting Calls</h1>
 <div id="motivation-more-ice-please" class="section level2">
@@ -397,10 +398,11 @@ state which has its own distribution. For this time series analysis
 state space problem, we will used the widely adopted and used approach
 of <span class="citation">(James Durbin and Koopman 2012)</span>. The
 governing equation for this system is given by:</p>
-<span class="math display">\[\begin{aligned}
-y_t &amp;= Z_t\alpha_t + \varepsilon_t \label{eq:1} \\
-\alpha_{t+1} &amp;= T_t \alpha_t + R_t \eta_t \label{eq:2}
-\end{aligned}\]</span>
+<p><span class="math display">\[\begin{equation}
+y_t = Z_t\alpha_t + \varepsilon_t \hspace{10mm} \text{(1)}
+\end{equation}\]</span> <span class="math display">\[\begin{equation}
+\alpha_{t+1} = T_t \alpha_t + R_t \eta_t \hspace{6mm} \text{(2)}
+\end{equation}\]</span></p>
 <p>where</p>
 <p><span class="math display">\[\varepsilon_t \sim \mathcal{N}(0,H_t)
 \hspace{2mm} \text{and} \hspace{2mm} \eta_t \sim
@@ -851,35 +853,37 @@ P_{t|t}&amp;=\textrm{Var}[\alpha_t|Y_t] \\
 \{y_1,y_2,\dots,y_t\}\)</span>. In practice, you can actually ignore the
 middle row (<span class="math inline">\(*_{t|t}\)</span>) but we include
 it for completeness. Now, let’s apply the above equations to produce the
-filtered expected states <span
-class="math inline">\(a_{t|t}\)</span>.</p>
-<pre class="r"><code>k_obj &lt;- state_space_utils$forward_backward_pass(
-  y_vec, a_1=rep(0,9), 
+filtered expected states <span class="math inline">\(a_{t|t}\)</span>.
+Since we are trying to understand the state of the system prior to our
+launch of the Tumbler v2™, we will exclude the data post launch from our
+analysis.</p>
+<pre class="r"><code>y_vec_no_prod &lt;- y_vec[!is_new_prod_live]
+k_obj &lt;- state_space_utils$forward_backward_pass(
+  y_vec_no_prod, a_1=rep(0,9), 
   P_1 = state_space_utils$iden(9)*0.5,
   var_vec = c(mu_var, ss_var), 
   noise_var = c(noise_var),
-  params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2), n_seasons=7)
+  params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 )
 
-filtered &lt;- y_vec - (k_obj$forw$v |&gt; unlist())
-smoothed &lt;- y_vec - (k_obj$back$v_smth |&gt; unlist())
+filtered &lt;- y_vec_no_prod - (k_obj$forw$v |&gt; unlist())
+smoothed &lt;- y_vec_no_prod - (k_obj$back$v_smth |&gt; unlist())
 
 sim &lt;- state_space_utils$simulate_state(
   k_obj$back$alpha_smth, a_1=rep(0,9), 
   P_1 = state_space_utils$iden(9)*0.5,
   var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
-  params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2), n_seasons=7)
+  params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 )
 
-plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
-     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
-axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
-axis(side=2, at=mean(y_vec), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec, lwd=3)
+plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec_no_prod, lwd=3)
 lines(filtered, lwd=3, col=&#39;darkred&#39;, lty=2)
 # lines(smoothed, lwd=3, col=&#39;darkblue&#39;)
 box(lwd=2)
-abline(v = length(y_vec)-9, lty=2, lwd=3)
 legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;), lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;), lty=c(1,2))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
 <pre class="r"><code># m &lt;- cmdstan_model(&#39;state_space.stan&#39;)
@@ -949,15 +953,14 @@ class="math inline">\(t=n,\dots,1\)</span>, with <span
 class="math inline">\(r_n = 0\)</span>. Let’s see how our smoothed trend
 <span class="math inline">\(\hat{\alpha}_t\)</span> compares to our
 filtered trend:</p>
-<pre class="r"><code>plot(y_vec, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
-     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec, x1, x2, ss_comp, filtered, smoothed)))
-axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
-axis(side=2, at=mean(y_vec), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec, lwd=3)
+<pre class="r"><code>plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
+lines(y_vec_no_prod, lwd=3)
 lines(filtered, lwd=3, col=&#39;darkred&#39;, lty=2)
 lines(smoothed, lwd=3, col=&#39;darkblue&#39;, lty=2)
 box(lwd=2)
-abline(v = length(y_vec)-9, lty=2, lwd=3)
 legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;, &#39;LENI Sales Smoothed&#39;), 
        lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;, &#39;darkblue&#39;), lty=c(1,2,2))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;" /></p>
@@ -971,8 +974,8 @@ of information.</p>
 show time? <strong>Simulating</strong>. I’m not one for point estimates.
 If given the option I’d rather work with a distribution, which works
 nicely with our chosen Bayesian workflow. Our distribution of interest
-is <span class="math inline">\(P(\alpha_t|Y_n)\)</span>, with individual
-draws denoted as <span class="math inline">\(\tilde{\alpha}_t\)</span>.
+is <span class="math inline">\(P(\alpha|Y_n)\)</span>, with individual
+draws denoted as <span class="math inline">\(\tilde{\alpha}\)</span>.
 How do we go about sampling this? Luckily, Durbin and Koopman have us
 covered once again <span class="citation">(J. Durbin and Koopman
 2002)</span>.</p>
@@ -984,9 +987,20 @@ class="math inline">\(Q_t\)</span>, <span
 class="math inline">\(a_1\)</span>, and <span
 class="math inline">\(P_1\)</span> (we’ll get to estimating those
 later). We’ll use the <span class="math inline">\(*^+\)</span> notation
-for describing draws that have been simulated from evol:</p>
+for describing draws that have been generated from evolving our system
+forward with random initializations. For example, <span
+class="math inline">\(\alpha^+ = [\alpha_1^+,
+\alpha_2^+,\dots,\alpha_n^+]\)</span>, where <span
+class="math inline">\(\alpha_1^+\)</span> was drawn from <span
+class="math inline">\(\mathcal{N}(a_1, P_1)\)</span> and the rest of the
+states simulated from recursively applying equations <span
+class="math inline">\(\text{(1)}\)</span> and <span
+class="math inline">\(\text{(2)}\)</span>.<a href="#fn4"
+class="footnote-ref" id="fnref4"><sup>4</sup></a> Here are the steps
+fully laid out for simulating <span
+class="math inline">\(*^+\)</span>:</p>
 <ol style="list-style-type: decimal">
-<li>Draw <span class="math inline">\(\alpha^\prime_1\)</span> from the
+<li>Draw <span class="math inline">\(\alpha^+_1\)</span> from the
 distribution <span class="math inline">\(\mathcal{N}(a_1,
 P_1)\)</span></li>
 <li>Set <span class="math inline">\(t=1\)</span></li>
@@ -994,9 +1008,36 @@ P_1)\)</span></li>
 class="math inline">\(\mathcal{N}(0, H_t)\)</span> and <span
 class="math inline">\(\nu_t\)</span> from <span
 class="math inline">\(\mathcal{N}(0, Q_t)\)</span></li>
-<li>Simulate the observation <span
-class="math inline">\(y^\prime_1\)</span> using</li>
+<li>Simulate the observation <span class="math inline">\(y^+_t\)</span>
+using equation <span class="math inline">\(\text{(1)}\)</span></li>
+<li>Simulate the next state <span
+class="math inline">\(\alpha^+_{t+1}\)</span> using equation <span
+class="math inline">\(\text{(2)}\)</span></li>
+<li>Set <span class="math inline">\(t = t+1\)</span></li>
+<li>Return to step 3</li>
 </ol>
+<p>Now that we have <span class="math inline">\(y^+\)</span>, we can
+calculate <span class="math inline">\(\hat{\alpha}^+\)</span> defined by
+<span class="math inline">\(E[\alpha|y^+]\)</span>. The equations used
+for finding <span class="math inline">\(\hat{\alpha}^+\)</span> are the
+same ones we used for filtering and smoothing above. Finally, we may use
+the culmination of the <span class="citation">(J. Durbin and Koopman
+2002)</span> paper to yield <span
+class="math inline">\(\tilde{\alpha}\)</span>, given by:</p>
+<p><span class="math display">\[\tilde{\alpha} = \alpha^+ -
+\hat{\alpha}^+ + \hat{\alpha}\]</span></p>
+<pre class="r"><code># state_space_utils &lt;- new.env()
+# source(&#39;state_space_model_utilities.R&#39;, state_space_utils)
+# 
+# a &lt;- state_space_utils$simulate_n_obs(3, 
+#   k_obj$back$alpha_smth, a_1=rep(0,9), 
+#   P_1 = state_space_utils$iden(9)*0.5,
+#   var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+#   params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
+# )
+# 
+# 
+# sim_mat &lt;- sim |&gt; unlist() |&gt; matrix(nrow=length(y_vec_no_prod), byrow = T)</code></pre>
 </div>
 </div>
 <div id="its-showtime" class="section level1">
@@ -1092,6 +1133,12 @@ disturbances if you’re willing to work with the <em>minimum variance
 linear unbiased estimate</em> (MVLUE) instead<a href="#fnref2"
 class="footnote-back">↩︎</a></p></li>
 <li id="fn3"><p>Or incredibly assuming<a href="#fnref3"
+class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>Durbin &amp; Koopman actually using <span
+class="math inline">\(\prime\)</span> when describing individual draws
+within the <span class="math inline">\(*^+\)</span> vector, I have
+chosen to use <span class="math inline">\(*^+_t\)</span> to keep the
+notation less overwhelming<a href="#fnref4"
 class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>

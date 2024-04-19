@@ -179,6 +179,17 @@ evolve_from_start <- function(alpha_1, n, var_vec, noise_var, params = list()){
   
 }
 
+generate_all_const_mats <- function(var_vec, params){
+  c('include_slope', 'x_mat', 'n_seasons') %<-% params[c('include_slope', 'x_mat', 'n_seasons')]
+  Z_list <- gen_Z_list(nrow(x_mat), include_slope = include_slope, 
+                       x_mat=x_mat, n_seasons=n_seasons)
+  T_mat <- gen_T_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
+                     n_seasons = n_seasons)
+  R_mat <- gen_R_mat(include_slope = include_slope, n_regress=ncol(x_mat), 
+                     n_seasons = n_seasons)
+  Q_mat <- gen_Q_mat(var_vec=var_vec)
+}
+
 simulate_state <- function(smoothed_state, a_1, P_1, var_vec, noise_var, params){
   alpha_1 <- MASS::mvrnorm(1, mu=a_1, Sigma=P_1)
   plus_system <- evolve_from_start(alpha_1, length(smoothed_state), var_vec=var_vec, noise_var=noise_var,
@@ -188,16 +199,50 @@ simulate_state <- function(smoothed_state, a_1, P_1, var_vec, noise_var, params)
   lapply(1:length(smoothed_state), 
          \(x) plus_system$evolve_state$alpha[[x]] - plus_system_smoothed$back$alpha_smth[[x]] +  smoothed_state[[x]])
 }
-# 
-# a <- forward_backward_pass(y_vec, a_1=rep(0,7), P_1=iden(7), var_vec=rep(1,3),
-#                            noise_var=1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=4))
-# 
-# a <- forward_backward_pass(y_vec, a_1=rep(0,4), P_1=P_1, var_vec=c(1,1e-15),
-#                            noise_var=0.1, params=list(x_mat=x_mat, include_slope=TRUE, n_seasons=NULL))
-# 
-# simulate_state(a$back$alpha_smth, a_1=rep(0,3), P_1=iden(3), var_vec=c(1), noise_var=0.1,
-#                params=list(x_mat=x_mat, include_slope=FALSE, n_seasons=NULL))
 
+simulate_n_obs <- function(n_sim, smoothed_state, a_1, P_1, var_vec, noise_var, params){
+  y_sim_list <- list()
+  params <- list('const_mats' = generate_all_const_mats(var_vec, params))
+  for (i in 1:n_sim){
+    alpha_sim <- simulate_state(smoothed_state, a_1, P_1, var_vec, noise_var, params)
+    y_sim_list[[i]] <- lapply(alpha_sim, \(x) params$T_mat %*% x) |> unlist()
+  }
+}
+
+time_series_err <- function(mat, prob_range = c(0.5, 0.75, 0.9)){
+  if(length(dim(mat)) != 2) stop('`mat` needs to be a 2-d matrix')
+  message(sprintf('Assuming expression `mat` is a time series consisting of %s posterior draws and %s variables.',nrow(mat), ncol(mat)))
+  
+  n_probs <- length(prob_range)
+  cmap <- colormap::colormap(colormap=c('#BCBCDC', '#9999C7', '#7C7CB9', '#5050A2', '#27278F', '#00007C'), 
+                             nshades=n_probs)
+  
+  quant <- mat |> apply(2, \(x, y=prob_range){
+    upper <- 0.5 + y/2
+    lower <- 0.5 - y/2
+    c(quantile(x,lower), quantile(x, upper)) |> sort() |> unname()
+  })
+  
+  lines(colMeans(mat), lwd=2)
+  
+  for (i in 1:n_probs){
+    if (i == 1){
+      y_upper <- quant[n_probs + i, ]
+      y_lower <- quant[n_probs - i + 1, ]
+      polygon(c(seq(ncol(mat)), rev(seq(ncol(mat)))), c(y_lower, rev(y_upper)), col=adjustcolor(cmap[i], 0.3), border=NA)
+    }
+    else {
+      y_upper_upper <- quant[n_probs + i, ]
+      y_upper_lower <- quant[n_probs + i - 1, ]
+      polygon(c(seq(ncol(mat)), rev(seq(ncol(mat)))), c(y_upper_lower, rev(y_upper_upper)), col=adjustcolor(cmap[i], 0.3),border=NA)
+      
+      y_lower_upper <- quant[n_probs - i + 2, ]
+      y_lower_lower <- quant[n_probs - i + 1, ]
+      polygon(c(seq(ncol(mat)), rev(seq(ncol(mat)))), c(y_lower_lower, rev(y_lower_upper)), col=adjustcolor(cmap[i], 0.3), border=NA)
+      
+    }
+  }
+}
 
 
 
