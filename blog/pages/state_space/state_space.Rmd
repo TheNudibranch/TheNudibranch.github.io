@@ -33,7 +33,7 @@ state_space_utils <- new.env()
 source('state_space_model_utilities.R', state_space_utils)
 
 
-season_length <- 7; number_seasons <- 15
+season_length <- 7; number_seasons <- 10
 n_tot <- season_length * number_seasons
 x1 <- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |> abs()
 x2 <- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |> abs()
@@ -47,7 +47,7 @@ ss_var <- 0.01^2;
 
 slope_start <- 0; slope_var <- 1e-30; slope_vec <- c(slope_start)
 
-mu_start <- rnorm(1,0,1); mu_var <- 0.01^2; mu_vec <- c(mu_start)
+mu_start <- rnorm(1,0,1); mu_var <- 0.05^2; mu_vec <- c(mu_start)
 
 noise_var <- 0.5
 
@@ -84,13 +84,13 @@ axis(side=1, at=mean(seq_along(y_vec)), labels='Time', cex.axis=1.3, lwd.ticks =
 axis(side=2, at=mean(y_vec), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
 lines(x1, lwd=3, col=adjustcolor('darkgoldenrod1', 0.5))
 lines(x2, lwd=3, col=adjustcolor('violet', 0.5))
-lines(y_vec, lwd=3)
+lines(y_vec, lwd=3, type='b', pch=16)
 # lines(ss_comp, lwd=3, pch=16, col='gold')
 box(lwd=2)
-abline(v = length(y_vec)-9, lty=2, lwd=3)
+abline(v = length(y_vec)-9.5, lty=2, lwd=3)
 legend('topleft', legend=c('LENI', 'Abominable Snowman', 'Bigfoot', 'Release of Tumbler v2™'), 
        lty=c(1,1,1,2), lwd=rep(3,4),
-       col=c('black', 'darkgoldenrod', 'violet', 'black'))
+       col=c('black', 'darkgoldenrod', 'violet', 'black'), bg=adjustcolor('white', 0.5))
 ```
 
 
@@ -275,14 +275,13 @@ sim <- state_space_utils$simulate_state(
 )
 
 plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
-     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec_no_prod, lwd=3)
-lines(filtered, lwd=3, col='darkred', lty=2)
-# lines(smoothed, lwd=3, col='darkblue')
+lines(filtered, lwd=3, col='darkred')
+lines(y_vec_no_prod, lwd=3, type='b', pch=16)
 box(lwd=2)
-legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered'), lwd=3,col=c('black', 'darkred'), lty=c(1,2))
+legend('topleft', legend=c('LENI Sales', 'LENI Sales Filtered'), lwd=3,col=c('black', 'darkred'))
 ```
 
 ```{r}
@@ -323,15 +322,16 @@ What fresh hell is this? We just keep getting more and more cast members? I prom
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
 plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
-     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec_no_prod, lwd=3)
-lines(filtered, lwd=3, col='darkred', lty=2)
-lines(smoothed, lwd=3, col='darkblue', lty=2)
+lines(filtered, lwd=3, col='darkred')
+lines(smoothed, lwd=3, col='darkblue')
+lines(y_vec_no_prod, lwd=3, type='b', pch=16)
 box(lwd=2)
 legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered', 'LENI Sales Smoothed'), 
-       lwd=3,col=c('black', 'darkred', 'darkblue'), lty=c(1,2,2))
+       lwd=3,col=c('black', 'darkred', 'darkblue'),
+        bg=adjustcolor('white', 0.5))
 ```
 
 You'll notice that the largest deviations from filtered to smooth are towards the beginning of the series when the system has the least amount of information.
@@ -353,16 +353,15 @@ The first step in simulating is realizing that we have the blueprints to play th
 Now that we have $y^+$,  we can calculate $\hat{\alpha}^+$ defined by $E[\alpha|y^+]$. The equations used for finding $\hat{\alpha}^+$ are the same ones we used for filtering and smoothing above. Finally, we may use the culmination of the [@sim_paper] paper to yield $\tilde{\alpha}$, given by:
 
 $$\tilde{\alpha} = \alpha^+ - \hat{\alpha}^+ + \hat{\alpha}$$
-```{r, fig.align='center', fig.width=10, fig.height=6}
+```{r, fig.align='center', fig.width=10, fig.height=6, warning=FALSE, message=FALSE}
 state_space_utils <- new.env()
 source('state_space_model_utilities.R', state_space_utils)
-
 y_sim <- list()
 alpha_sim <- list()
 z_list <- state_space_utils$gen_Z_list(length(y_vec_no_prod), include_slope=F,   
                                        x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 
-for (i in 1:1e3){
+for (i in 1:100){
   sim <- state_space_utils$simulate_state(
     k_obj$back$alpha_smth, a_1=rep(0,9), 
     P_1 = state_space_utils$iden(9)*0.5,
@@ -373,10 +372,14 @@ for (i in 1:1e3){
   y_sim[[i]] <- lapply(1:length(y_vec_no_prod), \(x) z_list[[x]] %*% sim[[x]]) |> unlist()
 }
 
-plot(y_vec_no_prod, type='b', lwd=3, pch=16)
-y_sim |> unlist() |> matrix(nrow=length(y_vec_no_prod), byrow=F) |> rowMeans() |> lines()
+plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+     ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
+box(lwd=2)
 y_sim |> unlist() |> matrix(ncol=length(y_vec_no_prod), byrow=T) |> 
   state_space_utils$time_series_err()
+lines(y_vec_no_prod, type='b', lwd=3, pch=16)
 ```
 
 # Its Showtime!

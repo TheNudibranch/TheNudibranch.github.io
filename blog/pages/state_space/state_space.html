@@ -318,7 +318,7 @@ state_space_utils &lt;- new.env()
 source(&#39;state_space_model_utilities.R&#39;, state_space_utils)
 
 
-season_length &lt;- 7; number_seasons &lt;- 15
+season_length &lt;- 7; number_seasons &lt;- 10
 n_tot &lt;- season_length * number_seasons
 x1 &lt;- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |&gt; abs()
 x2 &lt;- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |&gt; abs()
@@ -330,9 +330,9 @@ ss &lt;- ss - mean(ss)
 ss_vec &lt;- c(ss)[-length(ss)]
 ss_var &lt;- 0.01^2;
 
-slope_start &lt;- 0; slope_var &lt;- 1e-15; slope_vec &lt;- c(slope_start)
+slope_start &lt;- 0; slope_var &lt;- 1e-30; slope_vec &lt;- c(slope_start)
 
-mu_start &lt;- rnorm(1,0,); mu_var &lt;- 0.01^2; mu_vec &lt;- c(mu_start)
+mu_start &lt;- rnorm(1,0,1); mu_var &lt;- 0.05^2; mu_vec &lt;- c(mu_start)
 
 noise_var &lt;- 0.5
 
@@ -373,13 +373,13 @@ axis(side=1, at=mean(seq_along(y_vec)), labels=&#39;Time&#39;, cex.axis=1.3, lwd
 axis(side=2, at=mean(y_vec), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
 lines(x1, lwd=3, col=adjustcolor(&#39;darkgoldenrod1&#39;, 0.5))
 lines(x2, lwd=3, col=adjustcolor(&#39;violet&#39;, 0.5))
-lines(y_vec, lwd=3)
+lines(y_vec, lwd=3, type=&#39;b&#39;, pch=16)
 # lines(ss_comp, lwd=3, pch=16, col=&#39;gold&#39;)
 box(lwd=2)
-abline(v = length(y_vec)-9, lty=2, lwd=3)
+abline(v = length(y_vec)-9.5, lty=2, lwd=3)
 legend(&#39;topleft&#39;, legend=c(&#39;LENI&#39;, &#39;Abominable Snowman&#39;, &#39;Bigfoot&#39;, &#39;Release of Tumbler v2™&#39;), 
        lty=c(1,1,1,2), lwd=rep(3,4),
-       col=c(&#39;black&#39;, &#39;darkgoldenrod&#39;, &#39;violet&#39;, &#39;black&#39;))</code></pre>
+       col=c(&#39;black&#39;, &#39;darkgoldenrod&#39;, &#39;violet&#39;, &#39;black&#39;), bg=adjustcolor(&#39;white&#39;, 0.5))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-3-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 <div id="the-final-frontier" class="section level2">
@@ -877,14 +877,13 @@ sim &lt;- state_space_utils$simulate_state(
 )
 
 plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
-     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec_no_prod, lwd=3)
-lines(filtered, lwd=3, col=&#39;darkred&#39;, lty=2)
-# lines(smoothed, lwd=3, col=&#39;darkblue&#39;)
+lines(filtered, lwd=3, col=&#39;darkred&#39;)
+lines(y_vec_no_prod, lwd=3, type=&#39;b&#39;, pch=16)
 box(lwd=2)
-legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;), lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;), lty=c(1,2))</code></pre>
+legend(&#39;topleft&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;), lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
 <pre class="r"><code># m &lt;- cmdstan_model(&#39;state_space.stan&#39;)
 # data &lt;- list(
@@ -954,15 +953,16 @@ class="math inline">\(r_n = 0\)</span>. Let’s see how our smoothed trend
 <span class="math inline">\(\hat{\alpha}_t\)</span> compares to our
 filtered trend:</p>
 <pre class="r"><code>plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
-     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, x1, x2, ss_comp, filtered, smoothed)))
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
-lines(y_vec_no_prod, lwd=3)
-lines(filtered, lwd=3, col=&#39;darkred&#39;, lty=2)
-lines(smoothed, lwd=3, col=&#39;darkblue&#39;, lty=2)
+lines(filtered, lwd=3, col=&#39;darkred&#39;)
+lines(smoothed, lwd=3, col=&#39;darkblue&#39;)
+lines(y_vec_no_prod, lwd=3, type=&#39;b&#39;, pch=16)
 box(lwd=2)
 legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;, &#39;LENI Sales Smoothed&#39;), 
-       lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;, &#39;darkblue&#39;), lty=c(1,2,2))</code></pre>
+       lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;, &#39;darkblue&#39;),
+        bg=adjustcolor(&#39;white&#39;, 0.5))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>You’ll notice that the largest deviations from filtered to smooth are
 towards the beginning of the series when the system has the least amount
@@ -1026,18 +1026,33 @@ the culmination of the <span class="citation">(J. Durbin and Koopman
 class="math inline">\(\tilde{\alpha}\)</span>, given by:</p>
 <p><span class="math display">\[\tilde{\alpha} = \alpha^+ -
 \hat{\alpha}^+ + \hat{\alpha}\]</span></p>
-<pre class="r"><code># state_space_utils &lt;- new.env()
-# source(&#39;state_space_model_utilities.R&#39;, state_space_utils)
-# 
-# a &lt;- state_space_utils$simulate_n_obs(3, 
-#   k_obj$back$alpha_smth, a_1=rep(0,9), 
-#   P_1 = state_space_utils$iden(9)*0.5,
-#   var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
-#   params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
-# )
-# 
-# 
-# sim_mat &lt;- sim |&gt; unlist() |&gt; matrix(nrow=length(y_vec_no_prod), byrow = T)</code></pre>
+<pre class="r"><code>state_space_utils &lt;- new.env()
+source(&#39;state_space_model_utilities.R&#39;, state_space_utils)
+y_sim &lt;- list()
+alpha_sim &lt;- list()
+z_list &lt;- state_space_utils$gen_Z_list(length(y_vec_no_prod), include_slope=F,   
+                                       x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
+
+for (i in 1:100){
+  sim &lt;- state_space_utils$simulate_state(
+    k_obj$back$alpha_smth, a_1=rep(0,9), 
+    P_1 = state_space_utils$iden(9)*0.5,
+    var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
+    params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
+  )
+  alpha_sim[[i]] &lt;- sim
+  y_sim[[i]] &lt;- lapply(1:length(y_vec_no_prod), \(x) z_list[[x]] %*% sim[[x]]) |&gt; unlist()
+}
+
+plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+     ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, filtered, smoothed)))
+axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
+axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
+box(lwd=2)
+y_sim |&gt; unlist() |&gt; matrix(ncol=length(y_vec_no_prod), byrow=T) |&gt; 
+  state_space_utils$time_series_err()
+lines(y_vec_no_prod, type=&#39;b&#39;, lwd=3, pch=16)</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="its-showtime" class="section level1">
@@ -1064,25 +1079,27 @@ class="math inline">\(\tilde{\alpha}\)</span>, given by:</p>
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] tidyselect_1.1.1     xfun_0.27            bslib_0.3.1         
-##  [4] purrr_0.3.4          colorspace_2.0-2     vctrs_0.4.1         
-##  [7] generics_0.1.1       htmltools_0.5.2      viridisLite_0.4.0   
-## [10] yaml_2.2.1           utf8_1.2.2           rlang_1.0.3         
-## [13] jquerylib_0.1.4      pillar_1.6.4         glue_1.6.2          
-## [16] DBI_1.1.3            distributional_0.3.1 lifecycle_1.0.1     
-## [19] stringr_1.4.0        posterior_1.3.1      munsell_0.5.0       
-## [22] gtable_0.3.0         rvest_1.0.2          evaluate_0.14       
-## [25] knitr_1.36           fastmap_1.1.0        parallel_4.1.1      
-## [28] fansi_0.5.0          highr_0.9            scales_1.1.1        
-## [31] backports_1.4.1      checkmate_2.0.0      webshot_0.5.4       
-## [34] jsonlite_1.7.2       abind_1.4-5          farver_2.1.0        
-## [37] systemfonts_1.0.4    tensorA_0.36.2       ggplot2_3.3.5       
-## [40] digest_0.6.28        stringi_1.7.5        dplyr_1.0.9         
-## [43] grid_4.1.1           cli_3.3.0            tools_4.1.1         
-## [46] magrittr_2.0.1       sass_0.4.0           tibble_3.1.6        
-## [49] crayon_1.4.2         pkgconfig_2.0.3      MASS_7.3-54         
-## [52] ellipsis_0.3.2       xml2_1.3.3           assertthat_0.2.1    
-## [55] rmarkdown_2.11       svglite_2.1.0        httr_1.4.3          
-## [58] rstudioapi_0.13      R6_2.5.1             compiler_4.1.1</code></pre>
+##  [4] purrr_0.3.4          V8_4.4.2             colorspace_2.0-2    
+##  [7] vctrs_0.4.1          generics_0.1.1       htmltools_0.5.2     
+## [10] viridisLite_0.4.0    yaml_2.2.1           utf8_1.2.2          
+## [13] rlang_1.0.3          jquerylib_0.1.4      pillar_1.6.4        
+## [16] glue_1.6.2           DBI_1.1.3            colormap_0.1.4      
+## [19] distributional_0.3.1 lifecycle_1.0.1      stringr_1.4.0       
+## [22] posterior_1.3.1      munsell_0.5.0        gtable_0.3.0        
+## [25] rvest_1.0.2          evaluate_0.14        knitr_1.36          
+## [28] fastmap_1.1.0        curl_4.3.2           parallel_4.1.1      
+## [31] fansi_0.5.0          highr_0.9            Rcpp_1.0.7          
+## [34] scales_1.1.1         backports_1.4.1      checkmate_2.0.0     
+## [37] webshot_0.5.4        jsonlite_1.7.2       abind_1.4-5         
+## [40] farver_2.1.0         systemfonts_1.0.4    tensorA_0.36.2      
+## [43] ggplot2_3.3.5        digest_0.6.28        stringi_1.7.5       
+## [46] dplyr_1.0.9          grid_4.1.1           cli_3.3.0           
+## [49] tools_4.1.1          magrittr_2.0.1       sass_0.4.0          
+## [52] tibble_3.1.6         crayon_1.4.2         pkgconfig_2.0.3     
+## [55] MASS_7.3-54          ellipsis_0.3.2       xml2_1.3.3          
+## [58] assertthat_0.2.1     rmarkdown_2.11       svglite_2.1.0       
+## [61] httr_1.4.3           rstudioapi_0.13      R6_2.5.1            
+## [64] compiler_4.1.1</code></pre>
 <div id="references" class="section level2">
 <h2>References</h2>
 <div id="refs" class="references csl-bib-body hanging-indent">
