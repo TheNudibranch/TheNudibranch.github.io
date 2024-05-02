@@ -1,5 +1,5 @@
 ---
-title: "An Unhinged Introduction to State Space Models with STAN"
+title: "An Unhinged Introduction to State Space Models with STAN - Theory"
 output: 
   html_document:
     code_folding: hide
@@ -65,6 +65,9 @@ for (i in 1:n_tot){
 is_new_prod_live <- seq_along(y_vec) >= length(y_vec) - 9 
 y_vec[is_new_prod_live] <- abs(y_vec[is_new_prod_live])*0.5 + 
   y_vec[is_new_prod_live]
+
+data.frame(leni=y_vec, abdominable=x1, bigfoot=x2) |> 
+  write.csv('state_space_data.csv', row.names = F)
 ```
 
 # Casting Calls
@@ -90,7 +93,7 @@ box(lwd=2)
 abline(v = length(y_vec)-9.5, lty=2, lwd=3)
 legend('topleft', legend=c('LENI', 'Abominable Snowman', 'Bigfoot', 'Release of Tumbler v2™'), 
        lty=c(1,1,1,2), lwd=rep(3,4),
-       col=c('black', 'darkgoldenrod', 'violet', 'black'), bg=adjustcolor('white', 0.5))
+       col=c('black', 'darkgoldenrod', 'violet', 'black'), bg=adjustcolor('white', 0.5), pch=c(16,rep(NA,3)))
 ```
 
 
@@ -274,39 +277,16 @@ sim <- state_space_utils$simulate_state(
   params = list('include_slope'=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 )
 
-plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, 
      ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
 lines(filtered, lwd=3, col='darkred')
 lines(y_vec_no_prod, lwd=3, type='b', pch=16)
 box(lwd=2)
-legend('topleft', legend=c('LENI Sales', 'LENI Sales Filtered'), lwd=3,col=c('black', 'darkred'))
+legend('topleft', legend=c('LENI Sales', 'LENI Sales Filtered'), lwd=3,col=c('black', 'darkred'), pch=c(16,NA))
 ```
 
-```{r}
-# m <- cmdstan_model('state_space.stan')
-# data <- list(
-#   N=length(x1),
-#   y = y_vec,
-#   has_slope=0,
-#   n_seasons=7,
-#   n_covar=2,
-#   X_mat = cbind(x1,x2)
-# )
-# 
-# fit <- m$sample(data)
-# 
-# a <- fit$draws('alpha_sim', format='df')
-# a[1,1:9]
-# colnames(a) |> grepl('alpha_sim[1,')
-# a[1,grepl('alpha_sim\\[10,', colnames(a))] |> unlist() |> unname()
-# a[10,grepl(',8\\]', colnames(a))] |> unlist()
-# 
-# a <- fit$draws('k_obj', format='df')
-# paste0('k_obj[', 8*(1:105),']')
-# a[,paste0('k_obj[', 8*(1:105)+(1:105-1),']')]
-```
 
 ## Don't forget to Moisturize
 So you've done your filtering, but we don't want dry flaky equations. For that you're going to need to moisturize, or as the mathematicians call it: **smoothing**. You can think of filtering as the forward pass and smoothing as the backward pass. Filtering helped us get the finish line and find the next expected quantity given what we have seen so far. But now that we are at the final time step, we can go backwards and update our states with the entire series of observations, $Y_n$. There are smoothing equations for the smoothed disturbances of $\varepsilon_t$ and $\eta_t$, which we will denote $\hat{\varepsilon}_t$ and $\hat{\eta}_t$ respectively, but we will omit those since we are only concerned with the smoothed state $\hat{\alpha}_t$ inference.
@@ -321,7 +301,7 @@ $$
 What fresh hell is this? We just keep getting more and more cast members? I promise, this was the last audition, they'll be no more late additions. The matrix $L_t$ is present only for convenience and is defined as $L_t = T_t - K_t Z_t$. As I said before, this is the backward pass. When we start to compute our smoothed states, we will go in reverse following $t=n,\dots,1$, with $r_n = 0$. Let's see how our smoothed trend $\hat{\alpha}_t$ compares to our filtered trend:
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
-plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5,
      ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
@@ -329,9 +309,9 @@ lines(filtered, lwd=3, col='darkred')
 lines(smoothed, lwd=3, col='darkblue')
 lines(y_vec_no_prod, lwd=3, type='b', pch=16)
 box(lwd=2)
-legend('toplef', legend=c('LENI Sales', 'LENI Sales Filtered', 'LENI Sales Smoothed'), 
+legend('topleft', legend=c('LENI Sales', 'LENI Sales Filtered', 'LENI Sales Smoothed'), 
        lwd=3,col=c('black', 'darkred', 'darkblue'),
-        bg=adjustcolor('white', 0.5))
+        bg=adjustcolor('white', 0.5), pch=c(16,NA,NA))
 ```
 
 You'll notice that the largest deviations from filtered to smooth are towards the beginning of the series when the system has the least amount of information.
@@ -353,17 +333,17 @@ The first step in simulating is realizing that we have the blueprints to play th
 Now that we have $y^+$,  we can calculate $\hat{\alpha}^+$ defined by $E[\alpha|y^+]$. The equations used for finding $\hat{\alpha}^+$ are the same ones we used for filtering and smoothing above. Finally, we may use the culmination of the [@sim_paper] paper to yield $\tilde{\alpha}$, given by:
 
 $$\tilde{\alpha} = \alpha^+ - \hat{\alpha}^+ + \hat{\alpha}$$
+Using the methodology outline above, we can now plot the simulated states:
+
 ```{r, fig.align='center', fig.width=10, fig.height=6, warning=FALSE, message=FALSE}
-state_space_utils <- new.env()
-source('state_space_model_utilities.R', state_space_utils)
 y_sim <- list()
 alpha_sim <- list()
-z_list <- state_space_utils$gen_Z_list(length(y_vec_no_prod), include_slope=F,   
+z_list <- state_space_utils$gen_Z_list(length(y_vec_no_prod), include_slope=F,
                                        x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 
 for (i in 1:100){
   sim <- state_space_utils$simulate_state(
-    k_obj$back$alpha_smth, a_1=rep(0,9), 
+    k_obj$back$alpha_smth, a_1=rep(0,9),
     P_1 = state_space_utils$iden(9)*0.5,
     var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
     params = list('include_slope'=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
@@ -372,7 +352,7 @@ for (i in 1:100){
   y_sim[[i]] <- lapply(1:length(y_vec_no_prod), \(x) z_list[[x]] %*% sim[[x]]) |> unlist()
 }
 
-plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main='LENI Sales',
+plot(y_vec_no_prod, type='n', lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5,
      ylab='', xlab='', xaxt='n', yaxt='n', ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels='Time', cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels='Sales ($)', cex.axis=1.3, lwd.ticks = 0)
@@ -380,9 +360,23 @@ box(lwd=2)
 y_sim |> unlist() |> matrix(ncol=length(y_vec_no_prod), byrow=T) |> 
   state_space_utils$time_series_err()
 lines(y_vec_no_prod, type='b', lwd=3, pch=16)
+legend('topleft', legend=c('LENI Sales', 'Simulated State'),
+       col=c('black', NA),
+       pch=c(16,22),
+       pt.cex=c(1,2),
+       lwd=c(3,NA),
+       lty=c(1,NA),
+       pt.bg=c(NA, adjustcolor('darkblue',0.2)),
+
+               bg=adjustcolor('white', 0.5))
 ```
 
-# Its Showtime!
+# End of Act 1
+The curtains have closed and you may now take a brief intermission. There is still a lot of be done though. We have only talked about the nuts and bolts of the state space model and haven't even begun our exciting applications outlined at the beginning. We may have a framework that describes the data generating process, but there has been no work on any parameter inference. Spoiler alert, this is where STAN comes into play. In the next section we will:
+
+- Use [STAN](https://mc-stan.org/) as our inference engine for the model outlined
+- Interrogate the posterior distribution of the model's parameters to validate the initial assumptions
+- Predict the next states and observations credible intervals to back into a incremental estimate for our marketing campaign (the primary objective)
 ```{r}
 sessionInfo()
 ```

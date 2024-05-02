@@ -11,7 +11,7 @@
 
 
 
-<title>An Unhinged Introduction to State Space Models with STAN</title>
+<title>An Unhinged Introduction to State Space Models with STAN - Theory</title>
 
 <script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -288,7 +288,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">An Unhinged Introduction to State Space
-Models with STAN</h1>
+Models with STAN - Theory</h1>
 
 </div>
 
@@ -349,7 +349,10 @@ for (i in 1:n_tot){
 # Add 20% of series mean to the last 10 iterations
 is_new_prod_live &lt;- seq_along(y_vec) &gt;= length(y_vec) - 9 
 y_vec[is_new_prod_live] &lt;- abs(y_vec[is_new_prod_live])*0.5 + 
-  y_vec[is_new_prod_live]</code></pre>
+  y_vec[is_new_prod_live]
+
+data.frame(leni=y_vec, abdominable=x1, bigfoot=x2) |&gt; 
+  write.csv(&#39;state_space_data.csv&#39;, row.names = F)</code></pre>
 <div id="casting-calls" class="section level1">
 <h1>Casting Calls</h1>
 <div id="motivation-more-ice-please" class="section level2">
@@ -379,7 +382,7 @@ box(lwd=2)
 abline(v = length(y_vec)-9.5, lty=2, lwd=3)
 legend(&#39;topleft&#39;, legend=c(&#39;LENI&#39;, &#39;Abominable Snowman&#39;, &#39;Bigfoot&#39;, &#39;Release of Tumbler v2™&#39;), 
        lty=c(1,1,1,2), lwd=rep(3,4),
-       col=c(&#39;black&#39;, &#39;darkgoldenrod&#39;, &#39;violet&#39;, &#39;black&#39;), bg=adjustcolor(&#39;white&#39;, 0.5))</code></pre>
+       col=c(&#39;black&#39;, &#39;darkgoldenrod&#39;, &#39;violet&#39;, &#39;black&#39;), bg=adjustcolor(&#39;white&#39;, 0.5), pch=c(16,rep(NA,3)))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-3-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 <div id="the-final-frontier" class="section level2">
@@ -876,36 +879,15 @@ sim &lt;- state_space_utils$simulate_state(
   params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 )
 
-plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, 
      ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
 lines(filtered, lwd=3, col=&#39;darkred&#39;)
 lines(y_vec_no_prod, lwd=3, type=&#39;b&#39;, pch=16)
 box(lwd=2)
-legend(&#39;topleft&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;), lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;))</code></pre>
+legend(&#39;topleft&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;), lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;), pch=c(16,NA))</code></pre>
 <p><img src="state_space_files/figure-html/unnamed-chunk-6-1.png" width="960" style="display: block; margin: auto;" /></p>
-<pre class="r"><code># m &lt;- cmdstan_model(&#39;state_space.stan&#39;)
-# data &lt;- list(
-#   N=length(x1),
-#   y = y_vec,
-#   has_slope=0,
-#   n_seasons=7,
-#   n_covar=2,
-#   X_mat = cbind(x1,x2)
-# )
-# 
-# fit &lt;- m$sample(data)
-# 
-# a &lt;- fit$draws(&#39;alpha_sim&#39;, format=&#39;df&#39;)
-# a[1,1:9]
-# colnames(a) |&gt; grepl(&#39;alpha_sim[1,&#39;)
-# a[1,grepl(&#39;alpha_sim\\[10,&#39;, colnames(a))] |&gt; unlist() |&gt; unname()
-# a[10,grepl(&#39;,8\\]&#39;, colnames(a))] |&gt; unlist()
-# 
-# a &lt;- fit$draws(&#39;k_obj&#39;, format=&#39;df&#39;)
-# paste0(&#39;k_obj[&#39;, 8*(1:105),&#39;]&#39;)
-# a[,paste0(&#39;k_obj[&#39;, 8*(1:105)+(1:105-1),&#39;]&#39;)]</code></pre>
 </div>
 <div id="dont-forget-to-moisturize" class="section level2">
 <h2>Don’t forget to Moisturize</h2>
@@ -952,7 +934,7 @@ class="math inline">\(t=n,\dots,1\)</span>, with <span
 class="math inline">\(r_n = 0\)</span>. Let’s see how our smoothed trend
 <span class="math inline">\(\hat{\alpha}_t\)</span> compares to our
 filtered trend:</p>
-<pre class="r"><code>plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+<pre class="r"><code>plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5,
      ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
@@ -960,10 +942,10 @@ lines(filtered, lwd=3, col=&#39;darkred&#39;)
 lines(smoothed, lwd=3, col=&#39;darkblue&#39;)
 lines(y_vec_no_prod, lwd=3, type=&#39;b&#39;, pch=16)
 box(lwd=2)
-legend(&#39;toplef&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;, &#39;LENI Sales Smoothed&#39;), 
+legend(&#39;topleft&#39;, legend=c(&#39;LENI Sales&#39;, &#39;LENI Sales Filtered&#39;, &#39;LENI Sales Smoothed&#39;), 
        lwd=3,col=c(&#39;black&#39;, &#39;darkred&#39;, &#39;darkblue&#39;),
-        bg=adjustcolor(&#39;white&#39;, 0.5))</code></pre>
-<p><img src="state_space_files/figure-html/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;" /></p>
+        bg=adjustcolor(&#39;white&#39;, 0.5), pch=c(16,NA,NA))</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-7-1.png" width="960" style="display: block; margin: auto;" /></p>
 <p>You’ll notice that the largest deviations from filtered to smooth are
 towards the beginning of the series when the system has the least amount
 of information.</p>
@@ -1025,17 +1007,16 @@ the culmination of the <span class="citation">(J. Durbin and Koopman
 2002)</span> paper to yield <span
 class="math inline">\(\tilde{\alpha}\)</span>, given by:</p>
 <p><span class="math display">\[\tilde{\alpha} = \alpha^+ -
-\hat{\alpha}^+ + \hat{\alpha}\]</span></p>
-<pre class="r"><code>state_space_utils &lt;- new.env()
-source(&#39;state_space_model_utilities.R&#39;, state_space_utils)
-y_sim &lt;- list()
+\hat{\alpha}^+ + \hat{\alpha}\]</span> Using the methodology outline
+above, we can now plot the simulated states:</p>
+<pre class="r"><code>y_sim &lt;- list()
 alpha_sim &lt;- list()
-z_list &lt;- state_space_utils$gen_Z_list(length(y_vec_no_prod), include_slope=F,   
+z_list &lt;- state_space_utils$gen_Z_list(length(y_vec_no_prod), include_slope=F,
                                        x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
 
 for (i in 1:100){
   sim &lt;- state_space_utils$simulate_state(
-    k_obj$back$alpha_smth, a_1=rep(0,9), 
+    k_obj$back$alpha_smth, a_1=rep(0,9),
     P_1 = state_space_utils$iden(9)*0.5,
     var_vec = c(mu_var, ss_var), noise_var = c(noise_var),
     params = list(&#39;include_slope&#39;=F, x_mat=cbind(x1,x2)[!is_new_prod_live,], n_seasons=7)
@@ -1044,19 +1025,44 @@ for (i in 1:100){
   y_sim[[i]] &lt;- lapply(1:length(y_vec_no_prod), \(x) z_list[[x]] %*% sim[[x]]) |&gt; unlist()
 }
 
-plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5, main=&#39;LENI Sales&#39;,
+plot(y_vec_no_prod, type=&#39;n&#39;, lwd=3, cex.axis=1.2, cex=1.2, cex.main=1.5,
      ylab=&#39;&#39;, xlab=&#39;&#39;, xaxt=&#39;n&#39;, yaxt=&#39;n&#39;, ylim=range(c(y_vec_no_prod, filtered, smoothed)))
 axis(side=1, at=mean(seq_along(y_vec_no_prod)), labels=&#39;Time&#39;, cex.axis=1.3, lwd.ticks = 0)
 axis(side=2, at=mean(y_vec_no_prod), labels=&#39;Sales ($)&#39;, cex.axis=1.3, lwd.ticks = 0)
 box(lwd=2)
 y_sim |&gt; unlist() |&gt; matrix(ncol=length(y_vec_no_prod), byrow=T) |&gt; 
   state_space_utils$time_series_err()
-lines(y_vec_no_prod, type=&#39;b&#39;, lwd=3, pch=16)</code></pre>
-<p><img src="state_space_files/figure-html/unnamed-chunk-9-1.png" width="960" style="display: block; margin: auto;" /></p>
+lines(y_vec_no_prod, type=&#39;b&#39;, lwd=3, pch=16)
+legend(&#39;topleft&#39;, legend=c(&#39;LENI Sales&#39;, &#39;Simulated State&#39;),
+       col=c(&#39;black&#39;, NA),
+       pch=c(16,22),
+       pt.cex=c(1,2),
+       lwd=c(3,NA),
+       lty=c(1,NA),
+       pt.bg=c(NA, adjustcolor(&#39;darkblue&#39;,0.2)),
+
+               bg=adjustcolor(&#39;white&#39;, 0.5))</code></pre>
+<p><img src="state_space_files/figure-html/unnamed-chunk-8-1.png" width="960" style="display: block; margin: auto;" /></p>
 </div>
 </div>
-<div id="its-showtime" class="section level1">
-<h1>Its Showtime!</h1>
+<div id="end-of-act-1" class="section level1">
+<h1>End of Act 1</h1>
+<p>The curtains have closed and you may now take a brief intermission.
+There is still a lot of be done though. We have only talked about the
+nuts and bolts of the state space model and haven’t even begun our
+exciting applications outlined at the beginning. We may have a framework
+that describes the data generating process, but there has been no work
+on any parameter inference. Spoiler alert, this is where STAN comes into
+play. In the next section we will:</p>
+<ul>
+<li>Use <a href="https://mc-stan.org/">STAN</a> as our inference engine
+for the model outlined</li>
+<li>Interrogate the posterior distribution of the model’s parameters to
+validate the initial assumptions</li>
+<li>Predict the next states and observations credible intervals to back
+into a incremental estimate for our marketing campaign (the primary
+objective)</li>
+</ul>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>## R version 4.1.1 (2021-08-10)
 ## Platform: x86_64-w64-mingw32/x64 (64-bit)
