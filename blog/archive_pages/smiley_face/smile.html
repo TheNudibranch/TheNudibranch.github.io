@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find the Smiley Face</title>
+    <title>Find the Positive Face</title>
     <style>
         body {
             background-color: #999;
@@ -16,9 +16,9 @@
         }
         .container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             grid-gap: 10px;
-            max-width: 300px;
+            max-width: 500px;
             width: 100%;
         }
         .face {
@@ -49,7 +49,22 @@
     </div>
     <div id="message" class="message"></div>
     <script>
-        const faces = ['😞', '😞', '😞', '😞', '😞', '😞', '😞', '😞', '😊'];
+        const negativeFaces = ['😞', '😠', '😡', '😢', '😟', '😨', '😰', '😱', '😖', '😣', '😔', '😫', '😩', '😤', '😵', '🤢', '🤮', '😷', '🤒', '🤕', '🥵', '🥶', '🥴', '😬'];
+        const positiveFaces = ['😊', '😁', '😃', '😄', '😆'];
+
+        function getRandomNegativeFaces(count) {
+            let faces = [];
+            for (let i = 0; i < count; i++) {
+                const randomIndex = Math.floor(Math.random() * negativeFaces.length);
+                faces.push(negativeFaces[randomIndex]);
+            }
+            return faces;
+        }
+
+        function getRandomPositiveFace() {
+            const randomIndex = Math.floor(Math.random() * positiveFaces.length);
+            return positiveFaces[randomIndex];
+        }
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -64,23 +79,26 @@
             message.style.display = 'block';
             setTimeout(() => {
                 message.style.display = 'none';
-            }, 500);
+            }, 1500);
         }
 
         function renderFaces() {
             const faceContainer = document.getElementById('faceContainer');
             faceContainer.innerHTML = '';
+            const negativeFacesArray = getRandomNegativeFaces(24);
+            const positiveFace = getRandomPositiveFace();
+            const faces = [...negativeFacesArray, positiveFace];
             shuffle(faces);
             faces.forEach(face => {
                 const faceElement = document.createElement('div');
                 faceElement.className = 'face';
                 faceElement.textContent = face;
                 faceElement.onclick = () => {
-                    if (face === '😊') {
+                    if (positiveFaces.includes(face)) {
                         showMessage('Good job!');
-                        setTimeout(renderFaces, 500);
+                        setTimeout(renderFaces, 1500);
                     } else {
-                        showMessage('Oops, click the smiley face');
+                        showMessage('Oops, click the positive face');
                     }
                 };
                 faceContainer.appendChild(faceElement);
