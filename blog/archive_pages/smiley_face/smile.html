@@ -79,7 +79,7 @@
             message.style.display = 'block';
             setTimeout(() => {
                 message.style.display = 'none';
-            }, 1500);
+            }, 500);
         }
 
         function renderFaces() {
@@ -96,7 +96,7 @@
                 faceElement.onclick = () => {
                     if (positiveFaces.includes(face)) {
                         showMessage('Good job!');
-                        setTimeout(renderFaces, 1500);
+                        setTimeout(renderFaces, 500);
                     } else {
                         showMessage('Oops, click the positive face');
                     }
