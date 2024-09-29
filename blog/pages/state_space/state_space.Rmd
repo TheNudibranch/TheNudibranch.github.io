@@ -1,5 +1,5 @@
 ---
-title: "An Unhinged Introduction to State Space Models with STAN - Theory"
+title: "An Unhinged Introduction to State Space Models with Stan - Theory"
 output: 
   html_document:
     code_folding: hide
@@ -152,7 +152,7 @@ Clearly, $\eta_t$ is just a 1-D normal with variance $Q_t$, and thus as $\alpha_
 
 Now, the only variables I have yet to mention are $a_1$ and $P_1$. These dictate the distribution of our starting state. That is $\alpha_1 \sim \mathcal{N}(a_1, P_1)$. These initial values are assumed to be known at the time of modeling. In reality these are rarely known and there is a large amount of theory to approximate the best starting value of these based on asymptotics. For more information, check out chapter 5 of [@book]. But, we are Bayesians after all are we not? If we don't know something we just chuck a prior at it. Although we will abide by the suggestion in chapter 5 and set $a_1 = \bf{0}$. 
 
-I don't know if you can tell, but this notation is incredibly loaded, and unfortunately it is only going to get worse before it gets better. The most loaded of them all is understanding when we are talking about a state vector $\alpha_t$ or the expected value of a state, denoted by $a_t$. To hopefully alleviate some of notation burden, here is a footnote that shows the definition for all $\alpha_t$ or $a_t$ variations we might encounter.^[$\alpha_t$: defined as the state as time t <br />$a_t = \mathbb{E}[\alpha_t|Y_{t-1}]$ <br /> $a_{t|t} = \mathbb{E}[\alpha_t|Y_t]$ <br /> $\hat{\alpha}_t=\mathbb{E}[\alpha_t|Y_n]$. This one irks me a bit. I'd prefer it be $a_{t|n}$ or $\hat{a}_t$, but it makes sense if they wanted to be consistent with the sampling notation. <br /> $\tilde{\alpha}_t$: a draw from the distribution $P(\alpha|Y_n)$, where $\alpha = \{\alpha_1^\prime, \dots,\alpha_n^\prime\}^\prime$. Here $\prime$ is used to denote a draw <br /> $\alpha^+$: a draw from the distribution $P(\alpha)$, the unconditional distribution <br /> $\hat{\alpha}^+ = \mathbb{E}[\alpha|y^+]$, where $y^+$ are the observations from evolving the system forward given a random initialization drawn from the known disturbance variances and $\alpha_1$ distribution.]
+I don't know if you can tell, but this notation is incredibly loaded, and unfortunately it is only going to get worse before it gets better. The most loaded of them all is understanding when we are talking about a state vector $\alpha_t$ or the expected value of a state, denoted by $a_t$. To hopefully alleviate some of notation burden, here is a footnote that shows the definition for all $\alpha_t$ or $a_t$ variations we might encounter.^[$\alpha_t$: defined as the state as time t <br />$a_t = \mathbb{E}[\alpha_t|Y_{t-1}]$ <br /> $a_{t|t} = \mathbb{E}[\alpha_t|Y_t]$ <br /> $\hat{\alpha}_t=\mathbb{E}[\alpha_t|Y_n]$. This one irks me a bit. I'd prefer it be $a_{t|n}$ or $\hat{a}_t$, but it makes sense if they wanted to be consistent with the sampling notation. <br /> $\tilde{\alpha}_t$: a draw from the distribution $P(\alpha|Y_n)$ <br /> $\alpha^+$: a draw from the distribution $P(\alpha)$, the unconditional distribution <br /> $\hat{\alpha}^+ = \mathbb{E}[\alpha|y^+]$, where $y^+$ are the observations from evolving the system forward given a random initialization drawn from the known disturbance variances and $\alpha_1$ distribution.]
 
 ## I prefer Autumn
 One of the key components we'll utilize is seasonality. This means that for some repeating point in time, we want to see the same, or slightly modified effect. For example, we might observe seasonality in consumer purchasing behavior. Big spikes occur during the holidays when everyone is purchasing Tumbler v2s to give to their ice enthusiast friends at Christmas, but then sales slowly die off. It's a tale as old as time that we'll see again next Christmas.
@@ -255,7 +255,7 @@ $$
 a_{t|t}&=\mathbb{E}[\alpha_t|Y_t] & P_{t|t}&=\textrm{Var}[\alpha_t|Y_t] \\
 \end{align*}
 $$
-where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered expected states $a_{t|t}$. Since we are trying to understand the state of the system prior to our launch of the Tumbler v2™, we will exclude the data post launch from our analysis.
+where $Y_t = \{y_1,y_2,\dots,y_t\}$. In practice, you can actually ignore the middle row ($*_{t|t}$) but we include it for completeness. Now, let's apply the above equations to produce the filtered expected states $a_{t|t}$. Since we are trying to understand the state of the system prior to our launch of the Tumbler v2™, we will exclude the data post launch from our analysis. Note, the functions used throughout this analysis are loaded into a environment variable `state_space_utils` in the first hidden block. The full source code for the various functions can be found [here under the project directory](https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/state_space/state_space_model_utilities.R).
 
 ```{r, fig.align='center', fig.width=10, fig.height=6}
 y_vec_no_prod <- y_vec[!is_new_prod_live]
@@ -372,9 +372,9 @@ legend('topleft', legend=c('LENI Sales', 'Simulated State'),
 ```
 
 # End of Act 1
-The curtains have closed and you may now take a brief intermission. There is still a lot of be done though. We have only talked about the nuts and bolts of the state space model and haven't even begun our exciting applications outlined at the beginning. We may have a framework that describes the data generating process, but there has been no work on any parameter inference. Spoiler alert, this is where STAN comes into play. In the next section we will:
+The curtains have closed and you may now take a brief intermission. There is still a lot of be done though. We have only talked about the nuts and bolts of the state space model and haven't even begun our exciting applications outlined at the beginning. We may have a framework that describes the data generating process, but there has been no work on any parameter inference. Spoiler alert, this is where Stan comes into play. In the next section we will:
 
-- Use [STAN](https://mc-stan.org/) as our inference engine for the model outlined
+- Use [Stan](https://mc-stan.org/) as our inference engine for the model outlined
 - Interrogate the posterior distribution of the model's parameters to validate the initial assumptions
 - Predict the next states and observations credible intervals to back into a incremental estimate for our marketing campaign (the primary objective)
 ```{r}

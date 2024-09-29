@@ -11,7 +11,7 @@
 
 
 
-<title>An Unhinged Introduction to State Space Models with STAN - Theory</title>
+<title>An Unhinged Introduction to State Space Models with Stan - Theory</title>
 
 <script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -288,7 +288,7 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">An Unhinged Introduction to State Space
-Models with STAN - Theory</h1>
+Models with Stan - Theory</h1>
 
 </div>
 
@@ -859,7 +859,12 @@ it for completeness. Now, let’s apply the above equations to produce the
 filtered expected states <span class="math inline">\(a_{t|t}\)</span>.
 Since we are trying to understand the state of the system prior to our
 launch of the Tumbler v2™, we will exclude the data post launch from our
-analysis.</p>
+analysis. Note, the functions used throughout this analysis are loaded
+into a environment variable <code>state_space_utils</code> in the first
+hidden block. The full source code for the various functions can be
+found <a
+href="https://github.com/TheNudibranch/TheNudibranch.github.io/blob/main/blog/pages/state_space/state_space_model_utilities.R">here
+under the project directory</a>.</p>
 <pre class="r"><code>y_vec_no_prod &lt;- y_vec[!is_new_prod_live]
 k_obj &lt;- state_space_utils$forward_backward_pass(
   y_vec_no_prod, a_1=rep(0,9), 
@@ -1052,10 +1057,10 @@ There is still a lot of be done though. We have only talked about the
 nuts and bolts of the state space model and haven’t even begun our
 exciting applications outlined at the beginning. We may have a framework
 that describes the data generating process, but there has been no work
-on any parameter inference. Spoiler alert, this is where STAN comes into
+on any parameter inference. Spoiler alert, this is where Stan comes into
 play. In the next section we will:</p>
 <ul>
-<li>Use <a href="https://mc-stan.org/">STAN</a> as our inference engine
+<li>Use <a href="https://mc-stan.org/">Stan</a> as our inference engine
 for the model outlined</li>
 <li>Interrogate the posterior distribution of the model’s parameters to
 validate the initial assumptions</li>
@@ -1138,10 +1143,7 @@ class="math inline">\(a_{t|n}\)</span> or <span
 class="math inline">\(\hat{a}_t\)</span>, but it makes sense if they
 wanted to be consistent with the sampling notation. <br /> <span
 class="math inline">\(\tilde{\alpha}_t\)</span>: a draw from the
-distribution <span class="math inline">\(P(\alpha|Y_n)\)</span>, where
-<span class="math inline">\(\alpha = \{\alpha_1^\prime,
-\dots,\alpha_n^\prime\}^\prime\)</span>. Here <span
-class="math inline">\(\prime\)</span> is used to denote a draw <br />
+distribution <span class="math inline">\(P(\alpha|Y_n)\)</span> <br />
 <span class="math inline">\(\alpha^+\)</span>: a draw from the
 distribution <span class="math inline">\(P(\alpha)\)</span>, the
 unconditional distribution <br /> <span
