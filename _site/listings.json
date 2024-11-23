@@ -4,7 +4,8 @@
     "items": [
       "/posts/post-with-code/index.html",
       "/posts/welcome/index.html",
-      "/posts/poisson_metrop/index.html"
+      "/posts/poisson_metrop/index.html",
+      "/posts/tfjs/index.html"
     ]
   }
 ]

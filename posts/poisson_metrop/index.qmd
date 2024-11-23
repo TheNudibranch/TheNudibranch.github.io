@@ -1,6 +1,7 @@
 ---
 title: "Bayesian Decision Analysis with Poisson Regression and Metropolis-Hastings"
 date: "2022-03-26"
+description: "Bayesian poisson regression with a Metropolis Hastings sampler"
 categories: [Bayes, R]
 toc: true
 freeze: true
@@ -23,7 +24,6 @@ Let us also assume that the log rate of catching salmon is a linear function of 
 $$\log(\lambda) =  \beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0$$ Finally, we may write the probability of catching $y$ salmon during one hour of fishing given the above parameters:
 
 $$P(y|x_i;\beta_{depth},\beta_{oxy},\beta_0)=\frac{\lambda^y}{y!}e^{-\lambda}, \hspace{4mm} \lambda=\exp(\beta_{depth}\cdot x_{depth} + \beta_{oxy}\cdot x_{oxy} + \beta_0)$$ Now, let's generate some data!
-
 
 ```{r}
 #| output: false
@@ -301,4 +301,3 @@ Hence, after our extensive analysis we can come to the conclusion that it is bes
 #| code-fold: true
 sessionInfo()
 ```
-

@@ -1,0 +1,12 @@
+---
+title: "Tensorflow JS"
+description: "Just a simple webapp showing TF JS functionality for building simple models in the browser"
+categories: [Javascript]
+image: 'pic.png'
+date: '2018-07-27'
+title-block-banner: false
+format:
+  html:
+    include-in-header: 
+      - file: function.html
+---
