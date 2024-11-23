@@ -1,9 +1,0 @@
-Thumbs.db
-*.log
-*.Rhistory
-blog/pages/poisson_regression/poisson_cache/*
-*.exe
-blog/pages/polychoric/polychoric_cache/*
-*.Rds
-blog/pages/polychoric/copula_1_cache/*
-blog/pages/polychoric/state_space_cache/*
