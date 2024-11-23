@@ -1,0 +1,22 @@
+project:
+  type: website
+
+website:
+  title: "Ian Costley"
+  navbar:
+    search: false
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/TheNudibranch
+      - icon: linkedin
+        href: https://www.linkedin.com/in/ian-s-costley/
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    css: styles.css
+
+editor: visual
+
