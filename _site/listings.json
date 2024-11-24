@@ -2,8 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
-      "/posts/post-with-code/index.html",
-      "/posts/welcome/index.html",
+      "/posts/state_space/index.html",
       "/posts/polychoric/index.html",
       "/posts/poisson_metrop/index.html",
       "/posts/beta_conjugate/index.html",
