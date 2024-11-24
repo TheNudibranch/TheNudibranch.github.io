@@ -4,7 +4,7 @@ description: "Just a simple webapp showing TF JS functionality for building simp
 categories: [Javascript]
 image: 'pic.png'
 date: '2018-07-27'
-title-block-banner: false
+title-block-style: none
 format:
   html:
     include-in-header: 

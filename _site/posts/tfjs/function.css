@@ -9,5 +9,10 @@
 	background: #eee;
 }
 
+.date {
+  opacity: 0 !important;
+}
 
-
+.display-7 {
+  opacity: 0 !important;
+}

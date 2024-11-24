@@ -1,0 +1,12 @@
+---
+title: "Rock Paper Scissors Robots"
+description: "Rock paper scissors with a 3D printed wireless hand!"
+categories: [Arduino]
+image: 'pic.PNG'
+date: '2019-05-10'
+title-block-style: none
+format:
+  html:
+    include-in-header: 
+      - file: RPS.html
+---

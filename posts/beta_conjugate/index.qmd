@@ -1,0 +1,12 @@
+---
+title: "Interactive Beta-Binomial Model"
+description: "Provide some priors/data and what you're conjugate posteriors update in real-time!"
+categories: [Bayes, Javascript]
+image: 'pic.PNG'
+date: '2021-10-30'
+title-block-style: none
+format:
+  html:
+    include-in-header: 
+      - file: beta_dist.html
+---
