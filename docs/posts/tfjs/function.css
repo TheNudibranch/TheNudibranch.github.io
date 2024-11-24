@@ -1,0 +1,18 @@
+.chart{
+	width:75pc;
+	height: 600px;
+	margin: 0 auto;
+	padding-top: 5%;
+}
+
+.back{	
+	background: #eee;
+}
+
+.date {
+  opacity: 0 !important;
+}
+
+.display-7 {
+  opacity: 0 !important;
+}
