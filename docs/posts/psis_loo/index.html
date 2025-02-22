@@ -56,7 +56,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -189,6 +209,10 @@ window.Quarto = {
   <ul>
   <li><a href="#loo-who" id="toc-loo-who" class="nav-link active" data-scroll-target="#loo-who">Loo Who?</a></li>
   <li><a href="#some-important-samples" id="toc-some-important-samples" class="nav-link" data-scroll-target="#some-important-samples">Some Important Samples</a></li>
+  <li><a href="#pareto-mentality" id="toc-pareto-mentality" class="nav-link" data-scroll-target="#pareto-mentality">Pareto Mentality</a>
+  <ul class="collapse">
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -347,12 +371,49 @@ E_\pi[f(\theta)] &amp;= \int\pi(\theta)f(\theta)d\theta \\
 </div>
 </div>
 </div>
-<p>Wow! Look’s like we are far from our actual value. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen <span class="math inline">\(\gamma\)</span> distribution?</p>
+<p>Wow! Look’s like we are far from our actual value. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen <span class="math inline">\(\gamma\)</span> distribution? The key is in the importance ratios. Notice how in the first experiment where <span class="math inline">\(\gamma \sim t_{\nu=1,000}\)</span>, the histogram of importance ratios tail is much lighter than that of the second experiment. This is a property we would like to be able to enforce, as well as detect. An early method for controlling the importance rations <span class="math inline">\(r(\theta)\)</span> was to truncate at some maximum value. In particular <span class="citation" data-cites="trunc_sample_paper">Ionides (<a href="#ref-trunc_sample_paper" role="doc-biblioref">2008</a>)</span> defined <span class="math inline">\(w(\theta_s)\)</span> to be the truncated importance weights as:</p>
+<p><span class="math display">\[w(\theta_s) = \min(r(\theta_s),\sqrt{S}\bar{r})\]</span></p>
+<p>where <span class="math inline">\(\bar{r}\)</span> is the average importance ratio over all samples <span class="math inline">\(S\)</span>. While this method does guarantee finite variance of the truncated importance ratios, it unfortunately incorporates a large bias. Another method given by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> to control the importance ratios is to fit a Pareto distribution to the tail of importance ratio distribution. This not only aids in giving the importance ratios finite variance while introducing little bias, but also allows us to use the parameters of the fit Pareto distribution as diagnostics. The following definition for the Pareto distribution, as well as its motivation is defined with much greater detail in <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span>. I will attempt to give a slimmed down version of their background with a little added history.</p>
+</section>
+<section id="pareto-mentality" class="level2">
+<h2 class="anchored" data-anchor-id="pareto-mentality">Pareto Mentality</h2>
+<p>You might have heard of the <a href="https://en.wikipedia.org/wiki/Pareto_principle">80/20 “rule”</a> before. Usually in the context of sales: 20% of customers make up 80% of sales. It’s a powerful rule of thumb that more often than not comes out roughly correct. This rule, also known as the Pareto principle, is named after the Italian sociologist and economist <a href="https://en.wikipedia.org/wiki/Vilfredo_Pareto">Vilfredo Pareto</a>, for which the <a href="https://en.wikipedia.org/wiki/Pareto_distribution">Parteo distribution</a> is also named after.</p>
+<p>The Pareto distribution as one might expect after learning the 80/20, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by <span class="citation" data-cites="pickands_imp">Pickands (<a href="#ref-pickands_imp" role="doc-biblioref">1975</a>)</span> and <span class="citation" data-cites="Balkema_imp">Balkema and Haan (<a href="#ref-Balkema_imp" role="doc-biblioref">1974</a>)</span> to well approximate the tail of the importance ratios <span class="math inline">\(r(\theta) | r(\theta) &gt; u\)</span> for some set <em>tail</em> lower bound <span class="math inline">\(u\)</span>. The PDF for the generalized Pareto is given by:</p>
+<p><span class="math display">\[
+p(y|u,\sigma,k)=
+\begin{cases}
+      \frac{1}{\sigma} (1 + k (\frac{y-u}{\sigma}))^{-\frac{1}{k}-1} &amp; k\neq 0 \\
+      \frac{1}{\sigma}\exp(\frac{y-u}{\sigma}) &amp; k=0 \\
+\end{cases}
+\]</span> where <span class="math inline">\(u\)</span> is the aforementioned lower bound on the tail, <span class="math inline">\(\sigma\)</span> is the positive scale parameter, and <span class="math inline">\(k\)</span> is the very important shape parameter. The inputs distribution is further restricted to <span class="math inline">\(y\in[0,\inf)\)</span>. The inverse of our parameter <span class="math inline">\(k\)</span> tellsus how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, and if it has a second moment then its variance is defined. You might see where I am going with this - we can use <span class="math inline">\(k\)</span> after fitting our generalized Pareto to the importance ratios’ tail as a sort of diagnostic. It is shown by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> that for <span class="math inline">\(k\)</span></p>
+<section id="references" class="level3">
+<h3 class="anchored" data-anchor-id="references">References</h3>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Balkema_imp" class="csl-entry" role="listitem">
+Balkema, A. A., and L. de Haan. 1974. <span>“Residual Life Time at Great Age.”</span> <em>The Annals of Probability</em> 2 (5): 792–804. <a href="http://www.jstor.org/stable/2959306">http://www.jstor.org/stable/2959306</a>.
+</div>
+<div id="ref-trunc_sample_paper" class="csl-entry" role="listitem">
+Ionides, Edward L. 2008. <span>“Truncated Importance Sampling.”</span> <em>Journal of Computational and Graphical Statistics</em> 17 (2): 295–311. <a href="http://www.jstor.org/stable/27594308">http://www.jstor.org/stable/27594308</a>.
+</div>
+<div id="ref-pickands_imp" class="csl-entry" role="listitem">
+Pickands, James. 1975. <span>“Statistical Inference Using Extreme Order Statistics.”</span> <em>The Annals of Statistics</em> 3 (1): 119–31. <a href="http://www.jstor.org/stable/2958083">http://www.jstor.org/stable/2958083</a>.
+</div>
+<div id="ref-psis_paper" class="csl-entry" role="listitem">
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry. 2024. <span>“Pareto Smoothed Importance Sampling.”</span> <a href="https://arxiv.org/abs/1507.02646">https://arxiv.org/abs/1507.02646</a>.
+</div>
+</div>
 
 
 </section>
+</section>
 
-</main> <!-- /main -->
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>sorry Cauchy<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {

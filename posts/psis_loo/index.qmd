@@ -9,6 +9,7 @@ format:
 toc: true
 freeze: true
 draft: true
+bibliography: references.bib
 ---
 
 ### Loo Who?
@@ -120,4 +121,28 @@ hist(imp_ratios, col=adjustcolor('darkblue',0.3), xlab='Importance Ratios',
      main='', ylab='', breaks=25)
 ```
 
-Wow! Look's like we are far from our actual value. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen $\gamma$ distribution?
+Wow! Look's like we are far from our actual value. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen $\gamma$ distribution? The key is in the importance ratios. Notice how in the first experiment where $\gamma \sim t_{\nu=1,000}$, the histogram of importance ratios tail is much lighter than that of the second experiment. This is a property we would like to be able to enforce, as well as detect. An early method for controlling the importance rations $r(\theta)$ was to truncate at some maximum value. In particular @trunc_sample_paper defined $w(\theta_s)$ to be the truncated importance weights as:
+
+$$w(\theta_s) = \min(r(\theta_s),\sqrt{S}\bar{r})$$
+
+where $\bar{r}$ is the average importance ratio over all samples $S$. While this method does guarantee finite variance of the truncated importance ratios, it unfortunately incorporates a large bias. Another method given by @psis_paper to control the importance ratios is to fit a Pareto distribution to the tail of importance ratio distribution. This not only aids in giving the importance ratios finite variance while introducing little bias, but also allows us to use the parameters of the fit Pareto distribution as diagnostics. The following definition for the Pareto distribution, as well as its motivation is defined with much greater detail in @psis_paper. I will attempt to give a slimmed down version of their background with a little added history.   
+
+## Pareto Mentality
+You might have heard of the [80/20 "rule"](https://en.wikipedia.org/wiki/Pareto_principle) before. Usually in the context of sales: 20% of customers make up 80% of sales. It's a powerful rule of thumb that more often than not comes out roughly correct. This rule, also known as the Pareto principle, is named after the Italian sociologist and economist [Vilfredo Pareto](https://en.wikipedia.org/wiki/Vilfredo_Pareto), for which the [Parteo distribution](https://en.wikipedia.org/wiki/Pareto_distribution) is also named after. 
+
+The Pareto distribution as one might expect after learning the 80/20, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by @pickands_imp and @Balkema_imp to well approximate the tail of the importance ratios $r(\theta) | r(\theta) > u$ for some set *tail* lower bound $u$. The PDF for the generalized Pareto is given by:
+
+$$
+p(y|u,\sigma,k)=
+\begin{cases} 
+      \frac{1}{\sigma} (1 + k (\frac{y-u}{\sigma}))^{-\frac{1}{k}-1} & k\neq 0 \\
+      \frac{1}{\sigma}\exp(\frac{y-u}{\sigma}) & k=0 \\
+ \end{cases}
+$$
+where $u$ is the aforementioned lower bound on the tail, $\sigma$ is the positive scale parameter, and $k$ is the very important shape parameter. The inputs distribution is further restricted to $y\in[0,\inf)$. The inverse of our parameter $k$ tellsus how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean^[sorry Cauchy], and if it has a second moment then its variance is defined. You might see where I am going with this - we can use $k$ after fitting our generalized Pareto to the importance ratios' tail as a sort of diagnostic. It is shown by @psis_paper that for $k$
+
+
+### References
+
+::: {#refs}
+:::
