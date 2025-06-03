@@ -209,10 +209,15 @@ window.Quarto = {
   <ul>
   <li><a href="#loo-who" id="toc-loo-who" class="nav-link active" data-scroll-target="#loo-who">Loo Who?</a></li>
   <li><a href="#some-important-samples" id="toc-some-important-samples" class="nav-link" data-scroll-target="#some-important-samples">Some Important Samples</a></li>
-  <li><a href="#pareto-mentality" id="toc-pareto-mentality" class="nav-link" data-scroll-target="#pareto-mentality">Pareto Mentality</a>
+  <li><a href="#pareto-mentality" id="toc-pareto-mentality" class="nav-link" data-scroll-target="#pareto-mentality">Pareto Mentality</a></li>
+  <li><a href="#outline" id="toc-outline" class="nav-link" data-scroll-target="#outline">Outline</a>
   <ul class="collapse">
-  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  <li><a href="#why-loo" id="toc-why-loo" class="nav-link" data-scroll-target="#why-loo">Why Loo</a></li>
+  <li><a href="#importance-sampling" id="toc-importance-sampling" class="nav-link" data-scroll-target="#importance-sampling">Importance Sampling</a></li>
+  <li><a href="#pareto-distribution" id="toc-pareto-distribution" class="nav-link" data-scroll-target="#pareto-distribution">Pareto Distribution</a></li>
+  <li><a href="#tieing-it-back-together" id="toc-tieing-it-back-together" class="nav-link" data-scroll-target="#tieing-it-back-together">Tieing it back together</a></li>
   </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul>
 </nav>
     </div>
@@ -385,9 +390,53 @@ p(y|u,\sigma,k)=
       \frac{1}{\sigma} (1 + k (\frac{y-u}{\sigma}))^{-\frac{1}{k}-1} &amp; k\neq 0 \\
       \frac{1}{\sigma}\exp(\frac{y-u}{\sigma}) &amp; k=0 \\
 \end{cases}
-\]</span> where <span class="math inline">\(u\)</span> is the aforementioned lower bound on the tail, <span class="math inline">\(\sigma\)</span> is the positive scale parameter, and <span class="math inline">\(k\)</span> is the very important shape parameter. The inputs distribution is further restricted to <span class="math inline">\(y\in[0,\inf)\)</span>. The inverse of our parameter <span class="math inline">\(k\)</span> tellsus how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, and if it has a second moment then its variance is defined. You might see where I am going with this - we can use <span class="math inline">\(k\)</span> after fitting our generalized Pareto to the importance ratios’ tail as a sort of diagnostic. It is shown by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> that for <span class="math inline">\(k\)</span></p>
-<section id="references" class="level3">
-<h3 class="anchored" data-anchor-id="references">References</h3>
+\]</span> where <span class="math inline">\(u\)</span> is the aforementioned lower bound on the tail, <span class="math inline">\(\sigma\)</span> is the positive scale parameter, and <span class="math inline">\(k\)</span> is the very important shape parameter. The inputs distribution is further restricted to <span class="math inline">\(y\in[u,\inf)\)</span>. The inverse of our parameter <span class="math inline">\(k\)</span> tells us how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, and if it has a second moment then its variance is defined. You might see where I am going with this - we can use <span class="math inline">\(k\)</span> after fitting our generalized Pareto to the importance ratios’ tail as a sort of diagnostic. If <span class="math inline">\(k\)</span> is in an acceptable range, we can feel comfortable using the Pareto fit for the tails of our importance samples.</p>
+<p>The question of fit is not an easy one though. There have been numerous papers that build upon each other, but we will climb to the top of the Giant stack<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> for this one. Our method today comes from <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span>. It has a base of maximum likelihood, with a side of empirical Bayes, and a sprinkle of quadrature estimation for garnish. Overall a hearty meal!</p>
+<p>I’ve struggled with putting this in an appendix, and maybe that would be more digestible,<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> but where is the fun in that!</p>
+<p>It is shown by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> that for <span class="math inline">\(k\)</span></p>
+</section>
+<section id="outline" class="level2">
+<h2 class="anchored" data-anchor-id="outline">Outline</h2>
+<section id="why-loo" class="level3">
+<h3 class="anchored" data-anchor-id="why-loo">Why Loo</h3>
+<ul>
+<li>Provide some overview of why LOO CV is important</li>
+</ul>
+</section>
+<section id="importance-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="importance-sampling">Importance Sampling</h3>
+<ul>
+<li>We are going to be using it a lot later so good to get it out of the way</li>
+</ul>
+</section>
+<section id="pareto-distribution" class="level3">
+<h3 class="anchored" data-anchor-id="pareto-distribution">Pareto Distribution</h3>
+<ul>
+<li>What is it</li>
+<li>How is it defined - pdf
+<ul>
+<li>Why do we care</li>
+<li>What do the parameters mean?</li>
+</ul></li>
+<li>How do we go about estimating the parameters
+<ul>
+<li>Talk about the empirical Bayes estimation procedure</li>
+</ul></li>
+<li>Bring back the context of MC</li>
+</ul>
+</section>
+<section id="tieing-it-back-together" class="level3">
+<h3 class="anchored" data-anchor-id="tieing-it-back-together">Tieing it back together</h3>
+<ul>
+<li>Introduce the Vehtari 2017 paper</li>
+<li>Talk about ELPD</li>
+<li>Reference the paper to show that we can use p(y) as a approximate weight distribution (with the required math, work through the algebra)</li>
+<li>Go ahead and do the actual</li>
+</ul>
+</section>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-Balkema_imp" class="csl-entry" role="listitem">
 Balkema, A. A., and L. de Haan. 1974. <span>“Residual Life Time at Great Age.”</span> <em>The Annals of Probability</em> 2 (5): 792–804. <a href="http://www.jstor.org/stable/2959306">http://www.jstor.org/stable/2959306</a>.
@@ -401,10 +450,12 @@ Pickands, James. 1975. <span>“Statistical Inference Using Extreme Order Statis
 <div id="ref-psis_paper" class="csl-entry" role="listitem">
 Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry. 2024. <span>“Pareto Smoothed Importance Sampling.”</span> <a href="https://arxiv.org/abs/1507.02646">https://arxiv.org/abs/1507.02646</a>.
 </div>
+<div id="ref-zhang_gpd" class="csl-entry" role="listitem">
+Zhang, Jin, and Michael A. Stephens. 2009. <span>“A New and Efficient Estimation Method for the Generalized Pareto Distribution.”</span> <em>Technometrics</em> 51 (3): 316–25. <a href="http://www.jstor.org/stable/40586625">http://www.jstor.org/stable/40586625</a>.
+</div>
 </div>
 
 
-</section>
 </section>
 
 
@@ -412,6 +463,8 @@ Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry. 2024. 
 
 <ol>
 <li id="fn1"><p>sorry Cauchy<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>That’s my best pun for “Standing on the Shoulders of Giants”<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>I just can’t stop with these food puns<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

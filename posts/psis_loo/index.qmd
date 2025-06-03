@@ -139,10 +139,42 @@ p(y|u,\sigma,k)=
       \frac{1}{\sigma}\exp(\frac{y-u}{\sigma}) & k=0 \\
  \end{cases}
 $$
-where $u$ is the aforementioned lower bound on the tail, $\sigma$ is the positive scale parameter, and $k$ is the very important shape parameter. The inputs distribution is further restricted to $y\in[0,\inf)$. The inverse of our parameter $k$ tellsus how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean^[sorry Cauchy], and if it has a second moment then its variance is defined. You might see where I am going with this - we can use $k$ after fitting our generalized Pareto to the importance ratios' tail as a sort of diagnostic. It is shown by @psis_paper that for $k$
+where $u$ is the aforementioned lower bound on the tail, $\sigma$ is the positive scale parameter, and $k$ is the very important shape parameter. The inputs distribution is further restricted to $y\in[u,\inf)$. The inverse of our parameter $k$ tells us how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean^[sorry Cauchy], and if it has a second moment then its variance is defined. You might see where I am going with this - we can use $k$ after fitting our generalized Pareto to the importance ratios' tail as a sort of diagnostic. If $k$ is in an acceptable range, we can feel comfortable using the Pareto fit for the tails of our importance samples.
+
+The question of fit is not an easy one though. There have been numerous papers that build upon each other, but we will climb to the top of the Giant stack^[That's my best pun for "Standing on the Shoulders of Giants"] for this one. Our method today comes from @zhang_gpd. It has a base of maximum likelihood, with a side of empirical Bayes, and a sprinkle of quadrature estimation for garnish. Overall a hearty meal!
+
+I've struggled with putting this in an appendix, and maybe that would be more digestible,^[I just can't stop with these food puns] but where is the fun in that!
+
+It is shown by @psis_paper that for $k$
+
+## Outline
+
+### Why Loo
+- Provide some overview of why LOO CV is important
+
+### Importance Sampling
+- We are going to be using it a lot later so good to get it out of the way
+
+### Pareto Distribution
+- What is it
+- How is it defined - pdf
+  - Why do we care
+  - What do the parameters mean?
+- How do we go about estimating the parameters
+  - Talk about the empirical Bayes estimation procedure
+- Bring back the context of MC
+
+### Tieing it back together
+- Introduce the Vehtari 2017 paper
+- Talk about ELPD
+- Reference the paper to show that we can use p(y) as a approximate weight distribution (with the required math, work through the algebra)
+- Go ahead and do the actual 
 
 
-### References
+
+
+
+## References
 
 ::: {#refs}
 :::
