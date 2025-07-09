@@ -210,6 +210,10 @@ window.Quarto = {
   <li><a href="#loo-who" id="toc-loo-who" class="nav-link active" data-scroll-target="#loo-who">Loo Who?</a></li>
   <li><a href="#some-important-samples" id="toc-some-important-samples" class="nav-link" data-scroll-target="#some-important-samples">Some Important Samples</a></li>
   <li><a href="#pareto-mentality" id="toc-pareto-mentality" class="nav-link" data-scroll-target="#pareto-mentality">Pareto Mentality</a></li>
+  <li><a href="#appendix" id="toc-appendix" class="nav-link" data-scroll-target="#appendix">Appendix</a>
+  <ul class="collapse">
+  <li><a href="#zhang-and-stephens-k-esimation" id="toc-zhang-and-stephens-k-esimation" class="nav-link" data-scroll-target="#zhang-and-stephens-k-esimation">Zhang and Stephens <span class="math inline">\(k\)</span> esimation</a></li>
+  </ul></li>
   <li><a href="#outline" id="toc-outline" class="nav-link" data-scroll-target="#outline">Outline</a>
   <ul class="collapse">
   <li><a href="#why-loo" id="toc-why-loo" class="nav-link" data-scroll-target="#why-loo">Why Loo</a></li>
@@ -262,7 +266,7 @@ window.Quarto = {
 <section id="loo-who" class="level3">
 <h3 class="anchored" data-anchor-id="loo-who">Loo Who?</h3>
 <p>If you’re like me, when you first saw the <a href="https://mc-stan.org/loo/">loo</a> package and all the accompanying research, you probably thought it was something close to magic. Coming from a traditional ML world, leave-one-out (loo) cross-validation (cv) is the gold standard for model checking and validation, but it is usually quite time consuming to do in practice.</p>
-<p>To perform clascical loo, you loop over your data set <span class="math inline">\(n\)</span> times, where <span class="math inline">\(n\)</span> is the number points in your data. For each iteration you remove or “hold out” <span class="math inline">\((X_i, y_i)\)</span>, where <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> are the covariates and response, respectively. The remaining data <span class="math inline">\((X_{-i}, y_{-i})\)</span> is used to train the model. After training you predict using the held out covariate <span class="math inline">\(X_i\)</span> to produce <span class="math inline">\(\tilde{y}_i\)</span>. Comparison can then be made between <span class="math inline">\(\tilde{y}_i\)</span> and <span class="math inline">\(y_i\)</span> using whichever error function fits your domain: MSE, accuracy, ELPD, etc.</p>
+<p>To perform classiccal loo, you loop over your data set <span class="math inline">\(n\)</span> times, where <span class="math inline">\(n\)</span> is the number points in your data. For each iteration you remove or “hold out” <span class="math inline">\((X_i, y_i)\)</span>, where <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> are the covariates and response, respectively. The remaining data <span class="math inline">\((X_{-i}, y_{-i})\)</span> is used to train the model. After training you predict using the held out covariate <span class="math inline">\(X_i\)</span> to produce <span class="math inline">\(\tilde{y}_i\)</span>. Comparison can then be made between <span class="math inline">\(\tilde{y}_i\)</span> and <span class="math inline">\(y_i\)</span> using whichever error function fits your domain: MSE, accuracy, ELPD, etc.</p>
 <p>Here is a short demo for linear regression with one covariate. We’ll perform loo and plot the absolute difference between <span class="math inline">\(\tilde{y}_i\)</span> and <span class="math inline">\(y_i\)</span>:</p>
 <div class="cell" data-layout-align="center">
 <details open="" class="code-fold">
@@ -383,7 +387,7 @@ E_\pi[f(\theta)] &amp;= \int\pi(\theta)f(\theta)d\theta \\
 <section id="pareto-mentality" class="level2">
 <h2 class="anchored" data-anchor-id="pareto-mentality">Pareto Mentality</h2>
 <p>You might have heard of the <a href="https://en.wikipedia.org/wiki/Pareto_principle">80/20 “rule”</a> before. Usually in the context of sales: 20% of customers make up 80% of sales. It’s a powerful rule of thumb that more often than not comes out roughly correct. This rule, also known as the Pareto principle, is named after the Italian sociologist and economist <a href="https://en.wikipedia.org/wiki/Vilfredo_Pareto">Vilfredo Pareto</a>, for which the <a href="https://en.wikipedia.org/wiki/Pareto_distribution">Parteo distribution</a> is also named after.</p>
-<p>The Pareto distribution as one might expect after learning the 80/20, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by <span class="citation" data-cites="pickands_imp">Pickands (<a href="#ref-pickands_imp" role="doc-biblioref">1975</a>)</span> and <span class="citation" data-cites="Balkema_imp">Balkema and Haan (<a href="#ref-Balkema_imp" role="doc-biblioref">1974</a>)</span> to well approximate the tail of the importance ratios <span class="math inline">\(r(\theta) | r(\theta) &gt; u\)</span> for some set <em>tail</em> lower bound <span class="math inline">\(u\)</span>. The PDF for the generalized Pareto is given by:</p>
+<p>The Pareto distribution, as one might expect after learning about the 80/20 rule, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by <span class="citation" data-cites="pickands_imp">Pickands (<a href="#ref-pickands_imp" role="doc-biblioref">1975</a>)</span> and <span class="citation" data-cites="Balkema_imp">Balkema and Haan (<a href="#ref-Balkema_imp" role="doc-biblioref">1974</a>)</span> to well approximate the tail of the importance ratios <span class="math inline">\(r(\theta) | r(\theta) &gt; u\)</span> for some set <em>tail</em> lower bound <span class="math inline">\(u\)</span>. The PDF for the generalized Pareto is given by:</p>
 <p><span class="math display">\[
 p(y|u,\sigma,k)=
 \begin{cases}
@@ -394,6 +398,36 @@ p(y|u,\sigma,k)=
 <p>The question of fit is not an easy one though. There have been numerous papers that build upon each other, but we will climb to the top of the Giant stack<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> for this one. Our method today comes from <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span>. It has a base of maximum likelihood, with a side of empirical Bayes, and a sprinkle of quadrature estimation for garnish. Overall a hearty meal!</p>
 <p>I’ve struggled with putting this in an appendix, and maybe that would be more digestible,<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> but where is the fun in that!</p>
 <p>It is shown by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> that for <span class="math inline">\(k\)</span></p>
+</section>
+<section id="appendix" class="level2">
+<h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
+<section id="zhang-and-stephens-k-esimation" class="level3">
+<h3 class="anchored" data-anchor-id="zhang-and-stephens-k-esimation">Zhang and Stephens <span class="math inline">\(k\)</span> esimation</h3>
+<p>One thing to note, in <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> they take a slightly different parameterization than <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span>. For one, <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span> sets the input <span class="math inline">\(x\)</span> to be between <span class="math inline">\([0,\inf)\)</span>, they don’t use <span class="math inline">\(u\)</span> for a lower bound. Second, <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> replace <span class="math inline">\(k\)</span> in <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span> with <span class="math inline">\(-k\)</span>. I haven’t be able to find a great explanation as to why Aki and team did this, but my assumption would be that it aids in interpretation of the final output. Regardless, after making those changes, the PDF that <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span> use is:</p>
+<p><span class="math display">\[
+p(y|u,\sigma,k)=
+\begin{cases}
+      \frac{1}{\sigma} (1 - (\frac{k x}{\sigma}))^{\frac{1}{k}-1} &amp; k\neq 0 \\
+      \frac{1}{\sigma}\exp(\frac{x}{\sigma}) &amp; k=0 \\
+\end{cases}
+\]</span> For our first step, we will find the estimating equations of the MLE for <span class="math inline">\((k,\sigma)\)</span>. We’ll also let <span class="math inline">\(\theta=\frac{k}{\sigma}\)</span>, which will help in the derivation. The log-likelihood function of <span class="math inline">\((\theta, k)\)</span> is given by:</p>
+<p><span class="math display">\[\begin{align}
+l(\theta, k) &amp;= \log\left[\prod^n_i \frac{k}{\theta}(1-x_i\theta)^{1/k - 1}\right]\\
+&amp;= n\log[k/\theta] + (1/k - 1)\sum\limits^n_{i=1} \log(1-x_i)
+\end{align}\]</span></p>
+<p>Now, let’s take the partial with respect to <span class="math inline">\(k\)</span>:</p>
+<p><span class="math display">\[\begin{align}
+\frac{\partial l(\theta, k)}{\partial k} &amp;= \frac{n}{k} + \frac{1}{k^2}\sum \log(1-x_i\theta)\\
+0 &amp;= \frac{n}{k} + \frac{1}{k^2}\sum \log(1-x_i\theta)\\
+\frac{1}{k^2}\sum \log(1-x_i\theta) &amp;= \frac{-n}{k}\\
+\hat{k}(\theta) &amp;= -n^{-1} \sum \log(1-x_i\theta)
+\end{align}\]</span></p>
+<p>Notice, we now have <span class="math inline">\(\hat{k}\)</span> in terms of <span class="math inline">\(\theta\)</span>. This means we can write our log-likelihood function fully in terms of <span class="math inline">\(\theta\)</span> by letting <span class="math inline">\(l(\theta, k)= l(\theta, \hat{k}(\theta)) = l(\theta)\)</span>. Further notice that we simplify our original log-likelihood function down to</p>
+<p><span class="math display">\[l(\theta) = n[\log(\theta/\hat{k}) + \hat{k} - 1]\]</span> where we have let <span class="math inline">\(\hat{k}=\hat{k}(\theta)\)</span> for clarity. Zhang and Stephens call the above the “profile log-likelihood”.</p>
+<p>A logical question is to ask why we aren’t just finding <span class="math inline">\(\hat{\theta}\)</span> from <span class="math inline">\(\frac{\partial l(\theta,k)}{\partial \theta}\)</span> and getting to old fashioned MLE solution and calling it a day. The answer is that unfortunately we can really only solve this system of equations using numerical solutions, and those solutions tend to be complex. One way around this is to solve it in terms of Bayesian quadrature estimation where we define an empirical prior and do grid approximation for the posterior.</p>
+<p>Good deal, let’s right down the expected value for <span class="math inline">\(\hat{\theta}\)</span>, taken with respect to the posterior:</p>
+<p><span class="math display">\[\hat{\theta}=\frac{\int\theta\cdot\pi(\theta)L(\theta)d\theta}{\int\pi(\theta)L(\theta)d\theta}\]</span> where <span class="math inline">\(\pi(\theta)\)</span> is our empirical prior for <span class="math inline">\(\theta\)</span> and <span class="math inline">\(L(\theta)\)</span> is the “profile likelihood” function. That is, <span class="math inline">\(L(\theta) = \exp[l(\theta)]\)</span>.</p>
+</section>
 </section>
 <section id="outline" class="level2">
 <h2 class="anchored" data-anchor-id="outline">Outline</h2>

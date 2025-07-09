@@ -15,7 +15,7 @@ bibliography: references.bib
 ### Loo Who?
 If you're like me, when you first saw the [loo](https://mc-stan.org/loo/) package and all the accompanying research, you probably thought it was something close to magic. Coming from a traditional ML world, leave-one-out (loo) cross-validation (cv) is the gold standard for model checking and validation, but it is usually quite time consuming to do in practice. 
 
-To perform clascical loo, you loop over your data set $n$ times, where $n$ is the number points in your data. For each iteration you remove or "hold out" $(X_i, y_i)$, where $X$ and $y$ are the covariates and response, respectively. The remaining data $(X_{-i}, y_{-i})$ is used to train the model. After training you predict using the held out covariate $X_i$ to produce $\tilde{y}_i$. Comparison can then be made between $\tilde{y}_i$ and $y_i$ using whichever error function fits your domain: MSE, accuracy, ELPD, etc.
+To perform classiccal loo, you loop over your data set $n$ times, where $n$ is the number points in your data. For each iteration you remove or "hold out" $(X_i, y_i)$, where $X$ and $y$ are the covariates and response, respectively. The remaining data $(X_{-i}, y_{-i})$ is used to train the model. After training you predict using the held out covariate $X_i$ to produce $\tilde{y}_i$. Comparison can then be made between $\tilde{y}_i$ and $y_i$ using whichever error function fits your domain: MSE, accuracy, ELPD, etc.
 
 Here is a short demo for linear regression with one covariate. We'll perform loo and plot the absolute difference between $\tilde{y}_i$ and $y_i$:
 ```{r}
@@ -130,7 +130,7 @@ where $\bar{r}$ is the average importance ratio over all samples $S$. While this
 ## Pareto Mentality
 You might have heard of the [80/20 "rule"](https://en.wikipedia.org/wiki/Pareto_principle) before. Usually in the context of sales: 20% of customers make up 80% of sales. It's a powerful rule of thumb that more often than not comes out roughly correct. This rule, also known as the Pareto principle, is named after the Italian sociologist and economist [Vilfredo Pareto](https://en.wikipedia.org/wiki/Vilfredo_Pareto), for which the [Parteo distribution](https://en.wikipedia.org/wiki/Pareto_distribution) is also named after. 
 
-The Pareto distribution as one might expect after learning the 80/20, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by @pickands_imp and @Balkema_imp to well approximate the tail of the importance ratios $r(\theta) | r(\theta) > u$ for some set *tail* lower bound $u$. The PDF for the generalized Pareto is given by:
+The Pareto distribution, as one might expect after learning about the 80/20 rule, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by @pickands_imp and @Balkema_imp to well approximate the tail of the importance ratios $r(\theta) | r(\theta) > u$ for some set *tail* lower bound $u$. The PDF for the generalized Pareto is given by:
 
 $$
 p(y|u,\sigma,k)=
@@ -146,6 +146,47 @@ The question of fit is not an easy one though. There have been numerous papers t
 I've struggled with putting this in an appendix, and maybe that would be more digestible,^[I just can't stop with these food puns] but where is the fun in that!
 
 It is shown by @psis_paper that for $k$
+
+## Appendix
+
+### Zhang and Stephens $k$ esimation
+One thing to note, in @psis_paper they take a slightly different parameterization than @zhang_gpd. For one, @zhang_gpd sets the input $x$ to be between $[0,\inf)$, they don't use $u$ for a lower bound. Second, @psis_paper replace $k$ in @zhang_gpd with $-k$. I haven't be able to find a great explanation as to why Aki and team did this, but my assumption would be that it aids in interpretation of the final output. Regardless, after making those changes, the PDF that @zhang_gpd use is:
+
+$$
+p(y|u,\sigma,k)=
+\begin{cases} 
+      \frac{1}{\sigma} (1 - (\frac{k x}{\sigma}))^{\frac{1}{k}-1} & k\neq 0 \\
+      \frac{1}{\sigma}\exp(\frac{x}{\sigma}) & k=0 \\
+ \end{cases}
+$$
+For our first step, we will find the estimating equations of the MLE for $(k,\sigma)$. We'll also let $\theta=\frac{k}{\sigma}$, which will help in the derivation. The log-likelihood function of $(\theta, k)$ is given by:
+
+\begin{align}
+l(\theta, k) &= \log\left[\prod^n_i \frac{k}{\theta}(1-x_i\theta)^{1/k - 1}\right]\\
+&= n\log[k/\theta] + (1/k - 1)\sum\limits^n_{i=1} \log(1-x_i)
+\end{align}
+
+Now, let's take the partial with respect to $k$:
+
+
+\begin{align}
+\frac{\partial l(\theta, k)}{\partial k} &= \frac{n}{k} + \frac{1}{k^2}\sum \log(1-x_i\theta)\\
+0 &= \frac{n}{k} + \frac{1}{k^2}\sum \log(1-x_i\theta)\\
+\frac{1}{k^2}\sum \log(1-x_i\theta) &= \frac{-n}{k}\\
+\hat{k}(\theta) &= -n^{-1} \sum \log(1-x_i\theta)
+\end{align}
+
+Notice, we now have $\hat{k}$ in terms of $\theta$. This means we can write our log-likelihood function fully in terms of $\theta$ by letting $l(\theta, k)= l(\theta, \hat{k}(\theta)) = l(\theta)$. Further notice that we simplify our original log-likelihood function down to 
+
+$$l(\theta) = n[\log(\theta/\hat{k}) + \hat{k} - 1]$$
+where we have let $\hat{k}=\hat{k}(\theta)$ for clarity. Zhang and Stephens call the above the "profile log-likelihood".
+
+A logical question is to ask why we aren't just finding $\hat{\theta}$ from $\frac{\partial l(\theta,k)}{\partial \theta}$ and getting an old fashioned MLE solution and calling it a day. The answer is that unfortunately we can really only solve this system of equations using numerical solutions, and those solutions tend to be complex. One way around this is to solve it in terms of Bayesian quadrature estimation where we define an empirical prior and do grid approximation for the posterior.
+
+Good deal, let's right down the expected value for $\hat{\theta}$, taken with respect to the posterior:
+
+$$\hat{\theta}=\frac{\int\theta\cdot\pi(\theta)L(\theta)d\theta}{\int\pi(\theta)L(\theta)d\theta}$$
+where $\pi(\theta)$ is our empirical prior for $\theta$ and $L(\theta)$ is the "profile likelihood" function. That is, $L(\theta) = \exp[l(\theta)]$.
 
 ## Outline
 

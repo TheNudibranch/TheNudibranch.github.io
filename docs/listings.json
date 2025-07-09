@@ -2,7 +2,6 @@
   {
     "listing": "/index.html",
     "items": [
-      "/posts/psis_loo/index.html",
       "/posts/state_space/index.html",
       "/posts/polychoric/index.html",
       "/posts/poisson_metrop/index.html",
