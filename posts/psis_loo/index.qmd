@@ -3,7 +3,7 @@ title: "Pareto Smoothed Importance Sampling - Leave One Out Cross Validation fro
 date: "2024-11-27"
 description: "I didn't believe the magic until I derived it for myself."
 categories: [Bayes, R, Stan]
-format: 
+format:
   html:
     code-fold: show
 toc: true
@@ -13,15 +13,12 @@ bibliography: references.bib
 ---
 
 ### Loo Who?
-If you're like me, when you first saw the [loo](https://mc-stan.org/loo/) package and all the accompanying research, you probably thought it was something close to magic. Coming from a traditional ML world, leave-one-out (loo) cross-validation (cv) is the gold standard for model checking and validation, but it is usually quite time consuming to do in practice. 
+If you're like me, when you first saw the [loo](https://mc-stan.org/loo/) package and all the accompanying research, you probably thought it was something close to magic. Coming from a traditional ML world, leave-one-out (loo) cross-validation (cv) is the gold standard for model checking and validation, but it is usually quite time consuming to do in practice.
 
 To perform classiccal loo, you loop over your data set $n$ times, where $n$ is the number points in your data. For each iteration you remove or "hold out" $(X_i, y_i)$, where $X$ and $y$ are the covariates and response, respectively. The remaining data $(X_{-i}, y_{-i})$ is used to train the model. After training you predict using the held out covariate $X_i$ to produce $\tilde{y}_i$. Comparison can then be made between $\tilde{y}_i$ and $y_i$ using whichever error function fits your domain: MSE, accuracy, ELPD, etc.
 
 Here is a short demo for linear regression with one covariate. We'll perform loo and plot the absolute difference between $\tilde{y}_i$ and $y_i$:
 ```{r}
-#| fig-align: center
-#| fig-width: 10
-#| fig-height: 6
 set.seed(1235)
 n <- 100
 x <- rnorm(n)
@@ -36,9 +33,22 @@ for (i in 1:n){
   slope_pred[i] <- mod$coefficients[2]
 }
 diff <- abs(loo_pred - data$resp)
-plot(diff, ylab='Abs. Difference between pred and actual y', 
-     xlab='LOO Iteration', pch=16, col=ifelse(diff > 4, 'blue','black'))
-legend('topleft', col=c('blue'), pch=c(16), legend=c('Influential Points'))
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Plot: LOO residuals"
+#| fig-align: center
+#| fig-width: 9
+#| fig-height: 5
+par(mar = c(4.5, 4.5, 1.5, 1), family = "serif", font.lab = 2)
+plot(diff, ylab = 'Absolute Difference', xlab = 'Observation Index',
+     pch = 21, bg = ifelse(diff > 4, adjustcolor('#D4A017', 0.7), adjustcolor('grey40', 0.5)),
+     col = ifelse(diff > 4, '#D4A017', 'grey40'), cex = 1.2, las = 1,
+     panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+legend('topleft', pch = 21, pt.bg = c('#D4A017', 'grey40'),
+       col = c('#D4A017', 'grey40'), pt.cex = 1.2, bty = 'n',
+       legend = c('Influential Points', 'Typical Points'))
 ```
 
 
@@ -46,13 +56,20 @@ An immediate result of this testing framework is that each point can be compared
 
 ```{r}
 #| code-fold: true
+#| code-summary: "Plot: Coefficient sensitivity"
 #| fig-align: center
-#| fig-width: 10
-#| fig-height: 6
-plot(slope_pred, pch=16, ylab='Slope of Model trained without point i', xlab='LOO Iteration',
-     col=ifelse(diff > 4, 'blue','black'))
+#| fig-width: 9
+#| fig-height: 5
+par(mar = c(4.5, 4.5, 1.5, 1), family = "serif", font.lab = 2)
+plot(slope_pred, pch = 21, ylab = 'Slope Estimate', xlab = 'Observation Left Out',
+     bg = ifelse(diff > 4, adjustcolor('#D4A017', 0.7), adjustcolor('grey40', 0.5)),
+     col = ifelse(diff > 4, '#D4A017', 'grey40'), cex = 1.2, las = 1,
+     panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(h = coef(lm(resp ~ co, data = data))[2], lty = 2, col = '#2874A6', lwd = 2)
+legend('bottomleft', lty = 2, col = '#2874A6', lwd = 2, bty = 'n',
+       legend = 'Full-data slope')
 ```
- 
+
 ## Some Important Samples
 Alright, so we've tackled the latter half of the posts name. What about the first half? Well for that, we'll have to split it in half as well and focus on importance sampling first. At its heart, importance sampling is just a way to evaluate pesky integrals. Consider the following expectation.
 
@@ -71,70 +88,83 @@ E_\pi[f(\theta)] &= \int\pi(\theta)f(\theta)d\theta \\
 &\approx \frac{1}{S} \sum^S \frac{\pi(\theta_s)}{\gamma(\theta_s)} \cdot f(\theta_s), \text{ where } \theta_s\sim\gamma(\theta)
 \end{align}
 
-We call the quantity $\frac{\pi(\theta)}{\gamma(\theta)}$ the importance ratio. The slight catch here is that above will only hold if both $\pi$ and $\gamma$ are normalized. If they are not, which is usually the case if we are approximating posteriors, then we need to employ the self-normalized estimator. That is, if $r(\theta)= \pi(\theta)/\gamma(\theta)$ is an non-normalized importance ratio, then 
+We call the quantity $\frac{\pi(\theta)}{\gamma(\theta)}$ the importance ratio. The slight catch here is that above will only hold if both $\pi$ and $\gamma$ are normalized. If they are not, which is usually the case if we are approximating posteriors, then we need to employ the self-normalized estimator. That is, if $r(\theta)= \pi(\theta)/\gamma(\theta)$ is an non-normalized importance ratio, then
 
 $$\frac{1}{S} \sum^S \frac{r(\theta_s) \cdot f(\theta_s)}{r(\theta_s)}$$
 
-is the self-normalized importance estimator of $E_\gamma[r(\theta) f(\theta)]$. 
+is the self-normalized importance estimator of $E_\gamma[r(\theta) f(\theta)]$.
 
-Let's show a quick example where $\pi \sim N(0,1)$ and $f(\theta) = \theta^4$. Clearly, $\pi$ would be a dream to sample from, but we'll assume that we left our normal sampler at home. We'll instead use $\gamma \sim t_{\nu=1,000}$ to sample from as an approximation to $\pi$.
+Let's show a quick example where $\pi \sim N(0,1)$ and $f(\theta) = \theta^4$. Clearly, $\pi$ would be a dream to sample from, but we'll assume that we left our normal sampler at home. We'll instead use $\gamma \sim t_{\nu=3}$ to sample from as an approximation to $\pi$. Note that the $t_3$ distribution has heavier tails than the normal, which is actually a *good* thing for importance sampling. Having a proposal with heavier tails ensures the importance ratios $\pi/\gamma$ stay bounded, since the proposal never drops to zero faster than the target.
 
 
 ```{r}
-#| fig-align: center
-#| fig-width: 10
-#| fig-height: 6
-theta_samples <- rt(1e4, df=1000)
-imp_ratios <- dt(theta_samples, df=1000)/dnorm(theta_samples)
+set.seed(42)
+theta_samples <- rt(1e4, df = 3)
+log_ratios <- dnorm(theta_samples, log = TRUE) - dt(theta_samples, df = 3, log = TRUE)
+imp_ratios <- exp(log_ratios)
 f <- theta_samples^4
-estimator <- cumsum(imp_ratios * f) / (1:length(theta_samples))
-
-par(mfrow=c(1,2))
-plot(estimator, lwd=3, ylab='Importance Estimator', xlab='S', type='n')
-abline(h=3, col='darkred', lwd=3)
-lines(estimator, lwd=3)
-legend('topright', legend=c('Estimated', 'Actual'), lwd=3, col=c('black', 'darkred'))
-hist(imp_ratios, col=adjustcolor('darkblue',0.3), xlab='Importance Ratios',
-     main='', ylab='', breaks=25)
+estimator <- cumsum(imp_ratios * f) / cumsum(imp_ratios)
 ```
-
-From the properties of the normal distribution, we know that we are just estimating $E[\theta^4]$ with respect to the normal distribution. The answer of course is just given by the 4th central moment: $3\sigma^2$.
-
-So we have our estimator, but there are still questions that we've swept under the rug. For one, how many iterations should we have run our sampler for, and does $\gamma$ really approximate $\pi$ well enough. For a little motivation let's try the same experiment again, but instead use $\gamma \sim t_{\nu=10}$ which has wider tails (a little foreshadowing).
 
 ```{r}
 #| code-fold: true
+#| code-summary: "Plot: Good importance sampling"
 #| fig-align: center
-#| fig-width: 10
-#| fig-height: 6
-theta_samples <- rt(1e4, df=20)
-imp_ratios <- dt(theta_samples, df=20)/dnorm(theta_samples)
-f <- theta_samples^4
-estimator <- cumsum(imp_ratios * f) / (1:length(theta_samples))
-
-par(mfrow=c(1,2))
-plot(estimator, lwd=3, ylab='Importance Estimator', xlab='S', type='n')
-abline(h=3, col='darkred', lwd=3)
-lines(estimator, lwd=3)
-legend('topright', legend=c('Estimated', 'Actual'), lwd=3, col=c('black', 'darkred'))
-hist(imp_ratios, col=adjustcolor('darkblue',0.3), xlab='Importance Ratios',
-     main='', ylab='', breaks=25)
+#| fig-width: 9
+#| fig-height: 5
+par(mfrow = c(1, 2), mar = c(4.5, 4.5, 2, 1), family = "serif", font.lab = 2)
+plot(estimator, lwd = 2, ylab = 'Self-Normalized IS Estimator', xlab = 'S', type = 'n',
+     las = 1, panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(h = 3, col = '#D4A017', lwd = 2, lty = 2)
+lines(estimator, lwd = 2, col = '#2874A6')
+legend('topright', legend = c('Estimated', 'True (3)'), lwd = 2,
+       col = c('#2874A6', '#D4A017'), lty = c(1, 2), bty = 'n')
+hist(imp_ratios, col = adjustcolor('#2874A6', 0.3), border = '#2874A6',
+     xlab = 'Importance Ratios', main = '', ylab = 'Frequency', breaks = 30, las = 1)
 ```
 
-Wow! Look's like we are far from our actual value. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen $\gamma$ distribution? The key is in the importance ratios. Notice how in the first experiment where $\gamma \sim t_{\nu=1,000}$, the histogram of importance ratios tail is much lighter than that of the second experiment. This is a property we would like to be able to enforce, as well as detect. An early method for controlling the importance rations $r(\theta)$ was to truncate at some maximum value. In particular @trunc_sample_paper defined $w(\theta_s)$ to be the truncated importance weights as:
+From the properties of the normal distribution, we know that we are just estimating $E[\theta^4]$ with respect to the normal distribution. The answer of course is just given by the 4th central moment: $3\sigma^2$. Notice how all the importance ratios are bounded near 1. That's the hallmark of a good proposal: its tails are at least as heavy as the target's, so no single draw dominates the sum.
+
+So we have our estimator, but there are still questions that we've swept under the rug. For one, how many iterations should we have run our sampler for, and does $\gamma$ really approximate $\pi$ well enough. For a little motivation let's flip the setup. Suppose now our target is the heavy-tailed $t_3$ distribution and we want to estimate $E_{t_3}[\theta^2]$. The true answer is $\nu/(\nu-2) = 3$ for $\nu=3$. But this time we'll use the standard normal $\gamma = N(0,1)$ as our proposal, which has *lighter* tails than the target.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Plot: Bad importance sampling"
+#| fig-align: center
+#| fig-width: 9
+#| fig-height: 5
+set.seed(6)
+theta_samples <- rnorm(5000)
+log_ratios <- dt(theta_samples, df = 3, log = TRUE) - dnorm(theta_samples, log = TRUE)
+imp_ratios <- exp(log_ratios)
+f <- theta_samples^2
+estimator <- cumsum(imp_ratios * f) / cumsum(imp_ratios)
+
+par(mfrow = c(1, 2), mar = c(4.5, 4.5, 2, 1), family = "serif", font.lab = 2)
+plot(estimator, lwd = 2, ylab = 'Self-Normalized IS Estimator', xlab = 'S', type = 'n',
+     las = 1, panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(h = 3, col = '#D4A017', lwd = 2, lty = 2)
+lines(estimator, lwd = 2, col = '#2874A6')
+legend('topright', legend = c('Estimated', 'True (3)'), lwd = 2,
+       col = c('#2874A6', '#D4A017'), lty = c(1, 2), bty = 'n')
+hist(imp_ratios, col = adjustcolor('#2874A6', 0.3), border = '#2874A6',
+     xlab = 'Importance Ratios', main = '', ylab = 'Frequency', breaks = 40, las = 1)
+```
+
+Wow! Look at that spike in the running average. A single draw happened to land out in the tail where the $t_3$ density is much larger than the normal density, producing an enormous importance ratio that jerks the entire estimate upward. And look at the histogram of ratios: a long right tail with a few extreme values. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen $\gamma$ distribution? The key is in the importance ratios. Notice how in the first experiment the histogram of importance ratios is concentrated near 1, while in this second experiment we see a heavy right tail. This is a property we would like to be able to enforce, as well as detect. An early method for controlling the importance rations $r(\theta)$ was to truncate at some maximum value. In particular @trunc_sample_paper defined $w(\theta_s)$ to be the truncated importance weights as:
 
 $$w(\theta_s) = \min(r(\theta_s),\sqrt{S}\bar{r})$$
 
-where $\bar{r}$ is the average importance ratio over all samples $S$. While this method does guarantee finite variance of the truncated importance ratios, it unfortunately incorporates a large bias. Another method given by @psis_paper to control the importance ratios is to fit a Pareto distribution to the tail of importance ratio distribution. This not only aids in giving the importance ratios finite variance while introducing little bias, but also allows us to use the parameters of the fit Pareto distribution as diagnostics. The following definition for the Pareto distribution, as well as its motivation is defined with much greater detail in @psis_paper. I will attempt to give a slimmed down version of their background with a little added history.   
+where $\bar{r}$ is the average importance ratio over all samples $S$. While this method does guarantee finite variance of the truncated importance ratios, it unfortunately incorporates a large bias. Another method given by @psis_paper to control the importance ratios is to fit a Pareto distribution to the tail of importance ratio distribution. This not only aids in giving the importance ratios finite variance while introducing little bias, but also allows us to use the parameters of the fit Pareto distribution as diagnostics. The following definition for the Pareto distribution, as well as its motivation is defined with much greater detail in @psis_paper. I will attempt to give a slimmed down version of their background with a little added history.
 
 ## Pareto Mentality
-You might have heard of the [80/20 "rule"](https://en.wikipedia.org/wiki/Pareto_principle) before. Usually in the context of sales: 20% of customers make up 80% of sales. It's a powerful rule of thumb that more often than not comes out roughly correct. This rule, also known as the Pareto principle, is named after the Italian sociologist and economist [Vilfredo Pareto](https://en.wikipedia.org/wiki/Vilfredo_Pareto), for which the [Parteo distribution](https://en.wikipedia.org/wiki/Pareto_distribution) is also named after. 
+You might have heard of the [80/20 "rule"](https://en.wikipedia.org/wiki/Pareto_principle) before. Usually in the context of sales: 20% of customers make up 80% of sales. It's a powerful rule of thumb that more often than not comes out roughly correct. This rule, also known as the Pareto principle, is named after the Italian sociologist and economist [Vilfredo Pareto](https://en.wikipedia.org/wiki/Vilfredo_Pareto), for which the [Parteo distribution](https://en.wikipedia.org/wiki/Pareto_distribution) is also named after.
 
 The Pareto distribution, as one might expect after learning about the 80/20 rule, is a simple power law. It is usually characterized by one parameter and is useful for fitting tails of distributions. For our use case, we will instead be using the generalized Pareto distribution which has been shown by @pickands_imp and @Balkema_imp to well approximate the tail of the importance ratios $r(\theta) | r(\theta) > u$ for some set *tail* lower bound $u$. The PDF for the generalized Pareto is given by:
 
 $$
 p(y|u,\sigma,k)=
-\begin{cases} 
+\begin{cases}
       \frac{1}{\sigma} (1 + k (\frac{y-u}{\sigma}))^{-\frac{1}{k}-1} & k\neq 0 \\
       \frac{1}{\sigma}\exp(\frac{y-u}{\sigma}) & k=0 \\
  \end{cases}
@@ -145,7 +175,348 @@ The question of fit is not an easy one though. There have been numerous papers t
 
 I've struggled with putting this in an appendix, and maybe that would be more digestible,^[I just can't stop with these food puns] but where is the fun in that!
 
-It is shown by @psis_paper that for $k$
+It is shown by @psis_paper that for $k < 0.5$, the variance of the importance weights is finite and the central limit theorem holds, meaning our estimates will be reliable with enough samples. For $0.5 \leq k < 0.7$, the variance is infinite but the mean still exists, so convergence is slower but generally still workable. For $k \geq 0.7$, neither the mean nor variance is guaranteed to be finite, and our importance sampling estimates should not be trusted. This simple three-tier diagnostic is one of the great gifts of the PSIS framework: fit the generalized Pareto to the tail of $r(\theta)$, check $\hat{k}$, and you instantly know whether your importance sampling is behaving.
+
+But $\hat{k}$ is not just a diagnostic. The Pareto fit also *fixes* the importance ratios. Let's see how.
+
+## Smoothing Things Over
+
+The "smoothed" in Pareto Smoothed Importance Sampling refers to replacing the largest importance ratios with the expected values of the order statistics from the fitted generalized Pareto distribution. Think of it as taking the noisy, unstable tail of our importance ratio distribution and swapping it out for a well-behaved parametric approximation. In practice, we define the number of tail samples $M = \min(S/5, 3\sqrt{S})$ where $S$ is the total number of draws.
+
+Here is the PSIS procedure:
+
+1. Compute the importance ratios $r(\theta_s)$ for $s = 1, \ldots, S$
+2. Sort them in increasing order
+3. Take the $M$ largest values and fit the generalized Pareto distribution to them (using the method described in the Appendix)
+4. Replace those $M$ values with the expected values of the order statistics from the fitted distribution
+5. Truncate the smoothed ratios at a maximum value of $S^{3/4}$ to maintain stability
+
+The intuition here is that the largest importance ratios are the noisiest. They are driven by a handful of extreme draws from $\gamma(\theta)$ that happened to land far out in the tails. By replacing them with their expected values under the fitted Pareto, we reduce variance while introducing only a small amount of bias. The details of the fitting procedure are in the Appendix if you want to follow the derivation through to its conclusion.
+
+Let's revisit our earlier troublesome example where $\gamma = N(0,1)$ and $\pi = t_3$ and see what happens when we apply Pareto smoothing. Recall that the raw IS estimate was jerked upward by a single extreme importance ratio. PSIS will fit a generalized Pareto to the tail of those ratios, replace them with well-behaved expected order statistics, and give us a $\hat{k}$ diagnostic in the process.
+
+::: {.callout-note}
+## Implementation note: practical heuristics in `fit_gpd_tail`
+
+The function below follows the `loo` package's implementation rather than the textbook Zhang and Stephens procedure verbatim. There are several practical heuristics at play that deviate from the pure derivation in the Appendix:
+
+1. **Log-space shifted arithmetic**: We subtract the max log-weight before exponentiating to avoid overflow, then compute exceedances on the exponentiated scale (`exp(tail) - exp(cutoff)`) rather than working with raw ratios directly.
+2. **Modified grid construction**: Instead of the original order-statistic based grid from Zhang and Stephens ($\theta_j$ built from spacings of sorted data), the `loo` package uses a simpler formula anchored at the upper quartile of exceedances: $\theta_j = 1/x_{(N)} + (1 - \sqrt{m/(j-0.5)}) / 3 x^*$ where $x^* = x_{(\lfloor N/4 \rfloor)}$. This is more robust to heavily skewed tails.
+3. **Weakly informative prior on k**: After estimation, $k$ is shrunk toward 0.5 via $\hat{k}_{\text{adj}} = \hat{k} \cdot N/(N+10) + 0.5 \cdot 10/(N+10)$. This stabilizes the diagnostic when the tail sample is small.
+4. **Quantile replacement on the exponentiated scale**: Smoothed tail values are GPD quantiles added to the exponentiated cutoff, then log-transformed back to the shifted log-weight scale.
+
+These deviations reflect years of practical refinement and are necessary to match the `loo` package's output. The Appendix gives the clean theory; the code below gives the battle-tested version.
+:::
+
+```{r}
+# Helper function to fit GPD and return smoothed weights
+fit_gpd_tail <- function(ratios) {
+  S <- length(ratios)
+  M <- min(floor(0.2 * S), 3 * floor(sqrt(S)))
+
+  # Work with shifted log weights for numerical stability
+  lw <- log(ratios)
+  lw_max <- max(lw)
+  lw <- lw - lw_max
+
+  # Sort and find cutoff
+  ord <- order(lw)
+  cutoff <- lw[ord[S - M]]
+  tail_ids <- ord[(S - M + 1):S]
+  lw_tail <- lw[tail_ids]
+
+  # Exceedances on exp scale (as the loo package does)
+  exp_cutoff <- exp(cutoff)
+  exc <- exp(lw_tail) - exp_cutoff
+
+  # Zhang and Stephens GPD fit
+  x <- sort(exc)
+  N <- length(x)
+  prior <- 3
+  m <- 30 + floor(sqrt(N))
+
+  # Grid of theta values (improved construction from loo package)
+  xstar <- x[floor(N / 4 + 0.5)]
+  theta_grid <- 1 / x[N] + (1 - sqrt(m / (seq_len(m) - 0.5))) / prior / xstar
+
+  # Profile log-likelihood for each theta
+  l_theta <- N * sapply(theta_grid, function(th) {
+    k_val <- mean(log1p(-th * x))
+    log(-th / k_val) - k_val - 1
+  })
+
+  # Posterior weights and estimate of theta
+  l_theta <- l_theta - max(l_theta)
+  w_theta <- exp(l_theta) / sum(exp(l_theta))
+  theta_hat <- sum(theta_grid * w_theta)
+
+  k <- mean(log1p(-theta_hat * x))
+  sigma <- -k / theta_hat
+
+  # Weakly informative prior adjustment (pulls k toward 0.5)
+  k <- k * N / (N + 10) + 0.5 * 10 / (N + 10)
+
+  # Replace tail with GPD quantiles
+  p <- (seq_len(M) - 0.5) / M
+  if (abs(k) > 1e-6) {
+    qq <- exp_cutoff + sigma / k * ((1 - p)^(-k) - 1)
+  } else {
+    qq <- exp_cutoff - sigma * log(1 - p)
+  }
+  smoothed_tail_lw <- log(qq)
+
+  # Assign sorted quantiles to sorted tail positions
+  smoothed_lw <- lw
+  smoothed_lw[tail_ids[order(lw_tail)]] <- sort(smoothed_tail_lw)
+
+  # Back to original scale and cap
+  smoothed <- exp(smoothed_lw + lw_max)
+  smoothed <- pmin(smoothed, S^(3/4))
+
+  list(smoothed = smoothed, k = k, threshold = cutoff)
+}
+```
+
+```{r}
+set.seed(6)
+theta_samples <- rnorm(5000)
+log_ratios <- dt(theta_samples, df = 3, log = TRUE) - dnorm(theta_samples, log = TRUE)
+imp_ratios <- exp(log_ratios)
+f <- theta_samples^2
+
+# Apply PSIS
+psis_result <- fit_gpd_tail(imp_ratios)
+smoothed_ratios <- psis_result$smoothed
+
+cat(sprintf(paste0(
+  "--- PSIS Diagnostics ---\n",
+  "  k-hat:                %.3f (%s)\n\n",
+  "--- Estimates ---\n",
+  "  Raw IS:               %.3f\n",
+  "  PSIS:                 %.3f\n",
+  "  True:                 3.000\n\n",
+  "--- Weight Summary ---\n",
+  "  Max raw weight:       %.1f\n",
+  "  Max smoothed weight:  %.1f\n"),
+  psis_result$k,
+  ifelse(psis_result$k < 0.5, "Good: finite variance, CLT holds",
+  ifelse(psis_result$k < 0.7, "Marginal: infinite variance, finite mean",
+                               "Caution: mean may not exist")),
+  sum(imp_ratios * f) / sum(imp_ratios),
+  sum(smoothed_ratios * f) / sum(smoothed_ratios),
+  max(imp_ratios),
+  max(smoothed_ratios)))
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Plot: PSIS smoothing comparison"
+#| fig-align: center
+#| fig-width: 9
+#| fig-height: 5
+raw_estimator <- cumsum(imp_ratios * f) / cumsum(imp_ratios)
+smoothed_estimator <- cumsum(smoothed_ratios * f) / cumsum(smoothed_ratios)
+
+par(mfrow = c(1, 2), mar = c(4.5, 4.5, 2, 1), family = "serif", font.lab = 2)
+
+# Left panel: convergence
+plot(raw_estimator, lwd = 1.5, ylab = 'Self-Normalized IS Estimator', xlab = 'S',
+     type = 'n', ylim = range(c(raw_estimator, smoothed_estimator, 3)),
+     las = 1, panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(h = 3, col = '#D4A017', lwd = 2, lty = 2)
+lines(raw_estimator, lwd = 1.5, col = adjustcolor('grey50', 0.6))
+lines(smoothed_estimator, lwd = 2, col = '#2874A6')
+legend('topright', legend = c('Raw IS', 'PSIS', 'True (3)'),
+       lwd = c(1.5, 2, 2), col = c('grey50', '#2874A6', '#D4A017'),
+       lty = c(1, 1, 2), bty = 'n')
+
+# Right panel: importance ratio distributions
+hist(imp_ratios, col = adjustcolor('grey50', 0.3), border = 'grey50',
+     xlab = 'Importance Ratios', main = '', ylab = 'Frequency', breaks = 40, las = 1)
+hist(smoothed_ratios, col = adjustcolor('#2874A6', 0.4), border = '#2874A6',
+     add = TRUE, breaks = 40)
+legend('topright', fill = c(adjustcolor('grey50', 0.3), adjustcolor('#2874A6', 0.4)),
+       border = c('grey50', '#2874A6'), legend = c('Raw', 'Smoothed'), bty = 'n')
+```
+
+Look at that left panel. The raw IS estimate (grey) has a dramatic spike around draw 644 where a single extreme weight dominates. The PSIS estimate (blue) smooths right through it. On the right, the histogram shows how the extreme tail of the raw weights has been replaced with well-behaved Pareto order statistics. The raw maximum weight was over 2000, while after smoothing it drops to around 60. That single dominant weight was responsible for the spike in the running average, and PSIS identified it and tamed it.
+
+The $\hat{k}$ diagnostic is in the "caution" zone, telling us that while the smoothing helped substantially, we should still be careful with this proposal distribution. In practice, if you saw this $\hat{k}$ value in a PSIS-LOO computation, it would mean the full posterior and the leave-one-out posterior disagree enough that the approximation is strained but potentially salvageable.
+
+## Coming Full Circle: PSIS-LOO
+
+Now for the grand finale. We've built up all three ingredients: LOO cross-validation, importance sampling, and Pareto smoothing. Time to combine them.
+
+Recall that in classical LOO, we refit the model $n$ times. In the Bayesian setting, each refit means running MCMC again without observation $i$. For complex models, this is wildly impractical. But importance sampling gives us a way out.
+
+Suppose we have already fit our full Bayesian model and obtained $S$ posterior draws $\theta_1, \ldots, \theta_S$ from $p(\theta | y)$. We want to approximate the leave-one-out predictive density for each observation:
+
+$$p(y_i | y_{-i}) = \int p(y_i | \theta) p(\theta | y_{-i}) d\theta$$
+
+We can treat the full posterior $p(\theta | y)$ as our proposal distribution $\gamma(\theta)$ and the leave-one-out posterior $p(\theta | y_{-i})$ as our target $\pi(\theta)$. The importance ratio for observation $i$ becomes:
+
+\begin{align}
+r_i(\theta_s) &= \frac{p(\theta_s | y_{-i})}{p(\theta_s | y)} \\
+&= \frac{p(y_{-i} | \theta_s)p(\theta_s)/p(y_{-i})}{p(y | \theta_s)p(\theta_s)/p(y)} \\
+&= \frac{p(y_{-i} | \theta_s)}{p(y | \theta_s)} \cdot \frac{p(y)}{p(y_{-i})} \\
+&\propto \frac{p(y_{-i} | \theta_s)}{p(y | \theta_s)} \\
+&= \frac{1}{p(y_i | \theta_s)}
+\end{align}
+
+where in the last step we used the fact that observations are conditionally independent given $\theta$, so $p(y | \theta) = p(y_i | \theta) \cdot p(y_{-i} | \theta)$.
+
+This is a really satisfying result. The importance ratio for LOO is just the inverse of the likelihood of the held-out observation evaluated at the posterior draw. We don't need to refit anything. We already have all the likelihood values from fitting the full model!
+
+Using the self-normalized importance estimator from earlier, the PSIS-LOO estimate of the leave-one-out predictive density for observation $i$ is:
+
+$$\hat{p}(y_i | y_{-i}) = \frac{\sum_{s=1}^S w_i(\theta_s) \cdot p(y_i | \theta_s)}{\sum_{s=1}^S w_i(\theta_s)}$$
+
+where $w_i(\theta_s)$ are the Pareto smoothed importance weights derived from $r_i(\theta_s) = 1/p(y_i | \theta_s)$.
+
+Summing the log of these values over all observations gives us the expected log pointwise predictive density (ELPD), which is the primary model comparison metric:
+
+$$\widehat{\text{elpd}}_{\text{psis-loo}} = \sum_{i=1}^n \log \hat{p}(y_i | y_{-i})$$
+
+And here is where all three ingredients come together. For each observation $i$, we get a Pareto $\hat{k}_i$ diagnostic from smoothing $r_i$. Points where $\hat{k}_i > 0.7$ are observations where the full posterior and the leave-one-out posterior strongly disagree. These are the influential observations, exactly the kind that classical LOO would also flag, but without needing to refit the model $n$ times.
+
+### Seeing it in Practice
+
+Let's tie everything together with a proper example. We'll fit a Bayesian linear regression using `rstanarm` with the same data from the very beginning of the post. The beauty of `rstanarm` is that it comes with pre-compiled Stan models, so there is no compilation step. We get straight to sampling.
+
+```{r}
+#| message: false
+#| warning: false
+#| eval: false
+library(rstanarm)
+library(loo)
+
+set.seed(1235)
+n <- 100
+x <- rnorm(n)
+y <- x * 2 + -2 + ifelse(1:100 %% 40 == 0, 15, rnorm(n, 0, 1))
+data <- data.frame(x = x, y = y)
+
+fit <- stan_glm(y ~ x, data = data,
+                family = gaussian(),
+                prior = normal(0, 10),
+                prior_intercept = normal(0, 10),
+                prior_aux = exponential(1),
+                chains = 4, iter = 2000, refresh = 0, seed = 123)
+```
+
+Under the hood, `rstanarm` is fitting the same model we would write in raw Stan. The difference is that the log-likelihood for every observation is computed automatically for us. We can extract it with the `log_lik` method and use it directly for our importance ratios.
+
+Now let's extract the log-likelihood matrix and compute PSIS-LOO both manually and with the `loo` package:
+
+```{r}
+#| eval: false
+log_lik_mat <- log_lik(fit)
+
+# Manual PSIS-LOO
+S <- nrow(log_lik_mat)
+n_obs <- ncol(log_lik_mat)
+elpd_manual <- rep(NA, n_obs)
+k_manual <- rep(NA, n_obs)
+
+for (i in 1:n_obs) {
+  # Raw importance ratios: 1/p(y_i | theta_s)
+  raw_ratios <- exp(-log_lik_mat[, i])
+
+  psis_fit <- fit_gpd_tail(raw_ratios)
+  w <- psis_fit$smoothed
+  k_manual[i] <- psis_fit$k
+
+  # Self-normalized IS estimate of LOO predictive density
+  w_norm <- w / sum(w)
+  elpd_manual[i] <- log(sum(w_norm * exp(log_lik_mat[, i])))
+}
+
+# Compare with the loo package
+loo_result <- loo(fit)
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Plot: Manual vs loo package comparison"
+#| fig-align: center
+#| fig-width: 9
+#| fig-height: 5
+#| eval: false
+par(mfrow = c(1, 2), mar = c(4.5, 4.5, 2, 1), family = "serif", font.lab = 2)
+plot(elpd_manual, loo_result$pointwise[, "elpd_loo"], pch = 21,
+     bg = adjustcolor('#2874A6', 0.5), col = '#2874A6',
+     xlab = 'Manual PSIS-LOO (elpd)', ylab = 'loo Package (elpd)',
+     las = 1, panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(0, 1, col = '#D4A017', lwd = 2, lty = 2)
+
+plot(k_manual, loo_result$diagnostics$pareto_k, pch = 21,
+     bg = adjustcolor('#2874A6', 0.5), col = '#2874A6',
+     xlab = expression('Manual ' * hat(k)), ylab = expression('loo Package ' * hat(k)),
+     las = 1, panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(0, 1, col = '#D4A017', lwd = 2, lty = 2)
+```
+
+Our manual estimates should track closely to the `loo` package results.^[They won't be exactly identical because the `loo` package uses a more refined implementation of the Zhang and Stephens estimator, but the spirit is the same.] The gold diagonal line shows perfect agreement.
+
+### Validating Our Implementation
+
+Let's go a step further and quantify just how close our from-scratch implementation is to the `loo` package. We'll look at the correlation, max absolute difference, and overall ELPD sum for both methods.
+
+```{r}
+#| eval: false
+elpd_loo_pkg <- loo_result$pointwise[, "elpd_loo"]
+k_loo_pkg <- loo_result$diagnostics$pareto_k
+
+cat(sprintf(paste0(
+  "--- ELPD Comparison ---\n",
+  "  Manual total:         %.2f\n",
+  "  loo package total:    %.2f\n",
+  "  Correlation:          %.6f\n",
+  "  Max |diff|:           %.4f\n\n",
+  "--- Pareto k Comparison ---\n",
+  "  Correlation:          %.6f\n",
+  "  Max |diff|:           %.4f\n"),
+  sum(elpd_manual), sum(elpd_loo_pkg),
+  cor(elpd_manual, elpd_loo_pkg),
+  max(abs(elpd_manual - elpd_loo_pkg)),
+  cor(k_manual, k_loo_pkg),
+  max(abs(k_manual - k_loo_pkg))))
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Plot: Pareto k diagnostics"
+#| fig-align: center
+#| fig-width: 9
+#| fig-height: 5
+#| eval: false
+par(mar = c(4.5, 4.5, 1.5, 1), family = "serif", font.lab = 2)
+plot(loo_result$diagnostics$pareto_k, pch = 21, cex = 1.2,
+     ylab = expression(hat(k)), xlab = 'Observation', las = 1,
+     bg = ifelse(loo_result$diagnostics$pareto_k > 0.7, adjustcolor('#D4A017', 0.7),
+          ifelse(loo_result$diagnostics$pareto_k > 0.5, adjustcolor('darkorange', 0.7),
+                 adjustcolor('grey40', 0.5))),
+     col = ifelse(loo_result$diagnostics$pareto_k > 0.7, '#D4A017',
+           ifelse(loo_result$diagnostics$pareto_k > 0.5, 'darkorange', 'grey40')),
+     panel.first = grid(col = adjustcolor('grey80', 0.5), lty = 1))
+abline(h = 0.7, col = '#D4A017', lty = 2, lwd = 1.5)
+abline(h = 0.5, col = 'darkorange', lty = 2, lwd = 1.5)
+legend('topleft', pch = 21, pt.cex = 1.2, bty = 'n',
+       pt.bg = c(adjustcolor('grey40', 0.5), adjustcolor('darkorange', 0.7),
+                 adjustcolor('#D4A017', 0.7)),
+       col = c('grey40', 'darkorange', '#D4A017'),
+       legend = c('k < 0.5 (good)', '0.5 < k < 0.7 (marginal)', 'k > 0.7 (bad)'))
+```
+
+If you recall our very first plot from the classical LOO section, the influential points we identified there should line up with the high $\hat{k}$ observations here. We used the same data generating process after all, complete with those pesky outliers at every 40th observation. The difference is that we only had to fit the model *once*.
+
+## Wrapping Up
+
+We started with the brute force approach of classical LOO cross-validation, took a detour through importance sampling and the generalized Pareto distribution, and landed on PSIS-LOO: a method that gives us the benefits of LOO-CV from a single model fit. The Pareto $\hat{k}$ diagnostic is the cherry on top,^[last food pun, I promise] giving us observation-level reliability checks for free.
+
+The `loo` package makes all of this turnkey in practice, but I think there is real value in understanding what is happening underneath. It builds intuition for when things go wrong (high $\hat{k}$ values everywhere usually means your model is misspecified or your posterior is too far from the LOO posteriors) and why the suggested remedies (moment matching, resampling, or just refitting for those specific observations) work.
+
+For further reading, @psis_paper is thorough and well written. @psis_method gives practical guidance for model comparison using PSIS-LOO and WAIC. And of course, the [Stan documentation](https://mc-stan.org/loo/articles/loo2-example.html) for the `loo` package is always a reliable companion.
 
 ## Appendix
 
@@ -154,7 +525,7 @@ One thing to note, in @psis_paper they take a slightly different parameterizatio
 
 $$
 p(y|u,\sigma,k)=
-\begin{cases} 
+\begin{cases}
       \frac{1}{\sigma} (1 - (\frac{k x}{\sigma}))^{\frac{1}{k}-1} & k\neq 0 \\
       \frac{1}{\sigma}\exp(\frac{x}{\sigma}) & k=0 \\
  \end{cases}
@@ -176,7 +547,7 @@ Now, let's take the partial with respect to $k$:
 \hat{k}(\theta) &= -n^{-1} \sum \log(1-x_i\theta)
 \end{align}
 
-Notice, we now have $\hat{k}$ in terms of $\theta$. This means we can write our log-likelihood function fully in terms of $\theta$ by letting $l(\theta, k)= l(\theta, \hat{k}(\theta)) = l(\theta)$. Further notice that we simplify our original log-likelihood function down to 
+Notice, we now have $\hat{k}$ in terms of $\theta$. This means we can write our log-likelihood function fully in terms of $\theta$ by letting $l(\theta, k)= l(\theta, \hat{k}(\theta)) = l(\theta)$. Further notice that we simplify our original log-likelihood function down to
 
 $$l(\theta) = n[\log(\theta/\hat{k}) + \hat{k} - 1]$$
 where we have let $\hat{k}=\hat{k}(\theta)$ for clarity. Zhang and Stephens call the above the "profile log-likelihood".
@@ -188,32 +559,25 @@ Good deal, let's right down the expected value for $\hat{\theta}$, taken with re
 $$\hat{\theta}=\frac{\int\theta\cdot\pi(\theta)L(\theta)d\theta}{\int\pi(\theta)L(\theta)d\theta}$$
 where $\pi(\theta)$ is our empirical prior for $\theta$ and $L(\theta)$ is the "profile likelihood" function. That is, $L(\theta) = \exp[l(\theta)]$.
 
-## Outline
+In @zhang_gpd, the authors define an empirical prior for $\theta$ by constructing a grid of candidate values. The key constraint is that $\theta$ must be less than $1/\max(x)$ for the log-likelihood to even be defined, since we need $1 - x_i\theta > 0$ for all observations. They build $m$ grid points $\theta_1, \ldots, \theta_m$ where $m = \lfloor \min(n/5, 20\sqrt{n}) \rfloor$ using the following formula:
 
-### Why Loo
-- Provide some overview of why LOO CV is important
+$$\theta_j = \frac{1}{x_{(n)} + \frac{1}{j}\left(x_{\left(\lceil n(1-(j-0.5)/m) \rceil\right)} - x_{(1)}\right)}, \quad j = 1, \ldots, m$$
 
-### Importance Sampling
-- We are going to be using it a lot later so good to get it out of the way
+where $x_{(j)}$ denotes the $j$th order statistic. This formula looks like it drops out of the sky, so let's unpack where it comes from.
 
-### Pareto Distribution
-- What is it
-- How is it defined - pdf
-  - Why do we care
-  - What do the parameters mean?
-- How do we go about estimating the parameters
-  - Talk about the empirical Bayes estimation procedure
-- Bring back the context of MC
+The fundamental constraint on $\theta$ is $\theta < 1/x_{(n)}$, the reciprocal of the largest observation. Any $\theta$ at or above this bound makes the log-likelihood blow up. So our grid must live in the interval $(0, 1/x_{(n)})$. The denominator in the formula achieves this: when $j=1$, the second term is largest and pushes $\theta_1$ furthest from the upper bound; as $j$ grows, the second term shrinks toward zero and $\theta_j$ approaches $1/x_{(n)}$ from below.
 
-### Tieing it back together
-- Introduce the Vehtari 2017 paper
-- Talk about ELPD
-- Reference the paper to show that we can use p(y) as a approximate weight distribution (with the required math, work through the algebra)
-- Go ahead and do the actual 
+The specific spacing comes from a quantile-matching heuristic. Zhang and Stephens note (Section 4 of their paper) that this grid was chosen so that the $\theta_j$ values correspond roughly to method-of-moments estimates you would get if the "true" shape parameter were at various quantiles of the data. The order statistic $x_{(\lceil n(1-(j-0.5)/m) \rceil)}$ selects a data point from the upper portion of the sample, and the spacing $1/j$ creates a denser concentration of grid points near the upper bound where the profile likelihood tends to be most peaked. The authors arrived at this particular functional form through a combination of asymptotic analysis and numerical experimentation, verifying across a wide range of simulated GPD samples that it reliably places enough grid points in the high-likelihood region to produce accurate quadrature estimates. It is not derived from first principles in a closed-form sense; rather, it is a carefully tuned recipe that works well in practice.
 
+The prior is then taken to be uniform over this grid. This reduces our integral to a simple weighted average:
 
+$$\hat{\theta} = \frac{\sum_{j=1}^m \theta_j \cdot L(\theta_j)}{\sum_{j=1}^m L(\theta_j)}$$
 
+which is just a posterior mean under a discrete uniform prior. Once we have $\hat{\theta}$, we recover $\hat{k}$ and $\hat{\sigma}$:
 
+$$\hat{k} = -n^{-1}\sum_{i=1}^n \log(1 - x_i\hat{\theta}), \quad \hat{\sigma} = \frac{\hat{k}}{\hat{\theta}}$$
+
+The elegance of this approach is that it avoids the numerical pitfalls of directly maximizing the log-likelihood while keeping the computation fast. The grid approximation typically only needs on the order of $m \approx 20\sqrt{n}$ evaluations, which is negligible for the sample sizes we encounter when fitting tails of importance ratios. For the curious, the `fit_gpd_tail` function we defined earlier implements exactly this procedure. Compare the grid construction and the posterior weighted estimate of $\hat{\theta}$ with the equations above and you should see a direct correspondence.
 
 ## References
 
