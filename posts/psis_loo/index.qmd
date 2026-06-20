@@ -7,7 +7,7 @@ format:
   html:
     code-fold: show
 toc: true
-freeze: false
+freeze: true
 draft: false
 bibliography: references.bib
 ---
