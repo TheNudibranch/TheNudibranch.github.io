@@ -1,14 +1,14 @@
 ---
 title: "Pareto Smoothed Importance Sampling - Leave One Out Cross Validation from Scratch"
-date: "2024-11-27"
+date: "2026-06-19"
 description: "I didn't believe the magic until I derived it for myself."
 categories: [Bayes, R, Stan]
 format:
   html:
     code-fold: show
 toc: true
-freeze: true
-draft: true
+freeze: false
+draft: false
 bibliography: references.bib
 ---
 
@@ -173,8 +173,6 @@ where $u$ is the aforementioned lower bound on the tail, $\sigma$ is the positiv
 
 The question of fit is not an easy one though. There have been numerous papers that build upon each other, but we will climb to the top of the Giant stack^[That's my best pun for "Standing on the Shoulders of Giants"] for this one. Our method today comes from @zhang_gpd. It has a base of maximum likelihood, with a side of empirical Bayes, and a sprinkle of quadrature estimation for garnish. Overall a hearty meal!
 
-I've struggled with putting this in an appendix, and maybe that would be more digestible,^[I just can't stop with these food puns] but where is the fun in that!
-
 It is shown by @psis_paper that for $k < 0.5$, the variance of the importance weights is finite and the central limit theorem holds, meaning our estimates will be reliable with enough samples. For $0.5 \leq k < 0.7$, the variance is infinite but the mean still exists, so convergence is slower but generally still workable. For $k \geq 0.7$, neither the mean nor variance is guaranteed to be finite, and our importance sampling estimates should not be trusted. This simple three-tier diagnostic is one of the great gifts of the PSIS framework: fit the generalized Pareto to the tail of $r(\theta)$, check $\hat{k}$, and you instantly know whether your importance sampling is behaving.
 
 But $\hat{k}$ is not just a diagnostic. The Pareto fit also *fixes* the importance ratios. Let's see how.
@@ -205,7 +203,7 @@ The function below follows the `loo` package's implementation rather than the te
 3. **Weakly informative prior on k**: After estimation, $k$ is shrunk toward 0.5 via $\hat{k}_{\text{adj}} = \hat{k} \cdot N/(N+10) + 0.5 \cdot 10/(N+10)$. This stabilizes the diagnostic when the tail sample is small.
 4. **Quantile replacement on the exponentiated scale**: Smoothed tail values are GPD quantiles added to the exponentiated cutoff, then log-transformed back to the shifted log-weight scale.
 
-These deviations reflect years of practical refinement and are necessary to match the `loo` package's output. The Appendix gives the clean theory; the code below gives the battle-tested version.
+These deviations reflect years of practical refinement and are necessary to match the `loo` package's output. The Appendix gives the clean theory, but the code below gives the battle-tested version.
 :::
 
 ```{r}
@@ -381,13 +379,39 @@ And here is where all three ingredients come together. For each observation $i$,
 
 ### Seeing it in Practice
 
-Let's tie everything together with a proper example. We'll fit a Bayesian linear regression using `rstanarm` with the same data from the very beginning of the post. The beauty of `rstanarm` is that it comes with pre-compiled Stan models, so there is no compilation step. We get straight to sampling.
+Let's tie everything together with a proper example. We'll fit a Bayesian linear regression using `cmdstanr` with the same data from the very beginning of the post.
+
+Here is the simple Stan code:
+
+```stan
+data {
+  int <lower=1> N;
+  vector[N] x;
+  vector[N] y;
+}
+parameters {
+  real beta;
+  real<lower=0> sigma;
+}
+model {
+  beta ~ normal(0,1);
+  sigma ~ exponential(1);
+  y ~ normal(x*beta, sigma);
+}
+generated quantities {
+  vector[N] log_lik;
+  for (n in 1:N) {
+    log_lik[n] = normal_lpdf(y[n] | x[n]*beta, sigma);
+  }
+}
+```
+Now fitting the model:
 
 ```{r}
 #| message: false
 #| warning: false
-#| eval: false
-library(rstanarm)
+#| output: false
+library(cmdstanr)
 library(loo)
 
 set.seed(1235)
@@ -396,22 +420,19 @@ x <- rnorm(n)
 y <- x * 2 + -2 + ifelse(1:100 %% 40 == 0, 15, rnorm(n, 0, 1))
 data <- data.frame(x = x, y = y)
 
-fit <- stan_glm(y ~ x, data = data,
-                family = gaussian(),
-                prior = normal(0, 10),
-                prior_intercept = normal(0, 10),
-                prior_aux = exponential(1),
-                chains = 4, iter = 2000, refresh = 0, seed = 123)
+
+mod <- cmdstan_model('simple_lm.stan')
+fit <- mod$sample(list(N=n, x=x, y=y))
 ```
 
-Under the hood, `rstanarm` is fitting the same model we would write in raw Stan. The difference is that the log-likelihood for every observation is computed automatically for us. We can extract it with the `log_lik` method and use it directly for our importance ratios.
 
 Now let's extract the log-likelihood matrix and compute PSIS-LOO both manually and with the `loo` package:
 
 ```{r}
-#| eval: false
-log_lik_mat <- log_lik(fit)
+log_lik_array <- fit$draws("log_lik")
+log_lik_mat <- fit$draws('log_lik', format='matrix')
 
+loo_result <- loo(log_lik_array)
 # Manual PSIS-LOO
 S <- nrow(log_lik_mat)
 n_obs <- ncol(log_lik_mat)
@@ -430,9 +451,6 @@ for (i in 1:n_obs) {
   w_norm <- w / sum(w)
   elpd_manual[i] <- log(sum(w_norm * exp(log_lik_mat[, i])))
 }
-
-# Compare with the loo package
-loo_result <- loo(fit)
 ```
 
 ```{r}
@@ -441,7 +459,6 @@ loo_result <- loo(fit)
 #| fig-align: center
 #| fig-width: 9
 #| fig-height: 5
-#| eval: false
 par(mfrow = c(1, 2), mar = c(4.5, 4.5, 2, 1), family = "serif", font.lab = 2)
 plot(elpd_manual, loo_result$pointwise[, "elpd_loo"], pch = 21,
      bg = adjustcolor('#2874A6', 0.5), col = '#2874A6',
@@ -456,14 +473,13 @@ plot(k_manual, loo_result$diagnostics$pareto_k, pch = 21,
 abline(0, 1, col = '#D4A017', lwd = 2, lty = 2)
 ```
 
-Our manual estimates should track closely to the `loo` package results.^[They won't be exactly identical because the `loo` package uses a more refined implementation of the Zhang and Stephens estimator, but the spirit is the same.] The gold diagonal line shows perfect agreement.
+Our manual estimates should track closely to the `loo` package results.^[There will be some slight disagreement with ELPD based on how the LOO packges differs for extreme values] The gold diagonal line shows perfect agreement.
 
 ### Validating Our Implementation
 
 Let's go a step further and quantify just how close our from-scratch implementation is to the `loo` package. We'll look at the correlation, max absolute difference, and overall ELPD sum for both methods.
 
 ```{r}
-#| eval: false
 elpd_loo_pkg <- loo_result$pointwise[, "elpd_loo"]
 k_loo_pkg <- loo_result$diagnostics$pareto_k
 
@@ -489,7 +505,6 @@ cat(sprintf(paste0(
 #| fig-align: center
 #| fig-width: 9
 #| fig-height: 5
-#| eval: false
 par(mar = c(4.5, 4.5, 1.5, 1), family = "serif", font.lab = 2)
 plot(loo_result$diagnostics$pareto_k, pch = 21, cex = 1.2,
      ylab = expression(hat(k)), xlab = 'Observation', las = 1,

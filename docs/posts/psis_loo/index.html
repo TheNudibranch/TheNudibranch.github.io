@@ -2,15 +2,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2024-11-27">
+<meta name="dcterms.date" content="2026-06-19">
 <meta name="description" content="I didn’t believe the magic until I derived it for myself.">
 
 <title>Pareto Smoothed Importance Sampling - Leave One Out Cross Validation from Scratch – Ian Costley</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -23,8 +26,9 @@ ul.task-list li input[type="checkbox"] {
   vertical-align: middle;
 }
 /* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -35,7 +39,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -60,7 +64,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -86,17 +89,20 @@ div.csl-indent {
 <script src="../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../">
-<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-e4e05f96a34dc1e8eee6cdbd3de0b71e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-1ba60028185dd35c2f7bbf0ada864971.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-e4e05f96a34dc1e8eee6cdbd3de0b71e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -124,10 +130,9 @@ div.csl-indent {
     "search-label": "Search"
   }
 }</script>
-<meta name="quarto:status" content="draft">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -140,7 +145,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -159,10 +164,172 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-fixed">
+<body class="nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top"><div id="quarto-draft-alert" class="alert alert-warning"><i class="bi bi-pencil-square"></i>Draft</div>
+  <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
@@ -170,7 +337,6 @@ window.Quarto = {
     <span class="navbar-title">Ian Costley</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
@@ -210,16 +376,16 @@ window.Quarto = {
   <li><a href="#loo-who" id="toc-loo-who" class="nav-link active" data-scroll-target="#loo-who">Loo Who?</a></li>
   <li><a href="#some-important-samples" id="toc-some-important-samples" class="nav-link" data-scroll-target="#some-important-samples">Some Important Samples</a></li>
   <li><a href="#pareto-mentality" id="toc-pareto-mentality" class="nav-link" data-scroll-target="#pareto-mentality">Pareto Mentality</a></li>
+  <li><a href="#smoothing-things-over" id="toc-smoothing-things-over" class="nav-link" data-scroll-target="#smoothing-things-over">Smoothing Things Over</a></li>
+  <li><a href="#coming-full-circle-psis-loo" id="toc-coming-full-circle-psis-loo" class="nav-link" data-scroll-target="#coming-full-circle-psis-loo">Coming Full Circle: PSIS-LOO</a>
+  <ul class="collapse">
+  <li><a href="#seeing-it-in-practice" id="toc-seeing-it-in-practice" class="nav-link" data-scroll-target="#seeing-it-in-practice">Seeing it in Practice</a></li>
+  <li><a href="#validating-our-implementation" id="toc-validating-our-implementation" class="nav-link" data-scroll-target="#validating-our-implementation">Validating Our Implementation</a></li>
+  </ul></li>
+  <li><a href="#wrapping-up" id="toc-wrapping-up" class="nav-link" data-scroll-target="#wrapping-up">Wrapping Up</a></li>
   <li><a href="#appendix" id="toc-appendix" class="nav-link" data-scroll-target="#appendix">Appendix</a>
   <ul class="collapse">
   <li><a href="#zhang-and-stephens-k-esimation" id="toc-zhang-and-stephens-k-esimation" class="nav-link" data-scroll-target="#zhang-and-stephens-k-esimation">Zhang and Stephens <span class="math inline">\(k\)</span> esimation</a></li>
-  </ul></li>
-  <li><a href="#outline" id="toc-outline" class="nav-link" data-scroll-target="#outline">Outline</a>
-  <ul class="collapse">
-  <li><a href="#why-loo" id="toc-why-loo" class="nav-link" data-scroll-target="#why-loo">Why Loo</a></li>
-  <li><a href="#importance-sampling" id="toc-importance-sampling" class="nav-link" data-scroll-target="#importance-sampling">Importance Sampling</a></li>
-  <li><a href="#pareto-distribution" id="toc-pareto-distribution" class="nav-link" data-scroll-target="#pareto-distribution">Pareto Distribution</a></li>
-  <li><a href="#tieing-it-back-together" id="toc-tieing-it-back-together" class="nav-link" data-scroll-target="#tieing-it-back-together">Tieing it back together</a></li>
   </ul></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul>
@@ -227,6 +393,7 @@ window.Quarto = {
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
+
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -251,7 +418,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 27, 2024</p>
+      <p class="date">June 19, 2026</p>
     </div>
   </div>
   
@@ -268,10 +435,10 @@ window.Quarto = {
 <p>If you’re like me, when you first saw the <a href="https://mc-stan.org/loo/">loo</a> package and all the accompanying research, you probably thought it was something close to magic. Coming from a traditional ML world, leave-one-out (loo) cross-validation (cv) is the gold standard for model checking and validation, but it is usually quite time consuming to do in practice.</p>
 <p>To perform classiccal loo, you loop over your data set <span class="math inline">\(n\)</span> times, where <span class="math inline">\(n\)</span> is the number points in your data. For each iteration you remove or “hold out” <span class="math inline">\((X_i, y_i)\)</span>, where <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> are the covariates and response, respectively. The remaining data <span class="math inline">\((X_{-i}, y_{-i})\)</span> is used to train the model. After training you predict using the held out covariate <span class="math inline">\(X_i\)</span> to produce <span class="math inline">\(\tilde{y}_i\)</span>. Comparison can then be made between <span class="math inline">\(\tilde{y}_i\)</span> and <span class="math inline">\(y_i\)</span> using whichever error function fits your domain: MSE, accuracy, ELPD, etc.</p>
 <p>Here is a short demo for linear regression with one covariate. We’ll perform loo and plot the absolute difference between <span class="math inline">\(\tilde{y}_i\)</span> and <span class="math inline">\(y_i\)</span>:</p>
-<div class="cell" data-layout-align="center">
+<div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1235</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1235</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> x<span class="sc">*</span><span class="dv">2</span> <span class="sc">+</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">ifelse</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span> <span class="sc">%%</span> <span class="dv">40</span> <span class="sc">==</span> <span class="dv">0</span>, <span class="dv">15</span>, <span class="fu">rnorm</span>(n,<span class="dv">0</span>,<span class="dv">1</span>))</span>
@@ -284,15 +451,25 @@ window.Quarto = {
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  loo_pred[i] <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod, <span class="at">newdata=</span>data[i,])</span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  slope_pred[i] <span class="ot">&lt;-</span> mod<span class="sc">$</span>coefficients[<span class="dv">2</span>]</span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>diff <span class="ot">&lt;-</span> <span class="fu">abs</span>(loo_pred <span class="sc">-</span> data<span class="sc">$</span>resp)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(diff, <span class="at">ylab=</span><span class="st">'Abs. Difference between pred and actual y'</span>, </span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab=</span><span class="st">'LOO Iteration'</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">col=</span><span class="fu">ifelse</span>(diff <span class="sc">&gt;</span> <span class="dv">4</span>, <span class="st">'blue'</span>,<span class="st">'black'</span>))</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="st">'blue'</span>), <span class="at">pch=</span><span class="fu">c</span>(<span class="dv">16</span>), <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Influential Points'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>diff <span class="ot">&lt;-</span> <span class="fu">abs</span>(loo_pred <span class="sc">-</span> data<span class="sc">$</span>resp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Plot: LOO residuals</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="fl">1.5</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(diff, <span class="at">ylab =</span> <span class="st">'Absolute Difference'</span>, <span class="at">xlab =</span> <span class="st">'Observation Index'</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">21</span>, <span class="at">bg =</span> <span class="fu">ifelse</span>(diff <span class="sc">&gt;</span> <span class="dv">4</span>, <span class="fu">adjustcolor</span>(<span class="st">'#D4A017'</span>, <span class="fl">0.7</span>), <span class="fu">adjustcolor</span>(<span class="st">'grey40'</span>, <span class="fl">0.5</span>)),</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="fu">ifelse</span>(diff <span class="sc">&gt;</span> <span class="dv">4</span>, <span class="st">'#D4A017'</span>, <span class="st">'grey40'</span>), <span class="at">cex =</span> <span class="fl">1.2</span>, <span class="at">las =</span> <span class="dv">1</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">pch =</span> <span class="dv">21</span>, <span class="at">pt.bg =</span> <span class="fu">c</span>(<span class="st">'#D4A017'</span>, <span class="st">'grey40'</span>),</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">'#D4A017'</span>, <span class="st">'grey40'</span>), <span class="at">pt.cex =</span> <span class="fl">1.2</span>, <span class="at">bty =</span> <span class="st">'n'</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">'Influential Points'</span>, <span class="st">'Typical Points'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
 </figure>
 </div>
 </div>
@@ -300,14 +477,20 @@ window.Quarto = {
 <p>An immediate result of this testing framework is that each point can be compared independent of the other. They are not batched into testing/training sets, each point is a predicted value where the model never got to see it during training. We can already start to see which points might be causing issues for the model or does not fit our data generating process. Another benefit that I’ll briefly show is how the <em>coefficients</em> of the <span class="math inline">\(n\)</span> trained models differ. Thus showing how influential some points in the data might be.</p>
 <div class="cell" data-layout-align="center">
 <details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(slope_pred, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">ylab=</span><span class="st">'Slope of Model trained without point i'</span>, <span class="at">xlab=</span><span class="st">'LOO Iteration'</span>,</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span><span class="fu">ifelse</span>(diff <span class="sc">&gt;</span> <span class="dv">4</span>, <span class="st">'blue'</span>,<span class="st">'black'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<summary>Plot: Coefficient sensitivity</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="fl">1.5</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(slope_pred, <span class="at">pch =</span> <span class="dv">21</span>, <span class="at">ylab =</span> <span class="st">'Slope Estimate'</span>, <span class="at">xlab =</span> <span class="st">'Observation Left Out'</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">bg =</span> <span class="fu">ifelse</span>(diff <span class="sc">&gt;</span> <span class="dv">4</span>, <span class="fu">adjustcolor</span>(<span class="st">'#D4A017'</span>, <span class="fl">0.7</span>), <span class="fu">adjustcolor</span>(<span class="st">'grey40'</span>, <span class="fl">0.5</span>)),</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="fu">ifelse</span>(diff <span class="sc">&gt;</span> <span class="dv">4</span>, <span class="st">'#D4A017'</span>, <span class="st">'grey40'</span>), <span class="at">cex =</span> <span class="fl">1.2</span>, <span class="at">las =</span> <span class="dv">1</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fu">coef</span>(<span class="fu">lm</span>(resp <span class="sc">~</span> co, <span class="at">data =</span> data))[<span class="dv">2</span>], <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">'#2874A6'</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'bottomleft'</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">'#2874A6'</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">bty =</span> <span class="st">'n'</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend =</span> <span class="st">'Full-data slope'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
 </figure>
 </div>
 </div>
@@ -329,58 +512,70 @@ E_\pi[f(\theta)] &amp;= \int\pi(\theta)f(\theta)d\theta \\
 <p>We call the quantity <span class="math inline">\(\frac{\pi(\theta)}{\gamma(\theta)}\)</span> the importance ratio. The slight catch here is that above will only hold if both <span class="math inline">\(\pi\)</span> and <span class="math inline">\(\gamma\)</span> are normalized. If they are not, which is usually the case if we are approximating posteriors, then we need to employ the self-normalized estimator. That is, if <span class="math inline">\(r(\theta)= \pi(\theta)/\gamma(\theta)\)</span> is an non-normalized importance ratio, then</p>
 <p><span class="math display">\[\frac{1}{S} \sum^S \frac{r(\theta_s) \cdot f(\theta_s)}{r(\theta_s)}\]</span></p>
 <p>is the self-normalized importance estimator of <span class="math inline">\(E_\gamma[r(\theta) f(\theta)]\)</span>.</p>
-<p>Let’s show a quick example where <span class="math inline">\(\pi \sim N(0,1)\)</span> and <span class="math inline">\(f(\theta) = \theta^4\)</span>. Clearly, <span class="math inline">\(\pi\)</span> would be a dream to sample from, but we’ll assume that we left our normal sampler at home. We’ll instead use <span class="math inline">\(\gamma \sim t_{\nu=1,000}\)</span> to sample from as an approximation to <span class="math inline">\(\pi\)</span>.</p>
-<div class="cell" data-layout-align="center">
+<p>Let’s show a quick example where <span class="math inline">\(\pi \sim N(0,1)\)</span> and <span class="math inline">\(f(\theta) = \theta^4\)</span>. Clearly, <span class="math inline">\(\pi\)</span> would be a dream to sample from, but we’ll assume that we left our normal sampler at home. We’ll instead use <span class="math inline">\(\gamma \sim t_{\nu=3}\)</span> to sample from as an approximation to <span class="math inline">\(\pi\)</span>. Note that the <span class="math inline">\(t_3\)</span> distribution has heavier tails than the normal, which is actually a <em>good</em> thing for importance sampling. Having a proposal with heavier tails ensures the importance ratios <span class="math inline">\(\pi/\gamma\)</span> stay bounded, since the proposal never drops to zero faster than the target.</p>
+<div class="cell">
 <details open="" class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>theta_samples <span class="ot">&lt;-</span> <span class="fu">rt</span>(<span class="fl">1e4</span>, <span class="at">df=</span><span class="dv">1000</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>imp_ratios <span class="ot">&lt;-</span> <span class="fu">dt</span>(theta_samples, <span class="at">df=</span><span class="dv">1000</span>)<span class="sc">/</span><span class="fu">dnorm</span>(theta_samples)</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> theta_samples<span class="sc">^</span><span class="dv">4</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>estimator <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(imp_ratios <span class="sc">*</span> f) <span class="sc">/</span> (<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(theta_samples))</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(estimator, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">ylab=</span><span class="st">'Importance Estimator'</span>, <span class="at">xlab=</span><span class="st">'S'</span>, <span class="at">type=</span><span class="st">'n'</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">3</span>, <span class="at">col=</span><span class="st">'darkred'</span>, <span class="at">lwd=</span><span class="dv">3</span>)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(estimator, <span class="at">lwd=</span><span class="dv">3</span>)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Estimated'</span>, <span class="st">'Actual'</span>), <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="st">'black'</span>, <span class="st">'darkred'</span>))</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(imp_ratios, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">'darkblue'</span>,<span class="fl">0.3</span>), <span class="at">xlab=</span><span class="st">'Importance Ratios'</span>,</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>, <span class="at">breaks=</span><span class="dv">25</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>theta_samples <span class="ot">&lt;-</span> <span class="fu">rt</span>(<span class="fl">1e4</span>, <span class="at">df =</span> <span class="dv">3</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>log_ratios <span class="ot">&lt;-</span> <span class="fu">dnorm</span>(theta_samples, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">-</span> <span class="fu">dt</span>(theta_samples, <span class="at">df =</span> <span class="dv">3</span>, <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>imp_ratios <span class="ot">&lt;-</span> <span class="fu">exp</span>(log_ratios)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> theta_samples<span class="sc">^</span><span class="dv">4</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>estimator <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(imp_ratios <span class="sc">*</span> f) <span class="sc">/</span> <span class="fu">cumsum</span>(imp_ratios)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
-</figure>
 </div>
-</div>
-</div>
-<p>From the properties of the normal distribution, we know that we are just estimating <span class="math inline">\(E[\theta^4]\)</span> with respect to the normal distribution. The answer of course is just given by the 4th central moment: <span class="math inline">\(3\sigma^2\)</span>.</p>
-<p>So we have our estimator, but there are still questions that we’ve swept under the rug. For one, how many iterations should we have run our sampler for, and does <span class="math inline">\(\gamma\)</span> really approximate <span class="math inline">\(\pi\)</span> well enough. For a little motivation let’s try the same experiment again, but instead use <span class="math inline">\(\gamma \sim t_{\nu=10}\)</span> which has wider tails (a little foreshadowing).</p>
 <div class="cell" data-layout-align="center">
 <details class="code-fold">
-<summary>Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>theta_samples <span class="ot">&lt;-</span> <span class="fu">rt</span>(<span class="fl">1e4</span>, <span class="at">df=</span><span class="dv">20</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>imp_ratios <span class="ot">&lt;-</span> <span class="fu">dt</span>(theta_samples, <span class="at">df=</span><span class="dv">20</span>)<span class="sc">/</span><span class="fu">dnorm</span>(theta_samples)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> theta_samples<span class="sc">^</span><span class="dv">4</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>estimator <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(imp_ratios <span class="sc">*</span> f) <span class="sc">/</span> (<span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(theta_samples))</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(estimator, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">ylab=</span><span class="st">'Importance Estimator'</span>, <span class="at">xlab=</span><span class="st">'S'</span>, <span class="at">type=</span><span class="st">'n'</span>)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">3</span>, <span class="at">col=</span><span class="st">'darkred'</span>, <span class="at">lwd=</span><span class="dv">3</span>)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(estimator, <span class="at">lwd=</span><span class="dv">3</span>)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Estimated'</span>, <span class="st">'Actual'</span>), <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span><span class="fu">c</span>(<span class="st">'black'</span>, <span class="st">'darkred'</span>))</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(imp_ratios, <span class="at">col=</span><span class="fu">adjustcolor</span>(<span class="st">'darkblue'</span>,<span class="fl">0.3</span>), <span class="at">xlab=</span><span class="st">'Importance Ratios'</span>,</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>, <span class="at">breaks=</span><span class="dv">25</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<summary>Plot: Good importance sampling</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(estimator, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">ylab =</span> <span class="st">'Self-Normalized IS Estimator'</span>, <span class="at">xlab =</span> <span class="st">'S'</span>, <span class="at">type =</span> <span class="st">'n'</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">las =</span> <span class="dv">1</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">3</span>, <span class="at">col =</span> <span class="st">'#D4A017'</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(estimator, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">'#2874A6'</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">'Estimated'</span>, <span class="st">'True (3)'</span>), <span class="at">lwd =</span> <span class="dv">2</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">'#2874A6'</span>, <span class="st">'#D4A017'</span>), <span class="at">lty =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">bty =</span> <span class="st">'n'</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(imp_ratios, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'#2874A6'</span>, <span class="fl">0.3</span>), <span class="at">border =</span> <span class="st">'#2874A6'</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">'Importance Ratios'</span>, <span class="at">main =</span> <span class="st">''</span>, <span class="at">ylab =</span> <span class="st">'Frequency'</span>, <span class="at">breaks =</span> <span class="dv">30</span>, <span class="at">las =</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>Wow! Look’s like we are far from our actual value. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen <span class="math inline">\(\gamma\)</span> distribution? The key is in the importance ratios. Notice how in the first experiment where <span class="math inline">\(\gamma \sim t_{\nu=1,000}\)</span>, the histogram of importance ratios tail is much lighter than that of the second experiment. This is a property we would like to be able to enforce, as well as detect. An early method for controlling the importance rations <span class="math inline">\(r(\theta)\)</span> was to truncate at some maximum value. In particular <span class="citation" data-cites="trunc_sample_paper">Ionides (<a href="#ref-trunc_sample_paper" role="doc-biblioref">2008</a>)</span> defined <span class="math inline">\(w(\theta_s)\)</span> to be the truncated importance weights as:</p>
+<p>From the properties of the normal distribution, we know that we are just estimating <span class="math inline">\(E[\theta^4]\)</span> with respect to the normal distribution. The answer of course is just given by the 4th central moment: <span class="math inline">\(3\sigma^2\)</span>. Notice how all the importance ratios are bounded near 1. That’s the hallmark of a good proposal: its tails are at least as heavy as the target’s, so no single draw dominates the sum.</p>
+<p>So we have our estimator, but there are still questions that we’ve swept under the rug. For one, how many iterations should we have run our sampler for, and does <span class="math inline">\(\gamma\)</span> really approximate <span class="math inline">\(\pi\)</span> well enough. For a little motivation let’s flip the setup. Suppose now our target is the heavy-tailed <span class="math inline">\(t_3\)</span> distribution and we want to estimate <span class="math inline">\(E_{t_3}[\theta^2]\)</span>. The true answer is <span class="math inline">\(\nu/(\nu-2) = 3\)</span> for <span class="math inline">\(\nu=3\)</span>. But this time we’ll use the standard normal <span class="math inline">\(\gamma = N(0,1)\)</span> as our proposal, which has <em>lighter</em> tails than the target.</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Plot: Bad importance sampling</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">6</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>theta_samples <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">5000</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>log_ratios <span class="ot">&lt;-</span> <span class="fu">dt</span>(theta_samples, <span class="at">df =</span> <span class="dv">3</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">-</span> <span class="fu">dnorm</span>(theta_samples, <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>imp_ratios <span class="ot">&lt;-</span> <span class="fu">exp</span>(log_ratios)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> theta_samples<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>estimator <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(imp_ratios <span class="sc">*</span> f) <span class="sc">/</span> <span class="fu">cumsum</span>(imp_ratios)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(estimator, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">ylab =</span> <span class="st">'Self-Normalized IS Estimator'</span>, <span class="at">xlab =</span> <span class="st">'S'</span>, <span class="at">type =</span> <span class="st">'n'</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">las =</span> <span class="dv">1</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">3</span>, <span class="at">col =</span> <span class="st">'#D4A017'</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(estimator, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">'#2874A6'</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">'Estimated'</span>, <span class="st">'True (3)'</span>), <span class="at">lwd =</span> <span class="dv">2</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">'#2874A6'</span>, <span class="st">'#D4A017'</span>), <span class="at">lty =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">bty =</span> <span class="st">'n'</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(imp_ratios, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'#2874A6'</span>, <span class="fl">0.3</span>), <span class="at">border =</span> <span class="st">'#2874A6'</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">'Importance Ratios'</span>, <span class="at">main =</span> <span class="st">''</span>, <span class="at">ylab =</span> <span class="st">'Frequency'</span>, <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">las =</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Wow! Look at that spike in the running average. A single draw happened to land out in the tail where the <span class="math inline">\(t_3\)</span> density is much larger than the normal density, producing an enormous importance ratio that jerks the entire estimate upward. And look at the histogram of ratios: a long right tail with a few extreme values. But there are no warnings, nothing yelled at us for the poorly estimated value. How can we critique the sampler as well as our chosen <span class="math inline">\(\gamma\)</span> distribution? The key is in the importance ratios. Notice how in the first experiment the histogram of importance ratios is concentrated near 1, while in this second experiment we see a heavy right tail. This is a property we would like to be able to enforce, as well as detect. An early method for controlling the importance rations <span class="math inline">\(r(\theta)\)</span> was to truncate at some maximum value. In particular <span class="citation" data-cites="trunc_sample_paper">Ionides (<a href="#ref-trunc_sample_paper" role="doc-biblioref">2008</a>)</span> defined <span class="math inline">\(w(\theta_s)\)</span> to be the truncated importance weights as:</p>
 <p><span class="math display">\[w(\theta_s) = \min(r(\theta_s),\sqrt{S}\bar{r})\]</span></p>
 <p>where <span class="math inline">\(\bar{r}\)</span> is the average importance ratio over all samples <span class="math inline">\(S\)</span>. While this method does guarantee finite variance of the truncated importance ratios, it unfortunately incorporates a large bias. Another method given by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> to control the importance ratios is to fit a Pareto distribution to the tail of importance ratio distribution. This not only aids in giving the importance ratios finite variance while introducing little bias, but also allows us to use the parameters of the fit Pareto distribution as diagnostics. The following definition for the Pareto distribution, as well as its motivation is defined with much greater detail in <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span>. I will attempt to give a slimmed down version of their background with a little added history.</p>
 </section>
@@ -396,8 +591,387 @@ p(y|u,\sigma,k)=
 \end{cases}
 \]</span> where <span class="math inline">\(u\)</span> is the aforementioned lower bound on the tail, <span class="math inline">\(\sigma\)</span> is the positive scale parameter, and <span class="math inline">\(k\)</span> is the very important shape parameter. The inputs distribution is further restricted to <span class="math inline">\(y\in[u,\inf)\)</span>. The inverse of our parameter <span class="math inline">\(k\)</span> tells us how many moments exist in the distribution. Recall that if a distributions first moment exists then it has a mean<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, and if it has a second moment then its variance is defined. You might see where I am going with this - we can use <span class="math inline">\(k\)</span> after fitting our generalized Pareto to the importance ratios’ tail as a sort of diagnostic. If <span class="math inline">\(k\)</span> is in an acceptable range, we can feel comfortable using the Pareto fit for the tails of our importance samples.</p>
 <p>The question of fit is not an easy one though. There have been numerous papers that build upon each other, but we will climb to the top of the Giant stack<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> for this one. Our method today comes from <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span>. It has a base of maximum likelihood, with a side of empirical Bayes, and a sprinkle of quadrature estimation for garnish. Overall a hearty meal!</p>
-<p>I’ve struggled with putting this in an appendix, and maybe that would be more digestible,<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> but where is the fun in that!</p>
-<p>It is shown by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> that for <span class="math inline">\(k\)</span></p>
+<p>It is shown by <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> that for <span class="math inline">\(k &lt; 0.5\)</span>, the variance of the importance weights is finite and the central limit theorem holds, meaning our estimates will be reliable with enough samples. For <span class="math inline">\(0.5 \leq k &lt; 0.7\)</span>, the variance is infinite but the mean still exists, so convergence is slower but generally still workable. For <span class="math inline">\(k \geq 0.7\)</span>, neither the mean nor variance is guaranteed to be finite, and our importance sampling estimates should not be trusted. This simple three-tier diagnostic is one of the great gifts of the PSIS framework: fit the generalized Pareto to the tail of <span class="math inline">\(r(\theta)\)</span>, check <span class="math inline">\(\hat{k}\)</span>, and you instantly know whether your importance sampling is behaving.</p>
+<p>But <span class="math inline">\(\hat{k}\)</span> is not just a diagnostic. The Pareto fit also <em>fixes</em> the importance ratios. Let’s see how.</p>
+</section>
+<section id="smoothing-things-over" class="level2">
+<h2 class="anchored" data-anchor-id="smoothing-things-over">Smoothing Things Over</h2>
+<p>The “smoothed” in Pareto Smoothed Importance Sampling refers to replacing the largest importance ratios with the expected values of the order statistics from the fitted generalized Pareto distribution. Think of it as taking the noisy, unstable tail of our importance ratio distribution and swapping it out for a well-behaved parametric approximation. In practice, we define the number of tail samples <span class="math inline">\(M = \min(S/5, 3\sqrt{S})\)</span> where <span class="math inline">\(S\)</span> is the total number of draws.</p>
+<p>Here is the PSIS procedure:</p>
+<ol type="1">
+<li>Compute the importance ratios <span class="math inline">\(r(\theta_s)\)</span> for <span class="math inline">\(s = 1, \ldots, S\)</span></li>
+<li>Sort them in increasing order</li>
+<li>Take the <span class="math inline">\(M\)</span> largest values and fit the generalized Pareto distribution to them (using the method described in the Appendix)</li>
+<li>Replace those <span class="math inline">\(M\)</span> values with the expected values of the order statistics from the fitted distribution</li>
+<li>Truncate the smoothed ratios at a maximum value of <span class="math inline">\(S^{3/4}\)</span> to maintain stability</li>
+</ol>
+<p>The intuition here is that the largest importance ratios are the noisiest. They are driven by a handful of extreme draws from <span class="math inline">\(\gamma(\theta)\)</span> that happened to land far out in the tails. By replacing them with their expected values under the fitted Pareto, we reduce variance while introducing only a small amount of bias. The details of the fitting procedure are in the Appendix if you want to follow the derivation through to its conclusion.</p>
+<p>Let’s revisit our earlier troublesome example where <span class="math inline">\(\gamma = N(0,1)\)</span> and <span class="math inline">\(\pi = t_3\)</span> and see what happens when we apply Pareto smoothing. Recall that the raw IS estimate was jerked upward by a single extreme importance ratio. PSIS will fit a generalized Pareto to the tail of those ratios, replace them with well-behaved expected order statistics, and give us a <span class="math inline">\(\hat{k}\)</span> diagnostic in the process.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Implementation note: practical heuristics in <code>fit_gpd_tail</code>
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The function below follows the <code>loo</code> package’s implementation rather than the textbook Zhang and Stephens procedure verbatim. There are several practical heuristics at play that deviate from the pure derivation in the Appendix:</p>
+<ol type="1">
+<li><strong>Log-space shifted arithmetic</strong>: We subtract the max log-weight before exponentiating to avoid overflow, then compute exceedances on the exponentiated scale (<code>exp(tail) - exp(cutoff)</code>) rather than working with raw ratios directly.</li>
+<li><strong>Modified grid construction</strong>: Instead of the original order-statistic based grid from Zhang and Stephens (<span class="math inline">\(\theta_j\)</span> built from spacings of sorted data), the <code>loo</code> package uses a simpler formula anchored at the upper quartile of exceedances: <span class="math inline">\(\theta_j = 1/x_{(N)} + (1 - \sqrt{m/(j-0.5)}) / 3 x^*\)</span> where <span class="math inline">\(x^* = x_{(\lfloor N/4 \rfloor)}\)</span>. This is more robust to heavily skewed tails.</li>
+<li><strong>Weakly informative prior on k</strong>: After estimation, <span class="math inline">\(k\)</span> is shrunk toward 0.5 via <span class="math inline">\(\hat{k}_{\text{adj}} = \hat{k} \cdot N/(N+10) + 0.5 \cdot 10/(N+10)\)</span>. This stabilizes the diagnostic when the tail sample is small.</li>
+<li><strong>Quantile replacement on the exponentiated scale</strong>: Smoothed tail values are GPD quantiles added to the exponentiated cutoff, then log-transformed back to the shifted log-weight scale.</li>
+</ol>
+<p>These deviations reflect years of practical refinement and are necessary to match the <code>loo</code> package’s output. The Appendix gives the clean theory, but the code below gives the battle-tested version.</p>
+</div>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper function to fit GPD and return smoothed weights</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>fit_gpd_tail <span class="ot">&lt;-</span> <span class="cf">function</span>(ratios) {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  S <span class="ot">&lt;-</span> <span class="fu">length</span>(ratios)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  M <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">floor</span>(<span class="fl">0.2</span> <span class="sc">*</span> S), <span class="dv">3</span> <span class="sc">*</span> <span class="fu">floor</span>(<span class="fu">sqrt</span>(S)))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Work with shifted log weights for numerical stability</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  lw <span class="ot">&lt;-</span> <span class="fu">log</span>(ratios)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  lw_max <span class="ot">&lt;-</span> <span class="fu">max</span>(lw)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  lw <span class="ot">&lt;-</span> lw <span class="sc">-</span> lw_max</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Sort and find cutoff</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  ord <span class="ot">&lt;-</span> <span class="fu">order</span>(lw)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  cutoff <span class="ot">&lt;-</span> lw[ord[S <span class="sc">-</span> M]]</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  tail_ids <span class="ot">&lt;-</span> ord[(S <span class="sc">-</span> M <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>S]</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  lw_tail <span class="ot">&lt;-</span> lw[tail_ids]</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Exceedances on exp scale (as the loo package does)</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  exp_cutoff <span class="ot">&lt;-</span> <span class="fu">exp</span>(cutoff)</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  exc <span class="ot">&lt;-</span> <span class="fu">exp</span>(lw_tail) <span class="sc">-</span> exp_cutoff</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Zhang and Stephens GPD fit</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">sort</span>(exc)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  N <span class="ot">&lt;-</span> <span class="fu">length</span>(x)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  prior <span class="ot">&lt;-</span> <span class="dv">3</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="dv">30</span> <span class="sc">+</span> <span class="fu">floor</span>(<span class="fu">sqrt</span>(N))</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Grid of theta values (improved construction from loo package)</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  xstar <span class="ot">&lt;-</span> x[<span class="fu">floor</span>(N <span class="sc">/</span> <span class="dv">4</span> <span class="sc">+</span> <span class="fl">0.5</span>)]</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  theta_grid <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> x[N] <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">sqrt</span>(m <span class="sc">/</span> (<span class="fu">seq_len</span>(m) <span class="sc">-</span> <span class="fl">0.5</span>))) <span class="sc">/</span> prior <span class="sc">/</span> xstar</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Profile log-likelihood for each theta</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  l_theta <span class="ot">&lt;-</span> N <span class="sc">*</span> <span class="fu">sapply</span>(theta_grid, <span class="cf">function</span>(th) {</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    k_val <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">log1p</span>(<span class="sc">-</span>th <span class="sc">*</span> x))</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log</span>(<span class="sc">-</span>th <span class="sc">/</span> k_val) <span class="sc">-</span> k_val <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Posterior weights and estimate of theta</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  l_theta <span class="ot">&lt;-</span> l_theta <span class="sc">-</span> <span class="fu">max</span>(l_theta)</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  w_theta <span class="ot">&lt;-</span> <span class="fu">exp</span>(l_theta) <span class="sc">/</span> <span class="fu">sum</span>(<span class="fu">exp</span>(l_theta))</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  theta_hat <span class="ot">&lt;-</span> <span class="fu">sum</span>(theta_grid <span class="sc">*</span> w_theta)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>  k <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">log1p</span>(<span class="sc">-</span>theta_hat <span class="sc">*</span> x))</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  sigma <span class="ot">&lt;-</span> <span class="sc">-</span>k <span class="sc">/</span> theta_hat</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Weakly informative prior adjustment (pulls k toward 0.5)</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  k <span class="ot">&lt;-</span> k <span class="sc">*</span> N <span class="sc">/</span> (N <span class="sc">+</span> <span class="dv">10</span>) <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="dv">10</span> <span class="sc">/</span> (N <span class="sc">+</span> <span class="dv">10</span>)</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Replace tail with GPD quantiles</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>  p <span class="ot">&lt;-</span> (<span class="fu">seq_len</span>(M) <span class="sc">-</span> <span class="fl">0.5</span>) <span class="sc">/</span> M</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">abs</span>(k) <span class="sc">&gt;</span> <span class="fl">1e-6</span>) {</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    qq <span class="ot">&lt;-</span> exp_cutoff <span class="sc">+</span> sigma <span class="sc">/</span> k <span class="sc">*</span> ((<span class="dv">1</span> <span class="sc">-</span> p)<span class="sc">^</span>(<span class="sc">-</span>k) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>    qq <span class="ot">&lt;-</span> exp_cutoff <span class="sc">-</span> sigma <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> p)</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>  smoothed_tail_lw <span class="ot">&lt;-</span> <span class="fu">log</span>(qq)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Assign sorted quantiles to sorted tail positions</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>  smoothed_lw <span class="ot">&lt;-</span> lw</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>  smoothed_lw[tail_ids[<span class="fu">order</span>(lw_tail)]] <span class="ot">&lt;-</span> <span class="fu">sort</span>(smoothed_tail_lw)</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Back to original scale and cap</span></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>  smoothed <span class="ot">&lt;-</span> <span class="fu">exp</span>(smoothed_lw <span class="sc">+</span> lw_max)</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>  smoothed <span class="ot">&lt;-</span> <span class="fu">pmin</span>(smoothed, S<span class="sc">^</span>(<span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>))</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">smoothed =</span> smoothed, <span class="at">k =</span> k, <span class="at">threshold =</span> cutoff)</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">6</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>theta_samples <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">5000</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>log_ratios <span class="ot">&lt;-</span> <span class="fu">dt</span>(theta_samples, <span class="at">df =</span> <span class="dv">3</span>, <span class="at">log =</span> <span class="cn">TRUE</span>) <span class="sc">-</span> <span class="fu">dnorm</span>(theta_samples, <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>imp_ratios <span class="ot">&lt;-</span> <span class="fu">exp</span>(log_ratios)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> theta_samples<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply PSIS</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>psis_result <span class="ot">&lt;-</span> <span class="fu">fit_gpd_tail</span>(imp_ratios)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>smoothed_ratios <span class="ot">&lt;-</span> psis_result<span class="sc">$</span>smoothed</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="fu">paste0</span>(</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"--- PSIS Diagnostics ---</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  k-hat:                %.3f (%s)</span><span class="sc">\n\n</span><span class="st">"</span>,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"--- Estimates ---</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Raw IS:               %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  PSIS:                 %.3f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  True:                 3.000</span><span class="sc">\n\n</span><span class="st">"</span>,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">"--- Weight Summary ---</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Max raw weight:       %.1f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Max smoothed weight:  %.1f</span><span class="sc">\n</span><span class="st">"</span>),</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  psis_result<span class="sc">$</span>k,</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ifelse</span>(psis_result<span class="sc">$</span>k <span class="sc">&lt;</span> <span class="fl">0.5</span>, <span class="st">"Good: finite variance, CLT holds"</span>,</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ifelse</span>(psis_result<span class="sc">$</span>k <span class="sc">&lt;</span> <span class="fl">0.7</span>, <span class="st">"Marginal: infinite variance, finite mean"</span>,</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"Caution: mean may not exist"</span>)),</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(imp_ratios <span class="sc">*</span> f) <span class="sc">/</span> <span class="fu">sum</span>(imp_ratios),</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(smoothed_ratios <span class="sc">*</span> f) <span class="sc">/</span> <span class="fu">sum</span>(smoothed_ratios),</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">max</span>(imp_ratios),</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">max</span>(smoothed_ratios)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>--- PSIS Diagnostics ---
+  k-hat:                0.732 (Caution: mean may not exist)
+
+--- Estimates ---
+  Raw IS:               8.199
+  PSIS:                 1.867
+  True:                 3.000
+
+--- Weight Summary ---
+  Max raw weight:       2015.9
+  Max smoothed weight:  62.4</code></pre>
+</div>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Plot: PSIS smoothing comparison</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>raw_estimator <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(imp_ratios <span class="sc">*</span> f) <span class="sc">/</span> <span class="fu">cumsum</span>(imp_ratios)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>smoothed_estimator <span class="ot">&lt;-</span> <span class="fu">cumsum</span>(smoothed_ratios <span class="sc">*</span> f) <span class="sc">/</span> <span class="fu">cumsum</span>(smoothed_ratios)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Left panel: convergence</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(raw_estimator, <span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">ylab =</span> <span class="st">'Self-Normalized IS Estimator'</span>, <span class="at">xlab =</span> <span class="st">'S'</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">'n'</span>, <span class="at">ylim =</span> <span class="fu">range</span>(<span class="fu">c</span>(raw_estimator, smoothed_estimator, <span class="dv">3</span>)),</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">las =</span> <span class="dv">1</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">3</span>, <span class="at">col =</span> <span class="st">'#D4A017'</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(raw_estimator, <span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey50'</span>, <span class="fl">0.6</span>))</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(smoothed_estimator, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">'#2874A6'</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">'Raw IS'</span>, <span class="st">'PSIS'</span>, <span class="st">'True (3)'</span>),</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">lwd =</span> <span class="fu">c</span>(<span class="fl">1.5</span>, <span class="dv">2</span>, <span class="dv">2</span>), <span class="at">col =</span> <span class="fu">c</span>(<span class="st">'grey50'</span>, <span class="st">'#2874A6'</span>, <span class="st">'#D4A017'</span>),</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">lty =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>), <span class="at">bty =</span> <span class="st">'n'</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Right panel: importance ratio distributions</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(imp_ratios, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey50'</span>, <span class="fl">0.3</span>), <span class="at">border =</span> <span class="st">'grey50'</span>,</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">'Importance Ratios'</span>, <span class="at">main =</span> <span class="st">''</span>, <span class="at">ylab =</span> <span class="st">'Frequency'</span>, <span class="at">breaks =</span> <span class="dv">40</span>, <span class="at">las =</span> <span class="dv">1</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(smoothed_ratios, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'#2874A6'</span>, <span class="fl">0.4</span>), <span class="at">border =</span> <span class="st">'#2874A6'</span>,</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>     <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">breaks =</span> <span class="dv">40</span>)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topright'</span>, <span class="at">fill =</span> <span class="fu">c</span>(<span class="fu">adjustcolor</span>(<span class="st">'grey50'</span>, <span class="fl">0.3</span>), <span class="fu">adjustcolor</span>(<span class="st">'#2874A6'</span>, <span class="fl">0.4</span>)),</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>       <span class="at">border =</span> <span class="fu">c</span>(<span class="st">'grey50'</span>, <span class="st">'#2874A6'</span>), <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">'Raw'</span>, <span class="st">'Smoothed'</span>), <span class="at">bty =</span> <span class="st">'n'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Look at that left panel. The raw IS estimate (grey) has a dramatic spike around draw 644 where a single extreme weight dominates. The PSIS estimate (blue) smooths right through it. On the right, the histogram shows how the extreme tail of the raw weights has been replaced with well-behaved Pareto order statistics. The raw maximum weight was over 2000, while after smoothing it drops to around 60. That single dominant weight was responsible for the spike in the running average, and PSIS identified it and tamed it.</p>
+<p>The <span class="math inline">\(\hat{k}\)</span> diagnostic is in the “caution” zone, telling us that while the smoothing helped substantially, we should still be careful with this proposal distribution. In practice, if you saw this <span class="math inline">\(\hat{k}\)</span> value in a PSIS-LOO computation, it would mean the full posterior and the leave-one-out posterior disagree enough that the approximation is strained but potentially salvageable.</p>
+</section>
+<section id="coming-full-circle-psis-loo" class="level2">
+<h2 class="anchored" data-anchor-id="coming-full-circle-psis-loo">Coming Full Circle: PSIS-LOO</h2>
+<p>Now for the grand finale. We’ve built up all three ingredients: LOO cross-validation, importance sampling, and Pareto smoothing. Time to combine them.</p>
+<p>Recall that in classical LOO, we refit the model <span class="math inline">\(n\)</span> times. In the Bayesian setting, each refit means running MCMC again without observation <span class="math inline">\(i\)</span>. For complex models, this is wildly impractical. But importance sampling gives us a way out.</p>
+<p>Suppose we have already fit our full Bayesian model and obtained <span class="math inline">\(S\)</span> posterior draws <span class="math inline">\(\theta_1, \ldots, \theta_S\)</span> from <span class="math inline">\(p(\theta | y)\)</span>. We want to approximate the leave-one-out predictive density for each observation:</p>
+<p><span class="math display">\[p(y_i | y_{-i}) = \int p(y_i | \theta) p(\theta | y_{-i}) d\theta\]</span></p>
+<p>We can treat the full posterior <span class="math inline">\(p(\theta | y)\)</span> as our proposal distribution <span class="math inline">\(\gamma(\theta)\)</span> and the leave-one-out posterior <span class="math inline">\(p(\theta | y_{-i})\)</span> as our target <span class="math inline">\(\pi(\theta)\)</span>. The importance ratio for observation <span class="math inline">\(i\)</span> becomes:</p>
+<p><span class="math display">\[\begin{align}
+r_i(\theta_s) &amp;= \frac{p(\theta_s | y_{-i})}{p(\theta_s | y)} \\
+&amp;= \frac{p(y_{-i} | \theta_s)p(\theta_s)/p(y_{-i})}{p(y | \theta_s)p(\theta_s)/p(y)} \\
+&amp;= \frac{p(y_{-i} | \theta_s)}{p(y | \theta_s)} \cdot \frac{p(y)}{p(y_{-i})} \\
+&amp;\propto \frac{p(y_{-i} | \theta_s)}{p(y | \theta_s)} \\
+&amp;= \frac{1}{p(y_i | \theta_s)}
+\end{align}\]</span></p>
+<p>where in the last step we used the fact that observations are conditionally independent given <span class="math inline">\(\theta\)</span>, so <span class="math inline">\(p(y | \theta) = p(y_i | \theta) \cdot p(y_{-i} | \theta)\)</span>.</p>
+<p>This is a really satisfying result. The importance ratio for LOO is just the inverse of the likelihood of the held-out observation evaluated at the posterior draw. We don’t need to refit anything. We already have all the likelihood values from fitting the full model!</p>
+<p>Using the self-normalized importance estimator from earlier, the PSIS-LOO estimate of the leave-one-out predictive density for observation <span class="math inline">\(i\)</span> is:</p>
+<p><span class="math display">\[\hat{p}(y_i | y_{-i}) = \frac{\sum_{s=1}^S w_i(\theta_s) \cdot p(y_i | \theta_s)}{\sum_{s=1}^S w_i(\theta_s)}\]</span></p>
+<p>where <span class="math inline">\(w_i(\theta_s)\)</span> are the Pareto smoothed importance weights derived from <span class="math inline">\(r_i(\theta_s) = 1/p(y_i | \theta_s)\)</span>.</p>
+<p>Summing the log of these values over all observations gives us the expected log pointwise predictive density (ELPD), which is the primary model comparison metric:</p>
+<p><span class="math display">\[\widehat{\text{elpd}}_{\text{psis-loo}} = \sum_{i=1}^n \log \hat{p}(y_i | y_{-i})\]</span></p>
+<p>And here is where all three ingredients come together. For each observation <span class="math inline">\(i\)</span>, we get a Pareto <span class="math inline">\(\hat{k}_i\)</span> diagnostic from smoothing <span class="math inline">\(r_i\)</span>. Points where <span class="math inline">\(\hat{k}_i &gt; 0.7\)</span> are observations where the full posterior and the leave-one-out posterior strongly disagree. These are the influential observations, exactly the kind that classical LOO would also flag, but without needing to refit the model <span class="math inline">\(n\)</span> times.</p>
+<section id="seeing-it-in-practice" class="level3">
+<h3 class="anchored" data-anchor-id="seeing-it-in-practice">Seeing it in Practice</h3>
+<p>Let’s tie everything together with a proper example. We’ll fit a Bayesian linear regression using <code>cmdstanr</code> with the same data from the very beginning of the post.</p>
+<p>Here is the simple Stan code:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> &lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] x;</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> beta;</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma;</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  beta ~ normal(<span class="dv">0</span>,<span class="dv">1</span>);</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  sigma ~ exponential(<span class="dv">1</span>);</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  y ~ normal(x*beta, sigma);</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] log_lik;</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (n <span class="cf">in</span> <span class="dv">1</span>:N) {</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    log_lik[n] = normal_lpdf(y[n] | x[n]*beta, sigma);</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Now fitting the model:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cmdstanr)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(loo)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1235</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> x <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="sc">-</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">ifelse</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">100</span> <span class="sc">%%</span> <span class="dv">40</span> <span class="sc">==</span> <span class="dv">0</span>, <span class="dv">15</span>, <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> x, <span class="at">y =</span> y)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(<span class="st">'simple_lm.stan'</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mod<span class="sc">$</span><span class="fu">sample</span>(<span class="fu">list</span>(<span class="at">N=</span>n, <span class="at">x=</span>x, <span class="at">y=</span>y))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Now let’s extract the log-likelihood matrix and compute PSIS-LOO both manually and with the <code>loo</code> package:</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>log_lik_array <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="st">"log_lik"</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>log_lik_mat <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="st">'log_lik'</span>, <span class="at">format=</span><span class="st">'matrix'</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>loo_result <span class="ot">&lt;-</span> <span class="fu">loo</span>(log_lik_array)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Manual PSIS-LOO</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>S <span class="ot">&lt;-</span> <span class="fu">nrow</span>(log_lik_mat)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>n_obs <span class="ot">&lt;-</span> <span class="fu">ncol</span>(log_lik_mat)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>elpd_manual <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_obs)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>k_manual <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, n_obs)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_obs) {</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Raw importance ratios: 1/p(y_i | theta_s)</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  raw_ratios <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="sc">-</span>log_lik_mat[, i])</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  psis_fit <span class="ot">&lt;-</span> <span class="fu">fit_gpd_tail</span>(raw_ratios)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> psis_fit<span class="sc">$</span>smoothed</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  k_manual[i] <span class="ot">&lt;-</span> psis_fit<span class="sc">$</span>k</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Self-normalized IS estimate of LOO predictive density</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  w_norm <span class="ot">&lt;-</span> w <span class="sc">/</span> <span class="fu">sum</span>(w)</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>  elpd_manual[i] <span class="ot">&lt;-</span> <span class="fu">log</span>(<span class="fu">sum</span>(w_norm <span class="sc">*</span> <span class="fu">exp</span>(log_lik_mat[, i])))</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Plot: Manual vs loo package comparison</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="dv">2</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(elpd_manual, loo_result<span class="sc">$</span>pointwise[, <span class="st">"elpd_loo"</span>], <span class="at">pch =</span> <span class="dv">21</span>,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">bg =</span> <span class="fu">adjustcolor</span>(<span class="st">'#2874A6'</span>, <span class="fl">0.5</span>), <span class="at">col =</span> <span class="st">'#2874A6'</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">'Manual PSIS-LOO (elpd)'</span>, <span class="at">ylab =</span> <span class="st">'loo Package (elpd)'</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">las =</span> <span class="dv">1</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">'#D4A017'</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(k_manual, loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k, <span class="at">pch =</span> <span class="dv">21</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">bg =</span> <span class="fu">adjustcolor</span>(<span class="st">'#2874A6'</span>, <span class="fl">0.5</span>), <span class="at">col =</span> <span class="st">'#2874A6'</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="fu">expression</span>(<span class="st">'Manual '</span> <span class="sc">*</span> <span class="fu">hat</span>(k)), <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="st">'loo Package '</span> <span class="sc">*</span> <span class="fu">hat</span>(k)),</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>     <span class="at">las =</span> <span class="dv">1</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">col =</span> <span class="st">'#D4A017'</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Our manual estimates should track closely to the <code>loo</code> package results.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> The gold diagonal line shows perfect agreement.</p>
+</section>
+<section id="validating-our-implementation" class="level3">
+<h3 class="anchored" data-anchor-id="validating-our-implementation">Validating Our Implementation</h3>
+<p>Let’s go a step further and quantify just how close our from-scratch implementation is to the <code>loo</code> package. We’ll look at the correlation, max absolute difference, and overall ELPD sum for both methods.</p>
+<div class="cell">
+<details open="" class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>elpd_loo_pkg <span class="ot">&lt;-</span> loo_result<span class="sc">$</span>pointwise[, <span class="st">"elpd_loo"</span>]</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>k_loo_pkg <span class="ot">&lt;-</span> loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="fu">paste0</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"--- ELPD Comparison ---</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Manual total:         %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  loo package total:    %.2f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Correlation:          %.6f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Max |diff|:           %.4f</span><span class="sc">\n\n</span><span class="st">"</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"--- Pareto k Comparison ---</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Correlation:          %.6f</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"  Max |diff|:           %.4f</span><span class="sc">\n</span><span class="st">"</span>),</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sum</span>(elpd_manual), <span class="fu">sum</span>(elpd_loo_pkg),</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor</span>(elpd_manual, elpd_loo_pkg),</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">max</span>(<span class="fu">abs</span>(elpd_manual <span class="sc">-</span> elpd_loo_pkg)),</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor</span>(k_manual, k_loo_pkg),</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">max</span>(<span class="fu">abs</span>(k_manual <span class="sc">-</span> k_loo_pkg))))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>--- ELPD Comparison ---
+  Manual total:         -249.20
+  loo package total:    -253.49
+  Correlation:          0.998518
+  Max |diff|:           2.5264
+
+--- Pareto k Comparison ---
+  Correlation:          0.998998
+  Max |diff|:           0.0301</code></pre>
+</div>
+</div>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Plot: Pareto k diagnostics</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.5</span>, <span class="fl">4.5</span>, <span class="fl">1.5</span>, <span class="dv">1</span>), <span class="at">family =</span> <span class="st">"serif"</span>, <span class="at">font.lab =</span> <span class="dv">2</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k, <span class="at">pch =</span> <span class="dv">21</span>, <span class="at">cex =</span> <span class="fl">1.2</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">hat</span>(k)), <span class="at">xlab =</span> <span class="st">'Observation'</span>, <span class="at">las =</span> <span class="dv">1</span>,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">bg =</span> <span class="fu">ifelse</span>(loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k <span class="sc">&gt;</span> <span class="fl">0.7</span>, <span class="fu">adjustcolor</span>(<span class="st">'#D4A017'</span>, <span class="fl">0.7</span>),</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>          <span class="fu">ifelse</span>(loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="fu">adjustcolor</span>(<span class="st">'darkorange'</span>, <span class="fl">0.7</span>),</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">adjustcolor</span>(<span class="st">'grey40'</span>, <span class="fl">0.5</span>))),</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="fu">ifelse</span>(loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k <span class="sc">&gt;</span> <span class="fl">0.7</span>, <span class="st">'#D4A017'</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>           <span class="fu">ifelse</span>(loo_result<span class="sc">$</span>diagnostics<span class="sc">$</span>pareto_k <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">'darkorange'</span>, <span class="st">'grey40'</span>)),</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">panel.first =</span> <span class="fu">grid</span>(<span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">'grey80'</span>, <span class="fl">0.5</span>), <span class="at">lty =</span> <span class="dv">1</span>))</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fl">0.7</span>, <span class="at">col =</span> <span class="st">'#D4A017'</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="fl">0.5</span>, <span class="at">col =</span> <span class="st">'darkorange'</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">pch =</span> <span class="dv">21</span>, <span class="at">pt.cex =</span> <span class="fl">1.2</span>, <span class="at">bty =</span> <span class="st">'n'</span>,</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">pt.bg =</span> <span class="fu">c</span>(<span class="fu">adjustcolor</span>(<span class="st">'grey40'</span>, <span class="fl">0.5</span>), <span class="fu">adjustcolor</span>(<span class="st">'darkorange'</span>, <span class="fl">0.7</span>),</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">adjustcolor</span>(<span class="st">'#D4A017'</span>, <span class="fl">0.7</span>)),</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="fu">c</span>(<span class="st">'grey40'</span>, <span class="st">'darkorange'</span>, <span class="st">'#D4A017'</span>),</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">'k &lt; 0.5 (good)'</span>, <span class="st">'0.5 &lt; k &lt; 0.7 (marginal)'</span>, <span class="st">'k &gt; 0.7 (bad)'</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>If you recall our very first plot from the classical LOO section, the influential points we identified there should line up with the high <span class="math inline">\(\hat{k}\)</span> observations here. We used the same data generating process after all, complete with those pesky outliers at every 40th observation. The difference is that we only had to fit the model <em>once</em>.</p>
+</section>
+</section>
+<section id="wrapping-up" class="level2">
+<h2 class="anchored" data-anchor-id="wrapping-up">Wrapping Up</h2>
+<p>We started with the brute force approach of classical LOO cross-validation, took a detour through importance sampling and the generalized Pareto distribution, and landed on PSIS-LOO: a method that gives us the benefits of LOO-CV from a single model fit. The Pareto <span class="math inline">\(\hat{k}\)</span> diagnostic is the cherry on top,<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> giving us observation-level reliability checks for free.</p>
+<p>The <code>loo</code> package makes all of this turnkey in practice, but I think there is real value in understanding what is happening underneath. It builds intuition for when things go wrong (high <span class="math inline">\(\hat{k}\)</span> values everywhere usually means your model is misspecified or your posterior is too far from the LOO posteriors) and why the suggested remedies (moment matching, resampling, or just refitting for those specific observations) work.</p>
+<p>For further reading, <span class="citation" data-cites="psis_paper">Vehtari et al. (<a href="#ref-psis_paper" role="doc-biblioref">2024</a>)</span> is thorough and well written. <span class="citation" data-cites="psis_method">Vehtari et al. (<a href="#ref-psis_method" role="doc-biblioref">2016</a>)</span> gives practical guidance for model comparison using PSIS-LOO and WAIC. And of course, the <a href="https://mc-stan.org/loo/articles/loo2-example.html">Stan documentation</a> for the <code>loo</code> package is always a reliable companion.</p>
 </section>
 <section id="appendix" class="level2">
 <h2 class="anchored" data-anchor-id="appendix">Appendix</h2>
@@ -424,54 +998,24 @@ l(\theta, k) &amp;= \log\left[\prod^n_i \frac{k}{\theta}(1-x_i\theta)^{1/k - 1}\
 \end{align}\]</span></p>
 <p>Notice, we now have <span class="math inline">\(\hat{k}\)</span> in terms of <span class="math inline">\(\theta\)</span>. This means we can write our log-likelihood function fully in terms of <span class="math inline">\(\theta\)</span> by letting <span class="math inline">\(l(\theta, k)= l(\theta, \hat{k}(\theta)) = l(\theta)\)</span>. Further notice that we simplify our original log-likelihood function down to</p>
 <p><span class="math display">\[l(\theta) = n[\log(\theta/\hat{k}) + \hat{k} - 1]\]</span> where we have let <span class="math inline">\(\hat{k}=\hat{k}(\theta)\)</span> for clarity. Zhang and Stephens call the above the “profile log-likelihood”.</p>
-<p>A logical question is to ask why we aren’t just finding <span class="math inline">\(\hat{\theta}\)</span> from <span class="math inline">\(\frac{\partial l(\theta,k)}{\partial \theta}\)</span> and getting to old fashioned MLE solution and calling it a day. The answer is that unfortunately we can really only solve this system of equations using numerical solutions, and those solutions tend to be complex. One way around this is to solve it in terms of Bayesian quadrature estimation where we define an empirical prior and do grid approximation for the posterior.</p>
+<p>A logical question is to ask why we aren’t just finding <span class="math inline">\(\hat{\theta}\)</span> from <span class="math inline">\(\frac{\partial l(\theta,k)}{\partial \theta}\)</span> and getting an old fashioned MLE solution and calling it a day. The answer is that unfortunately we can really only solve this system of equations using numerical solutions, and those solutions tend to be complex. One way around this is to solve it in terms of Bayesian quadrature estimation where we define an empirical prior and do grid approximation for the posterior.</p>
 <p>Good deal, let’s right down the expected value for <span class="math inline">\(\hat{\theta}\)</span>, taken with respect to the posterior:</p>
 <p><span class="math display">\[\hat{\theta}=\frac{\int\theta\cdot\pi(\theta)L(\theta)d\theta}{\int\pi(\theta)L(\theta)d\theta}\]</span> where <span class="math inline">\(\pi(\theta)\)</span> is our empirical prior for <span class="math inline">\(\theta\)</span> and <span class="math inline">\(L(\theta)\)</span> is the “profile likelihood” function. That is, <span class="math inline">\(L(\theta) = \exp[l(\theta)]\)</span>.</p>
-</section>
-</section>
-<section id="outline" class="level2">
-<h2 class="anchored" data-anchor-id="outline">Outline</h2>
-<section id="why-loo" class="level3">
-<h3 class="anchored" data-anchor-id="why-loo">Why Loo</h3>
-<ul>
-<li>Provide some overview of why LOO CV is important</li>
-</ul>
-</section>
-<section id="importance-sampling" class="level3">
-<h3 class="anchored" data-anchor-id="importance-sampling">Importance Sampling</h3>
-<ul>
-<li>We are going to be using it a lot later so good to get it out of the way</li>
-</ul>
-</section>
-<section id="pareto-distribution" class="level3">
-<h3 class="anchored" data-anchor-id="pareto-distribution">Pareto Distribution</h3>
-<ul>
-<li>What is it</li>
-<li>How is it defined - pdf
-<ul>
-<li>Why do we care</li>
-<li>What do the parameters mean?</li>
-</ul></li>
-<li>How do we go about estimating the parameters
-<ul>
-<li>Talk about the empirical Bayes estimation procedure</li>
-</ul></li>
-<li>Bring back the context of MC</li>
-</ul>
-</section>
-<section id="tieing-it-back-together" class="level3">
-<h3 class="anchored" data-anchor-id="tieing-it-back-together">Tieing it back together</h3>
-<ul>
-<li>Introduce the Vehtari 2017 paper</li>
-<li>Talk about ELPD</li>
-<li>Reference the paper to show that we can use p(y) as a approximate weight distribution (with the required math, work through the algebra)</li>
-<li>Go ahead and do the actual</li>
-</ul>
+<p>In <span class="citation" data-cites="zhang_gpd">Zhang and Stephens (<a href="#ref-zhang_gpd" role="doc-biblioref">2009</a>)</span>, the authors define an empirical prior for <span class="math inline">\(\theta\)</span> by constructing a grid of candidate values. The key constraint is that <span class="math inline">\(\theta\)</span> must be less than <span class="math inline">\(1/\max(x)\)</span> for the log-likelihood to even be defined, since we need <span class="math inline">\(1 - x_i\theta &gt; 0\)</span> for all observations. They build <span class="math inline">\(m\)</span> grid points <span class="math inline">\(\theta_1, \ldots, \theta_m\)</span> where <span class="math inline">\(m = \lfloor \min(n/5, 20\sqrt{n}) \rfloor\)</span> using the following formula:</p>
+<p><span class="math display">\[\theta_j = \frac{1}{x_{(n)} + \frac{1}{j}\left(x_{\left(\lceil n(1-(j-0.5)/m) \rceil\right)} - x_{(1)}\right)}, \quad j = 1, \ldots, m\]</span></p>
+<p>where <span class="math inline">\(x_{(j)}\)</span> denotes the <span class="math inline">\(j\)</span>th order statistic. This formula looks like it drops out of the sky, so let’s unpack where it comes from.</p>
+<p>The fundamental constraint on <span class="math inline">\(\theta\)</span> is <span class="math inline">\(\theta &lt; 1/x_{(n)}\)</span>, the reciprocal of the largest observation. Any <span class="math inline">\(\theta\)</span> at or above this bound makes the log-likelihood blow up. So our grid must live in the interval <span class="math inline">\((0, 1/x_{(n)})\)</span>. The denominator in the formula achieves this: when <span class="math inline">\(j=1\)</span>, the second term is largest and pushes <span class="math inline">\(\theta_1\)</span> furthest from the upper bound; as <span class="math inline">\(j\)</span> grows, the second term shrinks toward zero and <span class="math inline">\(\theta_j\)</span> approaches <span class="math inline">\(1/x_{(n)}\)</span> from below.</p>
+<p>The specific spacing comes from a quantile-matching heuristic. Zhang and Stephens note (Section 4 of their paper) that this grid was chosen so that the <span class="math inline">\(\theta_j\)</span> values correspond roughly to method-of-moments estimates you would get if the “true” shape parameter were at various quantiles of the data. The order statistic <span class="math inline">\(x_{(\lceil n(1-(j-0.5)/m) \rceil)}\)</span> selects a data point from the upper portion of the sample, and the spacing <span class="math inline">\(1/j\)</span> creates a denser concentration of grid points near the upper bound where the profile likelihood tends to be most peaked. The authors arrived at this particular functional form through a combination of asymptotic analysis and numerical experimentation, verifying across a wide range of simulated GPD samples that it reliably places enough grid points in the high-likelihood region to produce accurate quadrature estimates. It is not derived from first principles in a closed-form sense; rather, it is a carefully tuned recipe that works well in practice.</p>
+<p>The prior is then taken to be uniform over this grid. This reduces our integral to a simple weighted average:</p>
+<p><span class="math display">\[\hat{\theta} = \frac{\sum_{j=1}^m \theta_j \cdot L(\theta_j)}{\sum_{j=1}^m L(\theta_j)}\]</span></p>
+<p>which is just a posterior mean under a discrete uniform prior. Once we have <span class="math inline">\(\hat{\theta}\)</span>, we recover <span class="math inline">\(\hat{k}\)</span> and <span class="math inline">\(\hat{\sigma}\)</span>:</p>
+<p><span class="math display">\[\hat{k} = -n^{-1}\sum_{i=1}^n \log(1 - x_i\hat{\theta}), \quad \hat{\sigma} = \frac{\hat{k}}{\hat{\theta}}\]</span></p>
+<p>The elegance of this approach is that it avoids the numerical pitfalls of directly maximizing the log-likelihood while keeping the computation fast. The grid approximation typically only needs on the order of <span class="math inline">\(m \approx 20\sqrt{n}\)</span> evaluations, which is negligible for the sample sizes we encounter when fitting tails of importance ratios. For the curious, the <code>fit_gpd_tail</code> function we defined earlier implements exactly this procedure. Compare the grid construction and the posterior weighted estimate of <span class="math inline">\(\hat{\theta}\)</span> with the equations above and you should see a direct correspondence.</p>
 </section>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
 <div id="ref-Balkema_imp" class="csl-entry" role="listitem">
 Balkema, A. A., and L. de Haan. 1974. <span>“Residual Life Time at Great Age.”</span> <em>The Annals of Probability</em> 2 (5): 792–804. <a href="http://www.jstor.org/stable/2959306">http://www.jstor.org/stable/2959306</a>.
 </div>
@@ -481,8 +1025,11 @@ Ionides, Edward L. 2008. <span>“Truncated Importance Sampling.”</span> <em>J
 <div id="ref-pickands_imp" class="csl-entry" role="listitem">
 Pickands, James. 1975. <span>“Statistical Inference Using Extreme Order Statistics.”</span> <em>The Annals of Statistics</em> 3 (1): 119–31. <a href="http://www.jstor.org/stable/2958083">http://www.jstor.org/stable/2958083</a>.
 </div>
+<div id="ref-psis_method" class="csl-entry" role="listitem">
+Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2016. <span>“Practical Bayesian Model Evaluation Using Leave-One-Out Cross-Validation and WAIC.”</span> <em>Statistics and Computing</em> 27 (5): 1413–32. <a href="https://doi.org/10.1007/s11222-016-9696-4">https://doi.org/10.1007/s11222-016-9696-4</a>.
+</div>
 <div id="ref-psis_paper" class="csl-entry" role="listitem">
-Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry. 2024. <span>“Pareto Smoothed Importance Sampling.”</span> <a href="https://arxiv.org/abs/1507.02646">https://arxiv.org/abs/1507.02646</a>.
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry. 2024. <em>Pareto Smoothed Importance Sampling</em>. <a href="https://arxiv.org/abs/1507.02646">https://arxiv.org/abs/1507.02646</a>.
 </div>
 <div id="ref-zhang_gpd" class="csl-entry" role="listitem">
 Zhang, Jin, and Michael A. Stephens. 2009. <span>“A New and Efficient Estimation Method for the Generalized Pareto Distribution.”</span> <em>Technometrics</em> 51 (3): 316–25. <a href="http://www.jstor.org/stable/40586625">http://www.jstor.org/stable/40586625</a>.
@@ -498,387 +1045,261 @@ Zhang, Jin, and Michael A. Stephens. 2009. <span>“A New and Efficient Estimati
 <ol>
 <li id="fn1"><p>sorry Cauchy<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>That’s my best pun for “Standing on the Shoulders of Giants”<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p>I just can’t stop with these food puns<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>There will be some slight disagreement with ELPD based on how the LOO packges differs for extreme values<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>last food pun, I promise<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
-window.document.addEventListener("DOMContentLoaded", function (event) {
-  const toggleBodyColorMode = (bsSheetEl) => {
-    const mode = bsSheetEl.getAttribute("data-mode");
-    const bodyEl = window.document.querySelector("body");
-    if (mode === "dark") {
-      bodyEl.classList.add("quarto-dark");
-      bodyEl.classList.remove("quarto-light");
-    } else {
-      bodyEl.classList.add("quarto-light");
-      bodyEl.classList.remove("quarto-dark");
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
     }
-  }
-  const toggleBodyColorPrimary = () => {
-    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
-    if (bsSheetEl) {
-      toggleBodyColorMode(bsSheetEl);
-    }
-  }
-  toggleBodyColorPrimary();  
-  const disableStylesheet = (stylesheets) => {
-    for (let i=0; i < stylesheets.length; i++) {
-      const stylesheet = stylesheets[i];
-      stylesheet.rel = 'prefetch';
-    }
-  }
-  const enableStylesheet = (stylesheets) => {
-    for (let i=0; i < stylesheets.length; i++) {
-      const stylesheet = stylesheets[i];
-      stylesheet.rel = 'stylesheet';
-    }
-  }
-  const manageTransitions = (selector, allowTransitions) => {
-    const els = window.document.querySelectorAll(selector);
-    for (let i=0; i < els.length; i++) {
-      const el = els[i];
-      if (allowTransitions) {
-        el.classList.remove('notransition');
-      } else {
-        el.classList.add('notransition');
-      }
-    }
-  }
-  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
-    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
-    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
-    let newTheme = '';
-    if(darkModeDefault) {
-      newTheme = isAlternate ? baseTheme : alternateTheme;
-    } else {
-      newTheme = isAlternate ? alternateTheme : baseTheme;
-    }
-    const changeGiscusTheme = () => {
-      // From: https://github.com/giscus/giscus/issues/336
-      const sendMessage = (message) => {
-        const iframe = document.querySelector('iframe.giscus-frame');
-        if (!iframe) return;
-        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
-      }
-      sendMessage({
-        setConfig: {
-          theme: newTheme
-        }
-      });
-    }
-    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
-    if (isGiscussLoaded) {
-      changeGiscusTheme();
-    }
-  }
-  const toggleColorMode = (alternate) => {
-    // Switch the stylesheets
-    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
-    manageTransitions('#quarto-margin-sidebar .nav-link', false);
-    if (alternate) {
-      enableStylesheet(alternateStylesheets);
-      for (const sheetNode of alternateStylesheets) {
-        if (sheetNode.id === "quarto-bootstrap") {
-          toggleBodyColorMode(sheetNode);
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
         }
       }
-    } else {
-      disableStylesheet(alternateStylesheets);
-      toggleBodyColorPrimary();
-    }
-    manageTransitions('#quarto-margin-sidebar .nav-link', true);
-    // Switch the toggles
-    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
-    for (let i=0; i < toggles.length; i++) {
-      const toggle = toggles[i];
-      if (toggle) {
-        if (alternate) {
-          toggle.classList.add("alternate");     
-        } else {
-          toggle.classList.remove("alternate");
-        }
-      }
-    }
-    // Hack to workaround the fact that safari doesn't
-    // properly recolor the scrollbar when toggling (#1455)
-    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
-      manageTransitions("body", false);
-      window.scrollTo(0, 1);
-      setTimeout(() => {
-        window.scrollTo(0, 0);
-        manageTransitions("body", true);
-      }, 40);  
-    }
-  }
-  const isFileUrl = () => { 
-    return window.location.protocol === 'file:';
-  }
-  const hasAlternateSentinel = () => {  
-    let styleSentinel = getColorSchemeSentinel();
-    if (styleSentinel !== null) {
-      return styleSentinel === "alternate";
-    } else {
       return false;
     }
-  }
-  const setStyleSentinel = (alternate) => {
-    const value = alternate ? "alternate" : "default";
-    if (!isFileUrl()) {
-      window.localStorage.setItem("quarto-color-scheme", value);
-    } else {
-      localAlternateSentinel = value;
-    }
-  }
-  const getColorSchemeSentinel = () => {
-    if (!isFileUrl()) {
-      const storageValue = window.localStorage.getItem("quarto-color-scheme");
-      return storageValue != null ? storageValue : localAlternateSentinel;
-    } else {
-      return localAlternateSentinel;
-    }
-  }
-  const darkModeDefault = false;
-  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
-  // Dark / light mode switch
-  window.quartoToggleColorScheme = () => {
-    // Read the current dark / light value 
-    let toAlternate = !hasAlternateSentinel();
-    toggleColorMode(toAlternate);
-    setStyleSentinel(toAlternate);
-    toggleGiscusIfUsed(toAlternate, darkModeDefault);
-  };
-  // Ensure there is a toggle, if there isn't float one in the top right
-  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
-    const a = window.document.createElement('a');
-    a.classList.add('top-right');
-    a.classList.add('quarto-color-scheme-toggle');
-    a.href = "";
-    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
-    const i = window.document.createElement("i");
-    i.classList.add('bi');
-    a.appendChild(i);
-    window.document.body.appendChild(a);
-  }
-  // Switch to dark mode if need be
-  if (hasAlternateSentinel()) {
-    toggleColorMode(true);
-  } else {
-    toggleColorMode(false);
-  }
-  const icon = "";
-  const anchorJS = new window.AnchorJS();
-  anchorJS.options = {
-    placement: 'right',
-    icon: icon
-  };
-  anchorJS.add('.anchored');
-  const isCodeAnnotation = (el) => {
-    for (const clz of el.classList) {
-      if (clz.startsWith('code-annotation-')) {                     
-        return true;
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
       }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
     }
-    return false;
-  }
-  const onCopySuccess = function(e) {
-    // button target
-    const button = e.trigger;
-    // don't keep focus
-    button.blur();
-    // flash "checked"
-    button.classList.add('code-copy-button-checked');
-    var currentTitle = button.getAttribute("title");
-    button.setAttribute("title", "Copied!");
-    let tooltip;
-    if (window.bootstrap) {
-      button.setAttribute("data-bs-toggle", "tooltip");
-      button.setAttribute("data-bs-placement", "left");
-      button.setAttribute("data-bs-title", "Copied!");
-      tooltip = new bootstrap.Tooltip(button, 
-        { trigger: "manual", 
-          customClass: "code-copy-button-tooltip",
-          offset: [0, -8]});
-      tooltip.show();    
-    }
-    setTimeout(function() {
-      if (tooltip) {
-        tooltip.hide();
-        button.removeAttribute("data-bs-title");
-        button.removeAttribute("data-bs-toggle");
-        button.removeAttribute("data-bs-placement");
-      }
-      button.setAttribute("title", currentTitle);
-      button.classList.remove('code-copy-button-checked');
-    }, 1000);
-    // clear code selection
-    e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
       for (const childEl of codeEl.children) {
         if (isCodeAnnotation(childEl)) {
           childEl.remove();
         }
       }
       return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
-  });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
     });
-    clipboardModal.on('success', onCopySuccess);
-  }
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
     }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
-    }
-  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-    const config = {
-      allowHTML: true,
-      maxWidth: 500,
-      delay: 100,
-      arrow: false,
-      appendTo: function(el) {
-          return el.parentElement;
-      },
-      interactive: true,
-      interactiveBorder: 10,
-      theme: 'quarto',
-      placement: 'bottom-start',
-    };
-    if (contentFn) {
-      config.content = contentFn;
-    }
-    if (onTriggerFn) {
-      config.onTrigger = onTriggerFn;
-    }
-    if (onUntriggerFn) {
-      config.onUntrigger = onUntriggerFn;
-    }
-    window.tippy(el, config); 
-  }
-  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-  for (var i=0; i<noterefs.length; i++) {
-    const ref = noterefs[i];
-    tippyHover(ref, function() {
-      // use id or data attribute instead here
-      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-      try { href = new URL(href).hash; } catch {}
-      const id = href.replace(/^#\/?/, "");
-      const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
-    });
-  }
-  const xrefs = window.document.querySelectorAll('a.quarto-xref');
-  const processXRef = (id, note) => {
-    // Strip column container classes
-    const stripColumnClz = (el) => {
-      el.classList.remove("page-full", "page-columns");
-      if (el.children) {
-        for (const child of el.children) {
-          stripColumnClz(child);
-        }
-      }
-    }
-    stripColumnClz(note)
-    if (id === null || id.startsWith('sec-')) {
-      // Special case sections, only their first couple elements
-      const container = document.createElement("div");
-      if (note.children && note.children.length > 2) {
-        container.appendChild(note.children[0].cloneNode(true));
-        for (let i = 1; i < note.children.length; i++) {
-          const child = note.children[i];
-          if (child.tagName === "P" && child.innerText === "") {
-            continue;
-          } else {
-            container.appendChild(child.cloneNode(true));
-            break;
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
           }
         }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(container);
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
         }
-        return container.innerHTML
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
       } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
         if (window.Quarto?.typesetMath) {
           window.Quarto.typesetMath(note);
         }
-        return note.innerHTML;
-      }
-    } else {
-      // Remove any anchor links if they are present
-      const anchorLink = note.querySelector('a.anchorjs-link');
-      if (anchorLink) {
-        anchorLink.remove();
-      }
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(note);
-      }
-      // TODO in 1.5, we should make sure this works without a callout special case
-      if (note.classList.contains("callout")) {
-        return note.outerHTML;
-      } else {
-        return note.innerHTML;
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
       }
     }
-  }
-  for (var i=0; i<xrefs.length; i++) {
-    const xref = xrefs[i];
-    tippyHover(xref, undefined, function(instance) {
-      instance.disable();
-      let url = xref.getAttribute('href');
-      let hash = undefined; 
-      if (url.startsWith('#')) {
-        hash = url;
-      } else {
-        try { hash = new URL(url).hash; } catch {}
-      }
-      if (hash) {
-        const id = hash.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note !== null) {
-          try {
-            const html = processXRef(id, note.cloneNode(true));
-            instance.setContent(html);
-          } finally {
-            instance.enable();
-            instance.show();
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
           }
         } else {
-          // See if we can fetch this
-          fetch(url.split('#')[0])
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
           .then(res => res.text())
           .then(html => {
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.getElementById(id);
+            const note = htmlDoc.querySelector('main.content');
             if (note !== null) {
-              const html = processXRef(id, note);
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
               instance.setContent(html);
             } 
           }).finally(() => {
@@ -886,185 +1307,161 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             instance.show();
           });
         }
-      } else {
-        // See if we can fetch a full url (with no hash to target)
-        // This is a special case and we should probably do some content thinning / targeting
-        fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const htmlDoc = parser.parseFromString(html, "text/html");
-          const note = htmlDoc.querySelector('main.content');
-          if (note !== null) {
-            // This should only happen for chapter cross references
-            // (since there is no id in the URL)
-            // remove the first header
-            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-              note.children[0].remove();
-            }
-            const html = processXRef(null, note);
-            instance.setContent(html);
-          } 
-        }).finally(() => {
-          instance.enable();
-          instance.show();
-        });
-      }
-    }, function(instance) {
-    });
-  }
-      let selectedAnnoteEl;
-      const selectorForAnnotation = ( cell, annotation) => {
-        let cellAttr = 'data-code-cell="' + cell + '"';
-        let lineAttr = 'data-code-annotation="' +  annotation + '"';
-        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-        return selector;
-      }
-      const selectCodeLines = (annoteEl) => {
-        const doc = window.document;
-        const targetCell = annoteEl.getAttribute("data-target-cell");
-        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-        const lineIds = lines.map((line) => {
-          return targetCell + "-" + line;
-        })
-        let top = null;
-        let height = null;
-        let parent = null;
-        if (lineIds.length > 0) {
-            //compute the position of the single el (top and bottom and make a div)
-            const el = window.document.getElementById(lineIds[0]);
-            top = el.offsetTop;
-            height = el.offsetHeight;
-            parent = el.parentElement.parentElement;
-          if (lineIds.length > 1) {
-            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-            height = bottom - top;
-          }
-          if (top !== null && height !== null && parent !== null) {
-            // cook up a div (if necessary) and position it 
-            let div = window.document.getElementById("code-annotation-line-highlight");
-            if (div === null) {
-              div = window.document.createElement("div");
-              div.setAttribute("id", "code-annotation-line-highlight");
-              div.style.position = 'absolute';
-              parent.appendChild(div);
-            }
-            div.style.top = top - 2 + "px";
-            div.style.height = height + 4 + "px";
-            div.style.left = 0;
-            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-            if (gutterDiv === null) {
-              gutterDiv = window.document.createElement("div");
-              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-              gutterDiv.style.position = 'absolute';
-              const codeCell = window.document.getElementById(targetCell);
-              const gutter = codeCell.querySelector('.code-annotation-gutter');
-              gutter.appendChild(gutterDiv);
-            }
-            gutterDiv.style.top = top - 2 + "px";
-            gutterDiv.style.height = height + 4 + "px";
-          }
-          selectedAnnoteEl = annoteEl;
-        }
-      };
-      const unselectCodeLines = () => {
-        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-        elementsIds.forEach((elId) => {
-          const div = window.document.getElementById(elId);
-          if (div) {
-            div.remove();
-          }
-        });
-        selectedAnnoteEl = undefined;
-      };
-        // Handle positioning of the toggle
-    window.addEventListener(
-      "resize",
-      throttle(() => {
-        elRect = undefined;
-        if (selectedAnnoteEl) {
-          selectCodeLines(selectedAnnoteEl);
-        }
-      }, 10)
-    );
-    function throttle(fn, ms) {
-    let throttle = false;
-    let timer;
-      return (...args) => {
-        if(!throttle) { // first call gets through
-            fn.apply(this, args);
-            throttle = true;
-        } else { // all the others get throttled
-            if(timer) clearTimeout(timer); // cancel #2
-            timer = setTimeout(() => {
-              fn.apply(this, args);
-              timer = throttle = false;
-            }, ms);
-        }
-      };
-    }
-      // Attach click handler to the DT
-      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-      for (const annoteDlNode of annoteDls) {
-        annoteDlNode.addEventListener('click', (event) => {
-          const clickedEl = event.target;
-          if (clickedEl !== selectedAnnoteEl) {
-            unselectCodeLines();
-            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-            if (activeEl) {
-              activeEl.classList.remove('code-annotation-active');
-            }
-            selectCodeLines(clickedEl);
-            clickedEl.classList.add('code-annotation-active');
-          } else {
-            // Unselect the line
-            unselectCodeLines();
-            clickedEl.classList.remove('code-annotation-active');
-          }
-        });
-      }
-  const findCites = (el) => {
-    const parentEl = el.parentElement;
-    if (parentEl) {
-      const cites = parentEl.dataset.cites;
-      if (cites) {
-        return {
-          el,
-          cites: cites.split(' ')
-        };
-      } else {
-        return findCites(el.parentElement)
-      }
-    } else {
-      return undefined;
-    }
-  };
-  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-  for (var i=0; i<bibliorefs.length; i++) {
-    const ref = bibliorefs[i];
-    const citeInfo = findCites(ref);
-    if (citeInfo) {
-      tippyHover(citeInfo.el, function() {
-        var popup = window.document.createElement('div');
-        citeInfo.cites.forEach(function(cite) {
-          var citeDiv = window.document.createElement('div');
-          citeDiv.classList.add('hanging-indent');
-          citeDiv.classList.add('csl-entry');
-          var biblioDiv = window.document.getElementById('ref-' + cite);
-          if (biblioDiv) {
-            citeDiv.innerHTML = biblioDiv.innerHTML;
-          }
-          popup.appendChild(citeDiv);
-        });
-        return popup.innerHTML;
+      }, function(instance) {
       });
     }
-  }
-});
-</script>
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
 </div> <!-- /content -->
 
 

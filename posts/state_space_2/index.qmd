@@ -3,8 +3,12 @@ title: "An Unhinged Introduction to State Space Models: Act 2"
 date: "2024-06-01"
 description: "Stan takes the stage: parameter inference, posterior interrogation, and answering the question that started it all"
 categories: [Bayes, R, Stan]
+format:
+  html:
+    code-fold: show
 toc: true
 freeze: true
+draft: true
 bibliography: references.bib
 ---
 
@@ -56,8 +60,7 @@ y_vec_no_prod <- y_vec[!is_new_prod_live]
 
 Welcome back. If you missed [Act 1](), here's the short version: LENI launched Tumbler v2™, sales went up, and we want to know how much of that increase is *actually* from the new product versus just industry trends, seasonality, and good vibes from our competitors "Abominable Snowman" and "Bigfoot". We introduced the state space framework:
 
-$$y_t = Z_t\alpha_t + \varepsilon_t$$
-$$\alpha_{t+1} = T_t \alpha_t + R_t \eta_t$$
+$$y_t = Z_t\alpha_t + \varepsilon_t$$ $$\alpha_{t+1} = T_t \alpha_t + R_t \eta_t$$
 
 We learned how to filter (forward pass), smooth (backward pass), and simulate draws from $P(\alpha|Y_n)$ using the Durbin and Koopman trick [@sim_paper]. The ensemble has been cast, the understudies have rehearsed, the stage is set.
 
@@ -79,7 +82,7 @@ where $v_t = y_t - Z_t a_t$ is the one-step-ahead prediction error and $F_t = \t
 
 Here's the punchline. If $v_t | Y_{t-1} \sim \mathcal{N}(0, F_t)$, then we can write the Stan model block as:
 
-```stan
+``` stan
 model {
   var_vec ~ exponential(1);
   P_1_diag ~ exponential(1);
@@ -117,7 +120,7 @@ The `#include` directive pulls in all of our matrix construction and Kalman filt
 
 ## The Data Block
 
-```stan
+``` stan
 data {
   int<lower=1> N;
   vector[N] y;
@@ -132,7 +135,7 @@ Nothing surprising here. We pass in our time series `y`, the covariate matrix `X
 
 ## Transformed Data: Building the System Matrices
 
-```stan
+``` stan
 transformed data{
   int season_cont = n_seasons > 2 ? n_seasons - 1 : 0;
   int a_size = has_slope + n_covar + season_cont + 1;
@@ -155,7 +158,7 @@ $$Z_t = \begin{bmatrix} 1 & 1 & 0 & 0 & 0 & 0 & 0 & x_{a,t} & x_{b,t}\end{bmatri
 
 The leading 1 selects the trend $\mu_t$. The second 1 selects the current seasonal effect $\tau_t$. The zeros skip the $s-2$ carried-over seasonal states. The trailing entries are the covariate values at time $t$. Here's how the Stan function builds this:
 
-```stan
+``` stan
 array[] row_vector gen_z_arr(int n, int include_slope, matrix x_mat, int n_seasons){
   int season_cont = n_seasons > 2 ? n_seasons - 1 : 0;
   int z_size = include_slope + cols(x_mat) + season_cont + 1;
@@ -229,7 +232,7 @@ Only $\mu_t$ and $\tau_t$ receive disturbances. The carried seasonal states and 
 
 ## Parameters: What Stan Explores
 
-```stan
+``` stan
 parameters{
   vector<lower=0>[cols(R_mat)] var_vec;
   vector<lower=0>[a_size] P_1_diag;
@@ -247,7 +250,7 @@ That's twelve total parameters for Stan to explore. Everything else (the full la
 
 ## Transformed Parameters: The Kalman Filter Lives Here
 
-```stan
+``` stan
 transformed parameters{
   vector[a_size * N + (2 * N)] k_obj = kalman_filter_smooth(
     N, y, rep_vector(0, a_size), P_1_diag,
@@ -262,7 +265,7 @@ Every time Stan proposes a new set of variance parameters, the Kalman filter run
 
 The packing/unpacking is handled by helper functions:
 
-```stan
+``` stan
 vector get_F(vector kalman_object, array[] int s){
   return segment(kalman_object, 1 + s[1], s[2]);
 }
@@ -276,7 +279,7 @@ The array `s` stores the segment boundaries so we can slice correctly. It's the 
 
 ## Generated Quantities: Simulation
 
-```stan
+``` stan
 generated quantities{
   array[N] vector[a_size] alpha_sim = simulate_state_rng(
     k_obj, N, s, s_evolve, y, rep_vector(0,a_size), P_1_diag,
@@ -289,10 +292,10 @@ generated quantities{
 
 This is the Durbin and Koopman simulation smoother from Act 1, now running inside Stan's sampler. At every MCMC iteration (after the warmup), it:
 
-1. Draws $\alpha_1^+$ from $\mathcal{N}(0, P_1)$
-2. Evolves the system forward to produce $\alpha^+$ and $y^+$
-3. Smooths the synthetic series to get $\hat{\alpha}^+$
-4. Computes $\tilde{\alpha} = \alpha^+ - \hat{\alpha}^+ + \hat{\alpha}$
+1.  Draws $\alpha_1^+$ from $\mathcal{N}(0, P_1)$
+2.  Evolves the system forward to produce $\alpha^+$ and $y^+$
+3.  Smooths the synthetic series to get $\hat{\alpha}^+$
+4.  Computes $\tilde{\alpha} = \alpha^+ - \hat{\alpha}^+ + \hat{\alpha}$
 
 The result is a draw from the posterior $P(\alpha | Y_n, \theta)$ conditional on that iteration's parameter values. Across all post-warmup iterations, you get a full posterior distribution over every latent state at every time point. Then `extract_trends` decomposes each draw into its constituent components: trend, seasonal, and regression.
 
@@ -300,7 +303,7 @@ The result is a draw from the posterior $P(\alpha | Y_n, \theta)$ conditional on
 
 Let me walk through the core filtering and smoothing function since it's doing all the heavy lifting. I'll annotate the key sections:
 
-```stan
+``` stan
 vector kalman_filter_smooth(int n, vector y, vector a_1, vector P_1_diag,
                             real noise_var, vector var_vec, matrix T_mat,
                             matrix R_mat, array[] row_vector Z_arr){
@@ -400,17 +403,17 @@ fit$summary(variables = c('var_vec', 'noise_var', 'P_1_diag')) |>
 
 What we're looking for:
 
-- **$\hat{R} < 1.01$** for all parameters (chains mixed well)
-- **ESS > 400** (enough effective samples)
+- $\hat{R} < 1.01$ for all parameters (chains mixed well)
+- **ESS \> 400** (enough effective samples)
 - **No divergent transitions** (geometry wasn't pathological)
 
 Since we generated this data ourselves, we have the luxury of checking parameter recovery. The true data generating process used:
 
-| Parameter | True Value |
-|-----------|-----------|
-| $\sigma^2_\mu$ | $0.05^2 = 0.0025$ |
-| $\sigma^2_\tau$ | $0.01^2 = 0.0001$ |
-| $\sigma^2_y$ (noise) | $0.5$ |
+| Parameter            | True Value        |
+|----------------------|-------------------|
+| $\sigma^2_\mu$       | $0.05^2 = 0.0025$ |
+| $\sigma^2_\tau$      | $0.01^2 = 0.0001$ |
+| $\sigma^2_y$ (noise) | $0.5$             |
 
 If the posterior intervals for `var_vec[1]`, `var_vec[2]`, and `noise_var` contain these values, the machinery is working correctly.
 
@@ -493,10 +496,10 @@ Now we ask: *what would LENI's sales have looked like in the 10 post-launch peri
 
 The procedure:
 
-1. Take the posterior draws of all parameters from the fitted model
-2. For each draw, use the final smoothed state $\hat{\alpha}_n$ as the launching point
-3. Evolve the system forward for 10 time steps using equations (1) and (2), plugging in the *actual* competitor covariate values from the post-launch period
-4. The resulting $\hat{y}_{n+1}, \dots, \hat{y}_{n+10}$ is our **counterfactual**: what the model predicts *without* any intervention
+1.  Take the posterior draws of all parameters from the fitted model
+2.  For each draw, use the final smoothed state $\hat{\alpha}_n$ as the launching point
+3.  Evolve the system forward for 10 time steps using equations (1) and (2), plugging in the *actual* competitor covariate values from the post-launch period
+4.  The resulting $\hat{y}_{n+1}, \dots, \hat{y}_{n+10}$ is our **counterfactual**: what the model predicts *without* any intervention
 
 ```{r}
 #| eval: false
@@ -626,11 +629,11 @@ If the credible interval stays above zero, we have strong evidence that the laun
 
 Let's take stock. Across these two acts we:
 
-1. Defined a flexible state space system that decomposes a time series into trend, seasonality, and regression components
-2. Implemented the Kalman filter and smoother in Stan's function language
-3. Used the prediction error decomposition as a likelihood, letting Stan explore only the variance parameters while the filter handles the latent states
-4. Generated full posterior draws of the latent state via the Durbin and Koopman simulation smoother
-5. Projected the fitted model forward to build a counterfactual, then compared it against reality to quantify the incremental effect of Tumbler v2™
+1.  Defined a flexible state space system that decomposes a time series into trend, seasonality, and regression components
+2.  Implemented the Kalman filter and smoother in Stan's function language
+3.  Used the prediction error decomposition as a likelihood, letting Stan explore only the variance parameters while the filter handles the latent states
+4.  Generated full posterior draws of the latent state via the Durbin and Koopman simulation smoother
+5.  Projected the fitted model forward to build a counterfactual, then compared it against reality to quantify the incremental effect of Tumbler v2™
 
 The total parameter count that Stan actually sampled was twelve. Twelve parameters to characterize an entire time series decomposition with full uncertainty quantification. The Kalman filter did the rest.
 
@@ -642,7 +645,7 @@ No model is perfect, and ours has some notable limitations:
 
 **Exogeneity**: We assumed that Abominable Snowman and Bigfoot's sales are exogenous to LENI's. If Tumbler v2™ *also* affected competitor sales (say, cannibalizing their market share), then our counterfactual would be biased. A multivariate state space model with $p > 1$ could address this.
 
-**Prior sensitivity on $P_1$**: The initial state covariance matters more than you'd think, especially for short series. With 60 pre-launch observations we have reasonable burn-in, but for very short series you might want to use the diffuse initialization approach from Chapter 5 of [@book].
+**Prior sensitivity on** $P_1$: The initial state covariance matters more than you'd think, especially for short series. With 60 pre-launch observations we have reasonable burn-in, but for very short series you might want to use the diffuse initialization approach from Chapter 5 of [@book].
 
 **Static coefficients**: We assumed $\beta_a$ and $\beta_b$ are constant over time. If the relationship between LENI and its competitors is evolving (perhaps due to market dynamics), time-varying coefficients can be enabled simply by adding rows to $R_t$ and corresponding entries in $Q_t$.
 
@@ -654,4 +657,5 @@ The audience applauds. The curtain falls. LENI's stock price goes up.
 
 ## References
 
-<div id="refs"></div>
+::: {#refs}
+:::
