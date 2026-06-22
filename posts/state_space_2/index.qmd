@@ -1,6 +1,6 @@
 ---
 title: "An Unhinged Introduction to State Space Models: Act 2"
-date: "2024-06-01"
+date: "2026-01-01"
 description: "Stan takes the stage: parameter inference, posterior interrogation, and answering the question that started it all"
 categories: [Bayes, R, Stan]
 format:
@@ -8,7 +8,7 @@ format:
     code-fold: show
 toc: true
 freeze: true
-draft: true
+draft: false
 bibliography: references.bib
 ---
 
@@ -16,12 +16,15 @@ bibliography: references.bib
 #| output: false
 #| code-fold: true
 library(kableExtra)
+library(tidyverse)
+
+# rstudioapi::getActiveDocumentContext()$path |> dirname() |> setwd()
 
 state_space_utils <- new.env()
 source('state_space_model_utilities.R', state_space_utils)
 
 # Reproduce the same data from Part 1
-set.seed(42)
+set.seed(1234)
 season_length <- 7; number_seasons <- 10
 n_tot <- season_length * number_seasons
 x1 <- (cumsum(rnorm(n_tot, 0,0.5)) + rnorm(n_tot, 0,.01)) |> abs()
@@ -58,7 +61,7 @@ y_vec_no_prod <- y_vec[!is_new_prod_live]
 
 # Previously, on LENI Drinkware
 
-Welcome back. If you missed [Act 1](), here's the short version: LENI launched Tumbler v2™, sales went up, and we want to know how much of that increase is *actually* from the new product versus just industry trends, seasonality, and good vibes from our competitors "Abominable Snowman" and "Bigfoot". We introduced the state space framework:
+Welcome back. If you missed [Act 1](../state_space/), here's the short version: LENI launched Tumbler v2™, sales went up, and we want to know how much of that increase is *actually* from the new product versus just industry trends, seasonality, and good vibes from our competitors "Abominable Snowman" and "Bigfoot". We introduced the state space framework:
 
 $$y_t = Z_t\alpha_t + \varepsilon_t$$ $$\alpha_{t+1} = T_t \alpha_t + R_t \eta_t$$
 
@@ -70,7 +73,9 @@ But here's the thing: in Act 1, we *knew* the variance parameters. We hand-deliv
 
 ## The Director's Vision
 
-[Stan](https://mc-stan.org/) is a probabilistic programming language built for Bayesian inference. It uses Hamiltonian Monte Carlo (HMC) to draw samples from posterior distributions. For our purposes, Stan will serve as the *director* of this production. It's going to look at the raw time series, figure out the variance parameters that best explain the data, and simultaneously generate full posterior draws of the latent state $\alpha_t$.
+[Stan](https://mc-stan.org/) is a probabilistic programming language built for Bayesian inference. It allows us to define our model in terms of priors, likelihoods, and generative structure without having to worry about specific maximum likelihood algorithms. We just let Stan turn the Bayesian crank to perform inference. 
+
+For our purposes, Stan will serve as the *director* of this production. It's going to look at the raw time series, figure out the variance parameters that best explain the data, and simultaneously generate full posterior draws of the latent state $\alpha_t$.
 
 The beautiful thing about the state space formulation is that the Kalman filter gives us a *decomposition of the likelihood* for free. You don't need to write out some nightmarish joint density over all the latent states. Instead, you get what's called the **prediction error decomposition**:
 
@@ -200,6 +205,7 @@ $T_t$ evolves the state forward. For our model it looks like:
 ```{r}
 #| code-fold: true
 #| fig-align: center
+#| code-summary: "Generate T matrix"
 T_mat <- state_space_utils$gen_T_mat(include_slope=F, n_regress=2, n_seasons=7)
 rownames(T_mat) <- colnames(T_mat) <- c('mu', paste0('tau_',0:5), 'beta_a', 'beta_b')
 T_mat |> kable() |> kable_styling(position='center', full_width=F) |>
@@ -221,6 +227,7 @@ $R_t$ decides which elements of $\alpha_t$ receive stochastic shocks. For LENI:
 ```{r}
 #| code-fold: true
 #| fig-align: center
+#| code-summary: "Generate R matrix"
 R_mat <- state_space_utils$gen_R_mat(include_slope=F, n_regress=2, n_seasons=7)
 rownames(R_mat) <- c('mu', paste0('tau_',0:5), 'beta_a', 'beta_b')
 colnames(R_mat) <- c('eta_mu', 'eta_tau')
@@ -365,6 +372,7 @@ With the script written and the cast assembled, it's time for the performance. W
 ```{r}
 #| eval: true
 #| code-fold: false
+#| output: false
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
 
@@ -383,11 +391,11 @@ fit <- mod$sample(
   data = data,
   chains = 4,
   parallel_chains = 4,
-  iter_warmup = 1000,
-  iter_sampling = 1000,
-  adapt_delta = 0.99
+  iter_warmup = 200,
+  iter_sampling = 200
 )
 ```
+
 
 We fit on `y_vec_no_prod`, the series *excluding* the post-launch observations. This is crucial. We're training the model on the world *before* Tumbler v2™ existed, so that when we project forward, the model has no knowledge of the intervention.
 
@@ -398,8 +406,10 @@ Before we trust any results, we need to make sure the sampler actually converged
 ```{r}
 #| eval: true
 #| code-fold: false
-fit$summary(variables = c('var_vec', 'noise_var', 'P_1_diag')) |> as.data.frame()
-  select(variable, mean, q5, q95, rhat, ess_bulk)
+#| warning: false
+fit$summary(variables = c('var_vec', 'noise_var', 'P_1_diag')) |> as.data.frame() |> 
+  select(variable, mean, q5, q95, rhat, ess_bulk, ess_tail) |> 
+  mutate(across(where(is.numeric), round, digits = 2)) |> head(7)
 ```
 
 What we're looking for:
@@ -448,10 +458,10 @@ These components are additive. At any time $t$:
 
 $$\hat{y}_t = \mu_t + \tau_t + \beta_a x_{a,t} + \beta_b x_{b,t}$$
 
-
 ```{r}
 #| eval: true
 #| code-fold: true
+#| warning: false
 #| fig-align: center
 #| fig-width: 10
 #| fig-height: 10
@@ -474,7 +484,7 @@ trend_mean <-  t_comp %>% select(starts_with('trend_comp[1,')) %>% colMeans()
 season_mean <- t_comp %>% select(starts_with('trend_comp[2,')) %>% colMeans()
 regress_mean <- t_comp %>% select(starts_with('trend_comp[3,')) %>% colMeans()
 
-par(mfrow=c(4,1), mar=c(3,4.5,2.5,1), bg=pal$light_bg, family='sans')
+par(mfrow=c(4,1), mar=c(3,4.5,2.5,1),  family='sans')
 
 # Panel 1: Observed
 plot(y_vec_no_prod, type='b', pch=16, cex=0.8, lwd=1.5, col=pal$navy,
@@ -544,7 +554,7 @@ n_post <- sum(is_new_prod_live)  # 10 periods
 x_post <- cbind(x1, x2)[is_new_prod_live, ]
 
 # For each posterior draw, roll forward
-n_draws <- 4e3
+n_draws <- 800
 counterfactual <- matrix(NA, nrow = n_draws, ncol = n_post)
 
 draws <- fit$draws(format = 'draws_matrix')
@@ -570,6 +580,7 @@ for (d in 1:n_draws) {
 }
 ```
 
+
 ## Quantifying the Incremental
 
 The **incremental effect** of Tumbler v2™ at each post-launch time point is simply:
@@ -579,7 +590,7 @@ $$\Delta_t = y_t^{\text{actual}} - \hat{y}_t^{\text{counterfactual}}$$
 Since we have a full posterior distribution over $\hat{y}_t^{\text{counterfactual}}$, we get a full posterior distribution over $\Delta_t$. This means we can make probabilistic statements like "there is a 95% probability that the incremental sales from Tumbler v2™ are between \$X and \$Y."
 
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: true
 #| fig-align: center
 #| fig-width: 10
@@ -612,7 +623,7 @@ cat(sprintf("95%% credible interval: [$%.2f, $%.2f]\n",
             quantile(total_inc, 0.025), quantile(total_inc, 0.975)))
 
 # Plot
-par(mar=c(4.5, 5, 3, 1), bg=pal$light_bg, family='sans')
+par(mar=c(4.5, 5, 3, 1), family='sans')
 x_idx <- (n_pre + 1):(n_pre + n_post)
 
 plot(seq_along(y_vec), y_vec, type='b', pch=16, cex=0.8, lwd=1.5,
@@ -650,7 +661,7 @@ The gap between the copper points (actual post-launch sales) and the blue dashed
 For a final summary, we can look at the cumulative incremental sales over the post-launch window:
 
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: true
 #| fig-align: center
 #| fig-width: 10
@@ -671,7 +682,7 @@ cum_mean <- colMeans(cum_inc)
 cum_q05 <- apply(cum_inc, 2, quantile, 0.05)
 cum_q95 <- apply(cum_inc, 2, quantile, 0.95)
 
-par(mar=c(4.5, 5, 3, 1), bg=pal$light_bg, family='sans')
+par(mar=c(4.5, 5, 3, 1), family='sans')
 
 plot(1:n_post, cum_mean, type='l', lwd=3, col=pal$blue,
      main='', xlab='', ylab='',

@@ -1,2 +1,1790 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"></html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-01-01">
+<meta name="description" content="Stan takes the stage: parameter inference, posterior interrogation, and answering the question that started it all">
+
+<title>An Unhinged Introduction to State Space Models: Act 2 – Ian Costley</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-e4e05f96a34dc1e8eee6cdbd3de0b71e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-1ba60028185dd35c2f7bbf0ada864971.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-e4e05f96a34dc1e8eee6cdbd3de0b71e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../../site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="../../site_libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Ian Costley</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/TheNudibranch"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/ian-s-costley/"> <i class="bi bi-linkedin" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#previously-on-leni-drinkware" id="toc-previously-on-leni-drinkware" class="nav-link active" data-scroll-target="#previously-on-leni-drinkware">Previously, on LENI Drinkware</a></li>
+  <li><a href="#enter-stan-stage-left" id="toc-enter-stan-stage-left" class="nav-link" data-scroll-target="#enter-stan-stage-left">Enter Stan, Stage Left</a>
+  <ul class="collapse">
+  <li><a href="#the-directors-vision" id="toc-the-directors-vision" class="nav-link" data-scroll-target="#the-directors-vision">The Director’s Vision</a></li>
+  <li><a href="#the-trick" id="toc-the-trick" class="nav-link" data-scroll-target="#the-trick">The Trick</a></li>
+  </ul></li>
+  <li><a href="#the-script" id="toc-the-script" class="nav-link" data-scroll-target="#the-script">The Script</a>
+  <ul class="collapse">
+  <li><a href="#full-stan-program" id="toc-full-stan-program" class="nav-link" data-scroll-target="#full-stan-program">Full Stan Program</a></li>
+  <li><a href="#the-data-block" id="toc-the-data-block" class="nav-link" data-scroll-target="#the-data-block">The Data Block</a></li>
+  <li><a href="#transformed-data-building-the-system-matrices" id="toc-transformed-data-building-the-system-matrices" class="nav-link" data-scroll-target="#transformed-data-building-the-system-matrices">Transformed Data: Building the System Matrices</a>
+  <ul class="collapse">
+  <li><a href="#the-design-matrix-gen_z_arr" id="toc-the-design-matrix-gen_z_arr" class="nav-link" data-scroll-target="#the-design-matrix-gen_z_arr">The Design Matrix: <code>gen_z_arr</code></a></li>
+  <li><a href="#the-transition-matrix-gen_t_mat" id="toc-the-transition-matrix-gen_t_mat" class="nav-link" data-scroll-target="#the-transition-matrix-gen_t_mat">The Transition Matrix: <code>gen_T_mat</code></a></li>
+  <li><a href="#the-selection-matrix-gen_r_mat" id="toc-the-selection-matrix-gen_r_mat" class="nav-link" data-scroll-target="#the-selection-matrix-gen_r_mat">The Selection Matrix: <code>gen_R_mat</code></a></li>
+  </ul></li>
+  <li><a href="#parameters-what-stan-explores" id="toc-parameters-what-stan-explores" class="nav-link" data-scroll-target="#parameters-what-stan-explores">Parameters: What Stan Explores</a></li>
+  <li><a href="#transformed-parameters-the-kalman-filter-lives-here" id="toc-transformed-parameters-the-kalman-filter-lives-here" class="nav-link" data-scroll-target="#transformed-parameters-the-kalman-filter-lives-here">Transformed Parameters: The Kalman Filter Lives Here</a></li>
+  <li><a href="#generated-quantities-simulation" id="toc-generated-quantities-simulation" class="nav-link" data-scroll-target="#generated-quantities-simulation">Generated Quantities: Simulation</a></li>
+  </ul></li>
+  <li><a href="#the-kalman-filter-implementation" id="toc-the-kalman-filter-implementation" class="nav-link" data-scroll-target="#the-kalman-filter-implementation">The Kalman Filter Implementation</a></li>
+  <li><a href="#opening-night" id="toc-opening-night" class="nav-link" data-scroll-target="#opening-night">Opening Night</a>
+  <ul class="collapse">
+  <li><a href="#fitting-the-model" id="toc-fitting-the-model" class="nav-link" data-scroll-target="#fitting-the-model">Fitting the Model</a></li>
+  <li><a href="#checking-the-reviews" id="toc-checking-the-reviews" class="nav-link" data-scroll-target="#checking-the-reviews">Checking the Reviews</a></li>
+  <li><a href="#recovering-the-regression-coefficients" id="toc-recovering-the-regression-coefficients" class="nav-link" data-scroll-target="#recovering-the-regression-coefficients">Recovering the Regression Coefficients</a></li>
+  </ul></li>
+  <li><a href="#decomposing-the-performance" id="toc-decomposing-the-performance" class="nav-link" data-scroll-target="#decomposing-the-performance">Decomposing the Performance</a>
+  <ul class="collapse">
+  <li><a href="#extracting-the-components" id="toc-extracting-the-components" class="nav-link" data-scroll-target="#extracting-the-components">Extracting the Components</a></li>
+  </ul></li>
+  <li><a href="#the-moment-of-truth" id="toc-the-moment-of-truth" class="nav-link" data-scroll-target="#the-moment-of-truth">The Moment of Truth</a>
+  <ul class="collapse">
+  <li><a href="#counterfactual-prediction" id="toc-counterfactual-prediction" class="nav-link" data-scroll-target="#counterfactual-prediction">Counterfactual Prediction</a></li>
+  <li><a href="#quantifying-the-incremental" id="toc-quantifying-the-incremental" class="nav-link" data-scroll-target="#quantifying-the-incremental">Quantifying the Incremental</a></li>
+  <li><a href="#the-cumulative-picture" id="toc-the-cumulative-picture" class="nav-link" data-scroll-target="#the-cumulative-picture">The Cumulative Picture</a></li>
+  </ul></li>
+  <li><a href="#curtain-call" id="toc-curtain-call" class="nav-link" data-scroll-target="#curtain-call">Curtain Call</a>
+  <ul class="collapse">
+  <li><a href="#what-we-built" id="toc-what-we-built" class="nav-link" data-scroll-target="#what-we-built">What We Built</a></li>
+  <li><a href="#limitations-and-extensions" id="toc-limitations-and-extensions" class="nav-link" data-scroll-target="#limitations-and-extensions">Limitations and Extensions</a></li>
+  <li><a href="#final-bow" id="toc-final-bow" class="nav-link" data-scroll-target="#final-bow">Final Bow</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">An Unhinged Introduction to State Space Models: Act 2</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Bayes</div>
+    <div class="quarto-category">R</div>
+    <div class="quarto-category">Stan</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    Stan takes the stage: parameter inference, posterior interrogation, and answering the question that started it all
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># rstudioapi::getActiveDocumentContext()$path |&gt; dirname() |&gt; setwd()</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>state_space_utils <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">'state_space_model_utilities.R'</span>, state_space_utils)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Reproduce the same data from Part 1</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>season_length <span class="ot">&lt;-</span> <span class="dv">7</span>; number_seasons <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>n_tot <span class="ot">&lt;-</span> season_length <span class="sc">*</span> number_seasons</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>x1 <span class="ot">&lt;-</span> (<span class="fu">cumsum</span>(<span class="fu">rnorm</span>(n_tot, <span class="dv">0</span>,<span class="fl">0.5</span>)) <span class="sc">+</span> <span class="fu">rnorm</span>(n_tot, <span class="dv">0</span>,.<span class="dv">01</span>)) <span class="sc">|&gt;</span> <span class="fu">abs</span>()</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>x2 <span class="ot">&lt;-</span> (<span class="fu">cumsum</span>(<span class="fu">rnorm</span>(n_tot, <span class="dv">0</span>,<span class="fl">0.5</span>)) <span class="sc">+</span> <span class="fu">rnorm</span>(n_tot, <span class="dv">0</span>,.<span class="dv">01</span>)) <span class="sc">|&gt;</span> <span class="fu">abs</span>()</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>x_mat <span class="ot">&lt;-</span> <span class="fu">cbind</span>(x1,x2)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>beta_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>ss <span class="ot">&lt;-</span> <span class="fu">cos</span>(<span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">2</span><span class="sc">*</span>pi, <span class="at">length.out=</span>season_length))<span class="sc">*</span><span class="dv">1</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>ss <span class="ot">&lt;-</span> ss <span class="sc">-</span> <span class="fu">mean</span>(ss)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>ss_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(ss)[<span class="sc">-</span><span class="fu">length</span>(ss)]</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>ss_var <span class="ot">&lt;-</span> <span class="fl">0.01</span><span class="sc">^</span><span class="dv">2</span>;</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>slope_start <span class="ot">&lt;-</span> <span class="dv">0</span>; slope_var <span class="ot">&lt;-</span> <span class="fl">1e-30</span>; slope_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(slope_start)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>mu_start <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>); mu_var <span class="ot">&lt;-</span> <span class="fl">0.05</span><span class="sc">^</span><span class="dv">2</span>; mu_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(mu_start)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>noise_var <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>y_vec <span class="ot">&lt;-</span> ss_comp <span class="ot">&lt;-</span>  <span class="fu">c</span>()</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_tot){</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  ss_comp <span class="ot">&lt;-</span> <span class="fu">c</span>(ss_vec[<span class="dv">1</span>], ss_comp)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  y_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(y_vec, mu_vec[i] <span class="sc">+</span> (x_mat <span class="sc">%*%</span> beta_vec)[i] <span class="sc">+</span> ss_vec[<span class="dv">1</span>] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="fu">sqrt</span>(noise_var)))</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  ss_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fu">sum</span>(ss_vec) <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="fu">sqrt</span>(ss_var)), ss_vec[<span class="sc">-</span><span class="fu">length</span>(ss_vec)])</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  slope_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(slope_vec, slope_vec[i] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="fu">sqrt</span>(slope_var)))</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  mu_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(mu_vec, mu_vec[i] <span class="sc">+</span> slope_vec[i] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>,<span class="fu">sqrt</span>(mu_var)))</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>is_new_prod_live <span class="ot">&lt;-</span> <span class="fu">seq_along</span>(y_vec) <span class="sc">&gt;=</span> <span class="fu">length</span>(y_vec) <span class="sc">-</span> <span class="dv">9</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>y_vec[is_new_prod_live] <span class="ot">&lt;-</span> <span class="fu">abs</span>(y_vec[is_new_prod_live])<span class="sc">*</span><span class="fl">0.5</span> <span class="sc">+</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  y_vec[is_new_prod_live]</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>y_vec_no_prod <span class="ot">&lt;-</span> y_vec[<span class="sc">!</span>is_new_prod_live]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<section id="previously-on-leni-drinkware" class="level1">
+<h1>Previously, on LENI Drinkware</h1>
+<p>Welcome back. If you missed <a href="../state_space/">Act 1</a>, here’s the short version: LENI launched Tumbler v2™, sales went up, and we want to know how much of that increase is <em>actually</em> from the new product versus just industry trends, seasonality, and good vibes from our competitors “Abominable Snowman” and “Bigfoot”. We introduced the state space framework:</p>
+<p><span class="math display">\[y_t = Z_t\alpha_t + \varepsilon_t\]</span> <span class="math display">\[\alpha_{t+1} = T_t \alpha_t + R_t \eta_t\]</span></p>
+<p>We learned how to filter (forward pass), smooth (backward pass), and simulate draws from <span class="math inline">\(P(\alpha|Y_n)\)</span> using the Durbin and Koopman trick <span class="citation" data-cites="sim_paper">(<a href="#ref-sim_paper" role="doc-biblioref">Durbin and Koopman 2002</a>)</span>. The ensemble has been cast, the understudies have rehearsed, the stage is set.</p>
+<p>But here’s the thing: in Act 1, we <em>knew</em> the variance parameters. We hand-delivered <span class="math inline">\(H_t\)</span>, <span class="math inline">\(Q_t\)</span>, and <span class="math inline">\(P_1\)</span> to the Kalman filter like a stage manager distributing scripts. In the real world, nobody hands you these. You have to figure them out. This is where Stan enters stage left.</p>
+</section>
+<section id="enter-stan-stage-left" class="level1">
+<h1>Enter Stan, Stage Left</h1>
+<section id="the-directors-vision" class="level2">
+<h2 class="anchored" data-anchor-id="the-directors-vision">The Director’s Vision</h2>
+<p><a href="https://mc-stan.org/">Stan</a> is a probabilistic programming language built for Bayesian inference. It allows us to define our model in terms of priors, likelihoods, and generative structure without having to worry about specific maximum likelihood algorithms. We just let Stan turn the Bayesian crank to perform inference.</p>
+<p>For our purposes, Stan will serve as the <em>director</em> of this production. It’s going to look at the raw time series, figure out the variance parameters that best explain the data, and simultaneously generate full posterior draws of the latent state <span class="math inline">\(\alpha_t\)</span>.</p>
+<p>The beautiful thing about the state space formulation is that the Kalman filter gives us a <em>decomposition of the likelihood</em> for free. You don’t need to write out some nightmarish joint density over all the latent states. Instead, you get what’s called the <strong>prediction error decomposition</strong>:</p>
+<p><span class="math display">\[\log p(Y_n | \theta) = -\frac{n}{2}\log 2\pi - \frac{1}{2}\sum_{t=1}^n\left[\log F_t + v_t^2 F_t^{-1}\right]\]</span></p>
+<p>where <span class="math inline">\(v_t = y_t - Z_t a_t\)</span> is the one-step-ahead prediction error and <span class="math inline">\(F_t = \text{Var}(v_t|Y_{t-1})\)</span> is its variance. Both of these fall directly out of the Kalman filter recursions. This is the same <span class="math inline">\(v_t\)</span> and <span class="math inline">\(F_t\)</span> you met in Act 1. They were side characters then, but now they’re the stars.</p>
+</section>
+<section id="the-trick" class="level2">
+<h2 class="anchored" data-anchor-id="the-trick">The Trick</h2>
+<p>Here’s the punchline. If <span class="math inline">\(v_t | Y_{t-1} \sim \mathcal{N}(0, F_t)\)</span>, then we can write the Stan model block as:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  var_vec ~ exponential(<span class="dv">1</span>);</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  P_1_diag ~ exponential(<span class="dv">1</span>);</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  noise_var ~ exponential(<span class="dv">1</span>);</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  v ~ normal(mu_placeholder, F);</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That’s it. That’s the likelihood. The vector <code>v</code> and <code>F</code> are computed deterministically in <code>transformed parameters</code> via the Kalman filter, and Stan’s sampler does the rest. The <code>mu_placeholder</code> is just a vector of zeros (since <span class="math inline">\(\mathbb{E}[v_t|Y_{t-1}] = 0\)</span> by construction). The parameter <code>F</code> here is actually <span class="math inline">\(\sqrt{F_t}\)</span> since Stan’s <code>normal</code> parameterization takes the standard deviation, not the variance.</p>
+<p>This is incredibly elegant. Stan only needs to explore a tiny parameter space (the variance components), while the Kalman filter handles all the latent state bookkeeping deterministically. No marginalization tricks, no augmented state vectors in the sampler. Just a handful of variance parameters and a very efficient filter.</p>
+</section>
+</section>
+<section id="the-script" class="level1">
+<h1>The Script</h1>
+<section id="full-stan-program" class="level2">
+<h2 class="anchored" data-anchor-id="full-stan-program">Full Stan Program</h2>
+<p>Let’s walk through the full Stan program piece by piece. The complete file is structured as:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>functions {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#include state_space_functions.stan</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>data { ... }</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>transformed data { ... }</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>parameters { ... }</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>transformed parameters { ... }</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>model { ... }</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>generated quantities { ... }</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The <code>#include</code> directive pulls in all of our matrix construction and Kalman filter machinery. Let’s start with what Stan needs from us.</p>
+</section>
+<section id="the-data-block" class="level2">
+<h2 class="anchored" data-anchor-id="the-data-block">The Data Block</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; N;</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] y;</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; has_slope;</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; n_covar;</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; n_seasons;</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[N,n_covar] X_mat;</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Nothing surprising here. We pass in our time series <code>y</code>, the covariate matrix <code>X_mat</code> (columns for Abominable Snowman and Bigfoot), and a set of flags that configure the model structure. The <code>has_slope</code> toggle lets us include or exclude a linear trend component. For our LENI analysis we set <code>has_slope=0</code> since the competitor covariates should absorb any industry-level drift.</p>
+</section>
+<section id="transformed-data-building-the-system-matrices" class="level2">
+<h2 class="anchored" data-anchor-id="transformed-data-building-the-system-matrices">Transformed Data: Building the System Matrices</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span>{</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> season_cont = n_seasons &gt; <span class="dv">2</span> ? n_seasons - <span class="dv">1</span> : <span class="dv">0</span>;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> a_size = has_slope + n_covar + season_cont + <span class="dv">1</span>;</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> has_season =  n_seasons &gt; <span class="dv">2</span> ? <span class="dv">1</span> : <span class="dv">0</span>;</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> has_regress = n_covar &gt; <span class="dv">0</span> ? <span class="dv">1</span> : <span class="dv">0</span>;</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">row_vector</span>[a_size] Z_arr = gen_z_arr(N, has_slope, X_mat, n_seasons);</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[a_size, a_size] T_mat = gen_T_mat(has_slope, n_covar, n_seasons);</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[a_size, <span class="dv">1</span> + has_slope + has_season] R_mat = gen_R_mat(has_slope, n_covar, n_seasons);</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This is where the model configuration crystallizes into concrete matrices. The three generator functions (<code>gen_z_arr</code>, <code>gen_T_mat</code>, <code>gen_R_mat</code>) build our entire system of equations based on the toggle flags. Let’s look at each one.</p>
+<section id="the-design-matrix-gen_z_arr" class="level3">
+<h3 class="anchored" data-anchor-id="the-design-matrix-gen_z_arr">The Design Matrix: <code>gen_z_arr</code></h3>
+<p>Recall that <span class="math inline">\(Z_t\)</span> maps from the latent state <span class="math inline">\(\alpha_t\)</span> down to the observation <span class="math inline">\(y_t\)</span>. For our LENI model with 7-day seasonality and 2 covariates:</p>
+<p><span class="math display">\[Z_t = \begin{bmatrix} 1 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; x_{a,t} &amp; x_{b,t}\end{bmatrix}\]</span></p>
+<p>The leading 1 selects the trend <span class="math inline">\(\mu_t\)</span>. The second 1 selects the current seasonal effect <span class="math inline">\(\tau_t\)</span>. The zeros skip the <span class="math inline">\(s-2\)</span> carried-over seasonal states. The trailing entries are the covariate values at time <span class="math inline">\(t\)</span>. Here’s how the Stan function builds this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">array</span>[] <span class="dt">row_vector</span> gen_z_arr(<span class="dt">int</span> n, <span class="dt">int</span> include_slope, <span class="dt">matrix</span> x_mat, <span class="dt">int</span> n_seasons){</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> season_cont = n_seasons &gt; <span class="dv">2</span> ? n_seasons - <span class="dv">1</span> : <span class="dv">0</span>;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> z_size = include_slope + cols(x_mat) + season_cont + <span class="dv">1</span>;</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n] <span class="dt">row_vector</span>[z_size] z_arr;</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">row_vector</span>[<span class="dv">1</span> + season_cont + include_slope] left_pad;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (n_seasons &gt; <span class="dv">2</span>){</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    left_pad = append_col(</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="dv">1</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      append_col(</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        rep_row_vector(<span class="dv">0</span>, include_slope),</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        append_col(<span class="dv">1</span>, rep_row_vector(<span class="dv">0</span>, n_seasons - <span class="dv">2</span>))</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    );</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> {</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    left_pad = append_col(<span class="dv">1</span>, rep_row_vector(<span class="dv">0</span>, include_slope));</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (cols(x_mat) &gt; <span class="dv">0</span>){</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:n)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>      z_arr[i] = append_col(left_pad, x_mat[i]);</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span>{</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:n)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>      z_arr[i] = left_pad;</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> z_arr;</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>left_pad</code> is the static portion (trend + season selectors). We then append the time-varying covariate row for each observation. This is the only matrix that changes with <span class="math inline">\(t\)</span>, because <span class="math inline">\(x_{a,t}\)</span> and <span class="math inline">\(x_{b,t}\)</span> are different at every time step.</p>
+</section>
+<section id="the-transition-matrix-gen_t_mat" class="level3">
+<h3 class="anchored" data-anchor-id="the-transition-matrix-gen_t_mat">The Transition Matrix: <code>gen_T_mat</code></h3>
+<p><span class="math inline">\(T_t\)</span> evolves the state forward. For our model it looks like:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Generate T matrix</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>T_mat <span class="ot">&lt;-</span> state_space_utils<span class="sc">$</span><span class="fu">gen_T_mat</span>(<span class="at">include_slope=</span>F, <span class="at">n_regress=</span><span class="dv">2</span>, <span class="at">n_seasons=</span><span class="dv">7</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(T_mat) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(T_mat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'mu'</span>, <span class="fu">paste0</span>(<span class="st">'tau_'</span>,<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>), <span class="st">'beta_a'</span>, <span class="st">'beta_b'</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>T_mat <span class="sc">|&gt;</span> <span class="fu">kable</span>() <span class="sc">|&gt;</span> <span class="fu">kable_styling</span>(<span class="at">position=</span><span class="st">'center'</span>, <span class="at">full_width=</span>F) <span class="sc">|&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="dv">1</span>, <span class="at">bold=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="table caption-top table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">mu</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">tau_0</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">tau_1</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">tau_2</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">tau_3</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">tau_4</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">tau_5</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">beta_a</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">beta_b</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">mu</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">tau_0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">-1</td>
+<td style="text-align: right;">-1</td>
+<td style="text-align: right;">-1</td>
+<td style="text-align: right;">-1</td>
+<td style="text-align: right;">-1</td>
+<td style="text-align: right;">-1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">tau_1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">tau_2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">tau_3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">tau_4</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">tau_5</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">beta_a</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">beta_b</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The structure encodes our modeling assumptions:</p>
+<ul>
+<li><strong>Row 1</strong>: <span class="math inline">\(\mu_{t+1} = \mu_t\)</span> (random walk, disturbance added later)</li>
+<li><strong>Rows 2-7</strong>: The seasonal shift register. Row 2 computes <span class="math inline">\(\tau_{t+1} = -\sum_{j=1}^{s-1}\tau_{t+1-j}\)</span>. Rows 3-7 shift the seasonal history down by one slot.</li>
+<li><strong>Rows 8-9</strong>: <span class="math inline">\(\beta_a\)</span> and <span class="math inline">\(\beta_b\)</span> persist unchanged (identity block)</li>
+</ul>
+<p>The Stan function <code>gen_T_mat</code> builds this programmatically. The seasonal block is the trickiest part: it places <span class="math inline">\(-1\)</span>s across the top row of the seasonal sub-matrix and a sub-diagonal of <span class="math inline">\(1\)</span>s to shift history.</p>
+</section>
+<section id="the-selection-matrix-gen_r_mat" class="level3">
+<h3 class="anchored" data-anchor-id="the-selection-matrix-gen_r_mat">The Selection Matrix: <code>gen_R_mat</code></h3>
+<p><span class="math inline">\(R_t\)</span> decides which elements of <span class="math inline">\(\alpha_t\)</span> receive stochastic shocks. For LENI:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Generate R matrix</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>R_mat <span class="ot">&lt;-</span> state_space_utils<span class="sc">$</span><span class="fu">gen_R_mat</span>(<span class="at">include_slope=</span>F, <span class="at">n_regress=</span><span class="dv">2</span>, <span class="at">n_seasons=</span><span class="dv">7</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(R_mat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'mu'</span>, <span class="fu">paste0</span>(<span class="st">'tau_'</span>,<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>), <span class="st">'beta_a'</span>, <span class="st">'beta_b'</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(R_mat) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">'eta_mu'</span>, <span class="st">'eta_tau'</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>R_mat <span class="sc">|&gt;</span> <span class="fu">kable</span>() <span class="sc">|&gt;</span> <span class="fu">kable_styling</span>(<span class="at">position=</span><span class="st">'center'</span>, <span class="at">full_width=</span>F) <span class="sc">|&gt;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="dv">1</span>, <span class="at">bold=</span>T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="table caption-top table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">eta_mu</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">eta_tau</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">mu</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">tau_0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">tau_1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">tau_2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">tau_3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">tau_4</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">tau_5</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">beta_a</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">beta_b</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Only <span class="math inline">\(\mu_t\)</span> and <span class="math inline">\(\tau_t\)</span> receive disturbances. The carried seasonal states and regression coefficients get nothing. This is how we encode “regression coefficients are static over time” without any special machinery. We simply don’t disturb them.</p>
+</section>
+</section>
+<section id="parameters-what-stan-explores" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-what-stan-explores">Parameters: What Stan Explores</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span>{</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[cols(R_mat)] var_vec;</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt;[a_size] P_1_diag;</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; noise_var;</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The entire parameter space consists of:</p>
+<ul>
+<li><code>var_vec</code>: the diagonal of <span class="math inline">\(Q_t\)</span>. For our model, this is <span class="math inline">\([\sigma^2_\mu, \sigma^2_\tau]\)</span>. Two parameters.</li>
+<li><code>P_1_diag</code>: the diagonal of the initial state covariance <span class="math inline">\(P_1\)</span>. Nine parameters (one per element of <span class="math inline">\(\alpha_1\)</span>).</li>
+<li><code>noise_var</code>: the observation noise <span class="math inline">\(H_t = \sigma^2_y\)</span>. One parameter.</li>
+</ul>
+<p>That’s twelve total parameters for Stan to explore. Everything else (the full latent state trajectory, the filtered/smoothed estimates, the prediction errors) is computed deterministically by the Kalman filter. This is a remarkably efficient use of HMC’s time.</p>
+</section>
+<section id="transformed-parameters-the-kalman-filter-lives-here" class="level2">
+<h2 class="anchored" data-anchor-id="transformed-parameters-the-kalman-filter-lives-here">Transformed Parameters: The Kalman Filter Lives Here</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span>{</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[a_size * N + (<span class="dv">2</span> * N)] k_obj = kalman_filter_smooth(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    N, y, rep_vector(<span class="dv">0</span>, a_size), P_1_diag,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    noise_var, var_vec, T_mat, R_mat, Z_arr</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] F = sqrt(get_F(k_obj, s));</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[N] v = get_v(k_obj, s);</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Every time Stan proposes a new set of variance parameters, the Kalman filter runs to completion and produces <span class="math inline">\(v_t\)</span> and <span class="math inline">\(F_t\)</span> for all <span class="math inline">\(t\)</span>. These get fed directly into the likelihood. The <code>k_obj</code> is a packed vector containing the smoothed states, <span class="math inline">\(F\)</span>, and <span class="math inline">\(v\)</span>. We pack it this way because Stan functions can only return a single object. Not pretty, but functional.</p>
+<p>The packing/unpacking is handled by helper functions:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="dt">vector</span> get_F(<span class="dt">vector</span> kalman_object, <span class="dt">array</span>[] <span class="dt">int</span> s){</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> segment(kalman_object, <span class="dv">1</span> + s[<span class="dv">1</span>], s[<span class="dv">2</span>]);</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="dt">vector</span> get_v(<span class="dt">vector</span> kalman_object, <span class="dt">array</span>[] <span class="dt">int</span> s){</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> segment(kalman_object, <span class="dv">1</span> + sum(s[<span class="dv">1</span>:<span class="dv">2</span>]), s[<span class="dv">3</span>]);</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The array <code>s</code> stores the segment boundaries so we can slice correctly. It’s the Stan equivalent of a ragged array, implemented via flat vectors and index arithmetic.</p>
+</section>
+<section id="generated-quantities-simulation" class="level2">
+<h2 class="anchored" data-anchor-id="generated-quantities-simulation">Generated Quantities: Simulation</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span>{</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[N] <span class="dt">vector</span>[a_size] alpha_sim = simulate_state_rng(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    k_obj, N, s, s_evolve, y, rep_vector(<span class="dv">0</span>,a_size), P_1_diag,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    noise_var, var_vec, T_mat, R_mat, Z_arr</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  );</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[<span class="dv">1</span> + has_season + has_regress] <span class="dt">vector</span>[N] trend_comp =</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    extract_trends(alpha_sim, N, Z_arr, has_slope, n_covar, n_seasons);</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This is the Durbin and Koopman simulation smoother from Act 1, now running inside Stan’s sampler. At every MCMC iteration (after the warmup), it:</p>
+<ol type="1">
+<li>Draws <span class="math inline">\(\alpha_1^+\)</span> from <span class="math inline">\(\mathcal{N}(0, P_1)\)</span></li>
+<li>Evolves the system forward to produce <span class="math inline">\(\alpha^+\)</span> and <span class="math inline">\(y^+\)</span></li>
+<li>Smooths the synthetic series to get <span class="math inline">\(\hat{\alpha}^+\)</span></li>
+<li>Computes <span class="math inline">\(\tilde{\alpha} = \alpha^+ - \hat{\alpha}^+ + \hat{\alpha}\)</span></li>
+</ol>
+<p>The result is a draw from the posterior <span class="math inline">\(P(\alpha | Y_n, \theta)\)</span> conditional on that iteration’s parameter values. Across all post-warmup iterations, you get a full posterior distribution over every latent state at every time point. Then <code>extract_trends</code> decomposes each draw into its constituent components: trend, seasonal, and regression.</p>
+</section>
+</section>
+<section id="the-kalman-filter-implementation" class="level1">
+<h1>The Kalman Filter Implementation</h1>
+<p>Let me walk through the core filtering and smoothing function since it’s doing all the heavy lifting. I’ll annotate the key sections:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">vector</span> kalman_filter_smooth(<span class="dt">int</span> n, <span class="dt">vector</span> y, <span class="dt">vector</span> a_1, <span class="dt">vector</span> P_1_diag,</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                            <span class="dt">real</span> noise_var, <span class="dt">vector</span> var_vec, <span class="dt">matrix</span> T_mat,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                            <span class="dt">matrix</span> R_mat, <span class="dt">array</span>[] <span class="dt">row_vector</span> Z_arr){</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[size(P_1_diag), size(P_1_diag)] P_1 = diag_matrix(P_1_diag);</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">// === FORWARD PASS ===</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[n] F;</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">vector</span>[n] v;</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n+<span class="dv">1</span>] <span class="dt">vector</span>[num_elements(a_1)] a;</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  a[<span class="dv">1</span>] = a_1;</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n+<span class="dv">1</span>] <span class="dt">matrix</span>[rows(P_1), cols(P_1)] P;</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  P[<span class="dv">1</span>] = P_1;</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n] <span class="dt">vector</span>[num_elements(a_1)] K;</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n] <span class="dt">matrix</span>[rows(T_mat), cols(T_mat)] L;</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="dt">matrix</span>[num_elements(var_vec), num_elements(var_vec)] Q_mat = diag_matrix(var_vec);</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:n){</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Prediction error and its variance</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    v[i] = y[i] - dot_product(Z_arr[i], a[i]);</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    F[i] = Z_arr[i] * P[i] * Z_arr[i]' + noise_var;</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Kalman gain</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    K[i] = T_mat * P[i] * Z_arr[i]' * (<span class="dv">1</span> / F[i]);</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    L[i] = T_mat - K[i] * Z_arr[i];</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="co">// State prediction</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    P[i + <span class="dv">1</span>] = T_mat * P[i] * L[i]' + R_mat * Q_mat * R_mat';</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    a[i + <span class="dv">1</span>] = (T_mat * a[i]) + (K[i] * v[i]);</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>  <span class="co">// === BACKWARD PASS ===</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n + <span class="dv">1</span>] <span class="dt">vector</span>[num_elements(a_1)] r =</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    rep_array(rep_vector(<span class="dv">0</span>, num_elements(a_1)), n + <span class="dv">1</span>);</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>  <span class="dt">array</span>[n] <span class="dt">vector</span>[num_elements(a_1)] alpha_smooth;</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (d <span class="cf">in</span> <span class="dv">1</span>:n){</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> i = n - d + <span class="dv">1</span>;  <span class="co">// Reverse: n, n-1, ..., 1</span></span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>    r[i] = Z_arr[i]' * (<span class="dv">1</span>/F[i]) * v[i] + L[i]' * r[i + <span class="dv">1</span>];</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>    alpha_smooth[i] = a[i] + P[i] * r[i];</span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Pack everything into a single vector and return</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>  ...</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The forward pass is a direct translation of the Kalman filter equations from Act 1. The backward pass implements the smoothing recursion <span class="math inline">\(r_{t-1} = Z_t^\prime F_t^{-1} v_t + L_t^\prime r_t\)</span> with <span class="math inline">\(\hat{\alpha}_t = a_t + P_t r_{t-1}\)</span>. Notice that <code>r</code> is initialized at zero for <code>r[n+1]</code> (corresponding to <span class="math inline">\(r_n = 0\)</span>) and the loop proceeds backwards.</p>
+<p>One implementation detail worth noting: since <span class="math inline">\(y_t\)</span> is univariate, <span class="math inline">\(F_t\)</span> is a scalar and we can use <code>1/F[i]</code> instead of a matrix inverse. This would need to change for a multivariate observation model.</p>
+</section>
+<section id="opening-night" class="level1">
+<h1>Opening Night</h1>
+<section id="fitting-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-the-model">Fitting the Model</h2>
+<p>With the script written and the cast assembled, it’s time for the performance. We fit the model using <code>cmdstanr</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cmdstanr)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">mc.cores =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>())</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(<span class="st">'state_space.stan'</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">length</span>(y_vec_no_prod),</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> y_vec_no_prod,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">has_slope =</span> <span class="dv">0</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_seasons =</span> <span class="dv">7</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_covar =</span> <span class="dv">2</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">X_mat =</span> <span class="fu">cbind</span>(x1, x2)[<span class="sc">!</span>is_new_prod_live, ]</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mod<span class="sc">$</span><span class="fu">sample</span>(</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> data,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">chains =</span> <span class="dv">4</span>,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">parallel_chains =</span> <span class="dv">4</span>,</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">iter_warmup =</span> <span class="dv">200</span>,</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">iter_sampling =</span> <span class="dv">200</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We fit on <code>y_vec_no_prod</code>, the series <em>excluding</em> the post-launch observations. This is crucial. We’re training the model on the world <em>before</em> Tumbler v2™ existed, so that when we project forward, the model has no knowledge of the intervention.</p>
+</section>
+<section id="checking-the-reviews" class="level2">
+<h2 class="anchored" data-anchor-id="checking-the-reviews">Checking the Reviews</h2>
+<p>Before we trust any results, we need to make sure the sampler actually converged. The usual suspects:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="at">variables =</span> <span class="fu">c</span>(<span class="st">'var_vec'</span>, <span class="st">'noise_var'</span>, <span class="st">'P_1_diag'</span>)) <span class="sc">|&gt;</span> <span class="fu">as.data.frame</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(variable, mean, q5, q95, rhat, ess_bulk, ess_tail) <span class="sc">|&gt;</span> </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.numeric), round, <span class="at">digits =</span> <span class="dv">2</span>)) <span class="sc">|&gt;</span> <span class="fu">head</span>(<span class="dv">7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     variable mean   q5  q95 rhat ess_bulk ess_tail
+1  var_vec[1] 0.04 0.00 0.14 1.01   551.99   549.72
+2  var_vec[2] 0.03 0.00 0.10 1.00   938.26   477.82
+3   noise_var 0.45 0.28 0.68 1.00   714.33   456.02
+4 P_1_diag[1] 1.13 0.18 2.89 1.01   660.06   338.39
+5 P_1_diag[2] 1.42 0.34 3.48 1.01   859.92   584.50
+6 P_1_diag[3] 0.80 0.02 2.66 1.00   677.02   360.15
+7 P_1_diag[4] 1.10 0.20 2.61 1.00   912.88   516.39</code></pre>
+</div>
+</div>
+<p>What we’re looking for:</p>
+<ul>
+<li><span class="math inline">\(\hat{R} &lt; 1.01\)</span> for all parameters (chains mixed well)</li>
+<li><strong>ESS &gt; 400</strong> (enough effective samples)</li>
+<li><strong>No divergent transitions</strong> (geometry wasn’t pathological)</li>
+</ul>
+<p>Since we generated this data ourselves, we have the luxury of checking parameter recovery. The true data generating process used:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>True Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(\sigma^2_\mu\)</span></td>
+<td><span class="math inline">\(0.05^2 = 0.0025\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(\sigma^2_\tau\)</span></td>
+<td><span class="math inline">\(0.01^2 = 0.0001\)</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(\sigma^2_y\)</span> (noise)</td>
+<td><span class="math inline">\(0.5\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>If the posterior intervals for <code>var_vec[1]</code>, <code>var_vec[2]</code>, and <code>noise_var</code> contain these values, the machinery is working correctly.</p>
+</section>
+<section id="recovering-the-regression-coefficients" class="level2">
+<h2 class="anchored" data-anchor-id="recovering-the-regression-coefficients">Recovering the Regression Coefficients</h2>
+<p>One of the most satisfying checks: do we recover the true <span class="math inline">\(\beta\)</span> values? Remember, the DGP used <span class="math inline">\(\beta_a = -1\)</span> and <span class="math inline">\(\beta_b = 1\)</span>. These live in the last two elements of <span class="math inline">\(\alpha_t\)</span>, and since we gave them no disturbance (via <span class="math inline">\(R_t\)</span>), they should be approximately constant across time. We can inspect them at the final time step:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Beta coefficients are in alpha_sim[N, 8] and alpha_sim[N, 9]</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>fit<span class="sc">$</span><span class="fu">summary</span>(<span class="at">variables =</span> <span class="fu">c</span>(</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sprintf</span>(<span class="st">'alpha_sim[%d,8]'</span>, <span class="fu">length</span>(y_vec_no_prod)),</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sprintf</span>(<span class="st">'alpha_sim[%d,9]'</span>, <span class="fu">length</span>(y_vec_no_prod))</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 10
+  variable       mean median     sd    mad     q5    q95  rhat ess_bulk ess_tail
+  &lt;chr&gt;         &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
+1 alpha_sim[6… -0.935 -0.939 0.0955 0.0812 -1.08  -0.764  1.00     653.     461.
+2 alpha_sim[6…  0.800  0.798 0.141  0.135   0.574  1.04   1.01     709.     652.</code></pre>
+</div>
+</div>
+<p>If the model is working, we should see the posteriors for <span class="math inline">\(\beta_a\)</span> and <span class="math inline">\(\beta_b\)</span> centered near <span class="math inline">\(-1\)</span> and <span class="math inline">\(1\)</span> respectively.</p>
+</section>
+</section>
+<section id="decomposing-the-performance" class="level1">
+<h1>Decomposing the Performance</h1>
+<section id="extracting-the-components" class="level2">
+<h2 class="anchored" data-anchor-id="extracting-the-components">Extracting the Components</h2>
+<p>The <code>extract_trends</code> function in <code>generated quantities</code> gives us three component arrays:</p>
+<ul>
+<li><code>trend_comp[1,]</code>: the underlying trend <span class="math inline">\(\mu_t\)</span></li>
+<li><code>trend_comp[2,]</code>: the seasonal component <span class="math inline">\(\tau_t\)</span></li>
+<li><code>trend_comp[3,]</code>: the regression component <span class="math inline">\(\beta_a x_{a,t} + \beta_b x_{b,t}\)</span></li>
+</ul>
+<p>These components are additive. At any time <span class="math inline">\(t\)</span>:</p>
+<p><span class="math display">\[\hat{y}_t = \mu_t + \tau_t + \beta_a x_{a,t} + \beta_b x_{b,t}\]</span></p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Color palette (dark blue anchored) ---</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>pal <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">navy      =</span> <span class="st">'#1B2838'</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">blue      =</span> <span class="st">'#2C5F8A'</span>,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">slate     =</span> <span class="st">'#4A7FB5'</span>,</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">copper    =</span> <span class="st">'#C47E3F'</span>,</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sage      =</span> <span class="st">'#5B8C6F'</span>,</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">light_bg  =</span> <span class="st">'#F7F9FC'</span>,</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid      =</span> <span class="st">'#D6DFE8'</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract posterior means for each component</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>t_comp <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="st">'trend_comp'</span>, <span class="at">format=</span><span class="st">'df'</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>trend_mean <span class="ot">&lt;-</span>  t_comp <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'trend_comp[1,'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>season_mean <span class="ot">&lt;-</span> t_comp <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'trend_comp[2,'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>regress_mean <span class="ot">&lt;-</span> t_comp <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">'trend_comp[3,'</span>)) <span class="sc">%&gt;%</span> <span class="fu">colMeans</span>()</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">4</span>,<span class="dv">1</span>), <span class="at">mar=</span><span class="fu">c</span>(<span class="dv">3</span>,<span class="fl">4.5</span>,<span class="fl">2.5</span>,<span class="dv">1</span>),  <span class="at">family=</span><span class="st">'sans'</span>)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel 1: Observed</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(y_vec_no_prod, <span class="at">type=</span><span class="st">'b'</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span><span class="fl">0.8</span>, <span class="at">lwd=</span><span class="fl">1.5</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy,</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>,</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">FALSE</span>, <span class="at">panel.first=</span><span class="fu">grid</span>(<span class="at">col=</span>pal<span class="sc">$</span>grid, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">main=</span><span class="st">'Observed Series'</span>, <span class="at">font.main=</span><span class="dv">2</span>, <span class="at">cex.main=</span><span class="fl">1.3</span>, <span class="at">col.main=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a><span class="fu">box</span>(<span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel 2: Trend</span></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(trend_mean, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span>pal<span class="sc">$</span>blue,</span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>,</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">FALSE</span>, <span class="at">panel.first=</span><span class="fu">grid</span>(<span class="at">col=</span>pal<span class="sc">$</span>grid, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">main=</span><span class="fu">expression</span>(<span class="fu">bold</span>(<span class="fu">paste</span>(<span class="st">'Trend ('</span>, mu[t], <span class="st">')'</span>))), <span class="at">cex.main=</span><span class="fl">1.3</span>, <span class="at">col.main=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a><span class="fu">box</span>(<span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel 3: Seasonal</span></span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(season_mean, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span>pal<span class="sc">$</span>sage,</span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>,</span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">FALSE</span>, <span class="at">panel.first=</span><span class="fu">grid</span>(<span class="at">col=</span>pal<span class="sc">$</span>grid, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">main=</span><span class="fu">expression</span>(<span class="fu">bold</span>(<span class="fu">paste</span>(<span class="st">'Seasonal ('</span>, tau[t], <span class="st">')'</span>))), <span class="at">cex.main=</span><span class="fl">1.3</span>, <span class="at">col.main=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a><span class="fu">box</span>(<span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel 4: Regression</span></span>
+<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(regress_mean, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span>pal<span class="sc">$</span>copper,</span>
+<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>,</span>
+<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">FALSE</span>, <span class="at">panel.first=</span><span class="fu">grid</span>(<span class="at">col=</span>pal<span class="sc">$</span>grid, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">main=</span><span class="fu">expression</span>(<span class="fu">bold</span>(<span class="fu">paste</span>(<span class="st">'Regression ('</span>, beta <span class="sc">%.%</span> x, <span class="st">')'</span>))), <span class="at">cex.main=</span><span class="fl">1.3</span>, <span class="at">col.main=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a><span class="fu">box</span>(<span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This decomposition is one of the primary selling points of the state space approach. You don’t just get a fitted line. You get a full accounting of <em>where</em> the signal comes from at every point in time.</p>
+</section>
+</section>
+<section id="the-moment-of-truth" class="level1">
+<h1>The Moment of Truth</h1>
+<section id="counterfactual-prediction" class="level2">
+<h2 class="anchored" data-anchor-id="counterfactual-prediction">Counterfactual Prediction</h2>
+<p>Here’s the scene we’ve been building towards. We’ve trained our model on the pre-launch era. The model has learned:</p>
+<ul>
+<li>The underlying trend dynamics (<span class="math inline">\(\sigma^2_\mu\)</span>)</li>
+<li>The seasonal rhythm (<span class="math inline">\(\sigma^2_\tau\)</span>, and the seasonal state history)</li>
+<li>How LENI’s sales relate to the broader drinkware industry (<span class="math inline">\(\beta_a\)</span>, <span class="math inline">\(\beta_b\)</span>)</li>
+<li>The observation noise (<span class="math inline">\(\sigma^2_y\)</span>)</li>
+</ul>
+<p>Now we ask: <em>what would LENI’s sales have looked like in the 10 post-launch periods if Tumbler v2™ had never been released?</em></p>
+<p>The procedure:</p>
+<ol type="1">
+<li>Take the posterior draws of all parameters from the fitted model</li>
+<li>For each draw, use the final smoothed state <span class="math inline">\(\hat{\alpha}_n\)</span> as the launching point</li>
+<li>Evolve the system forward for 10 time steps using equations (1) and (2), plugging in the <em>actual</em> competitor covariate values from the post-launch period</li>
+<li>The resulting <span class="math inline">\(\hat{y}_{n+1}, \dots, \hat{y}_{n+10}\)</span> is our <strong>counterfactual</strong>: what the model predicts <em>without</em> any intervention</li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract posterior draws of the final smoothed state and parameters</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>n_pre <span class="ot">&lt;-</span> <span class="fu">length</span>(y_vec_no_prod)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>n_post <span class="ot">&lt;-</span> <span class="fu">sum</span>(is_new_prod_live)  <span class="co"># 10 periods</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>x_post <span class="ot">&lt;-</span> <span class="fu">cbind</span>(x1, x2)[is_new_prod_live, ]</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># For each posterior draw, roll forward</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>n_draws <span class="ot">&lt;-</span> <span class="dv">800</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>counterfactual <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> n_draws, <span class="at">ncol =</span> n_post)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>draws <span class="ot">&lt;-</span> fit<span class="sc">$</span><span class="fu">draws</span>(<span class="at">format =</span> <span class="st">'draws_matrix'</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (d <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_draws) {</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Get the final alpha state for this draw</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  alpha_n <span class="ot">&lt;-</span> draws[d, <span class="fu">sprintf</span>(<span class="st">'alpha_sim[%d,%d]'</span>, n_pre, <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)]</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  var_d <span class="ot">&lt;-</span> draws[d, <span class="fu">c</span>(<span class="st">'var_vec[1]'</span>, <span class="st">'var_vec[2]'</span>)]</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  noise_d <span class="ot">&lt;-</span> draws[d, <span class="st">'noise_var'</span>]</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Build Z for post-launch period (same structure, new x values)</span></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>  alpha_curr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(alpha_n)</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_post) {</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>    z_t <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">5</span>), x_post[t, ])</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Expected observation (no noise for point prediction)</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>    counterfactual[d, t] <span class="ot">&lt;-</span> <span class="fu">sum</span>(z_t <span class="sc">*</span> alpha_curr)</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Evolve state forward</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>    alpha_curr <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(T_mat <span class="sc">%*%</span> alpha_curr) <span class="sc">+</span></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">as.numeric</span>(R_mat <span class="sc">%*%</span> <span class="fu">rnorm</span>(<span class="dv">2</span>, <span class="dv">0</span>, <span class="fu">sqrt</span>(<span class="fu">as.numeric</span>(var_d))))</span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="quantifying-the-incremental" class="level2">
+<h2 class="anchored" data-anchor-id="quantifying-the-incremental">Quantifying the Incremental</h2>
+<p>The <strong>incremental effect</strong> of Tumbler v2™ at each post-launch time point is simply:</p>
+<p><span class="math display">\[\Delta_t = y_t^{\text{actual}} - \hat{y}_t^{\text{counterfactual}}\]</span></p>
+<p>Since we have a full posterior distribution over <span class="math inline">\(\hat{y}_t^{\text{counterfactual}}\)</span>, we get a full posterior distribution over <span class="math inline">\(\Delta_t\)</span>. This means we can make probabilistic statements like “there is a 95% probability that the incremental sales from Tumbler v2™ are between $X and $Y.”</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>y_actual_post <span class="ot">&lt;-</span> y_vec[is_new_prod_live]</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Color palette (dark blue anchored) ---</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>pal <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">navy      =</span> <span class="st">'#1B2838'</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">blue      =</span> <span class="st">'#2C5F8A'</span>,</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">slate     =</span> <span class="st">'#4A7FB5'</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">copper    =</span> <span class="st">'#C47E3F'</span>,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">sage      =</span> <span class="st">'#5B8C6F'</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">light_bg  =</span> <span class="st">'#F7F9FC'</span>,</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid      =</span> <span class="st">'#D6DFE8'</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute incremental for each draw</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>incremental <span class="ot">&lt;-</span> <span class="fu">sweep</span>(<span class="sc">-</span>counterfactual, <span class="dv">2</span>, y_actual_post, <span class="st">'+'</span>)</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Posterior summaries</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>inc_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(incremental)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>inc_q05 <span class="ot">&lt;-</span> <span class="fu">apply</span>(incremental, <span class="dv">2</span>, quantile, <span class="fl">0.05</span>)</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>inc_q95 <span class="ot">&lt;-</span> <span class="fu">apply</span>(incremental, <span class="dv">2</span>, quantile, <span class="fl">0.95</span>)</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Total incremental</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>total_inc <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(incremental)</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"Posterior mean total incremental: $%.2f</span><span class="sc">\n</span><span class="st">"</span>, <span class="fu">mean</span>(total_inc)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Posterior mean total incremental: $36.77</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"95%% credible interval: [$%.2f, $%.2f]</span><span class="sc">\n</span><span class="st">"</span>,</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">quantile</span>(total_inc, <span class="fl">0.025</span>), <span class="fu">quantile</span>(total_inc, <span class="fl">0.975</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>95% credible interval: [$27.14, $47.01]</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar=</span><span class="fu">c</span>(<span class="fl">4.5</span>, <span class="dv">5</span>, <span class="dv">3</span>, <span class="dv">1</span>), <span class="at">family=</span><span class="st">'sans'</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>x_idx <span class="ot">&lt;-</span> (n_pre <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(n_pre <span class="sc">+</span> n_post)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">seq_along</span>(y_vec), y_vec, <span class="at">type=</span><span class="st">'b'</span>, <span class="at">pch=</span><span class="dv">16</span>, <span class="at">cex=</span><span class="fl">0.8</span>, <span class="at">lwd=</span><span class="fl">1.5</span>,</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">col=</span><span class="fu">ifelse</span>(is_new_prod_live, pal<span class="sc">$</span>copper, pal<span class="sc">$</span>navy),</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">FALSE</span>, <span class="at">panel.first=</span><span class="fu">grid</span>(<span class="at">col=</span>pal<span class="sc">$</span>grid, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>))</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">main=</span><span class="st">'Actual vs. Counterfactual'</span>, <span class="at">font.main=</span><span class="dv">2</span>, <span class="at">cex.main=</span><span class="fl">1.4</span>, <span class="at">col.main=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">xlab=</span><span class="st">'Time'</span>, <span class="at">ylab=</span><span class="st">'Sales'</span>, <span class="at">font.lab=</span><span class="dv">2</span>, <span class="at">cex.lab=</span><span class="fl">1.1</span>, <span class="at">col.lab=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Counterfactual with uncertainty</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>cf_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(counterfactual)</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>cf_q05 <span class="ot">&lt;-</span> <span class="fu">apply</span>(counterfactual, <span class="dv">2</span>, quantile, <span class="fl">0.05</span>)</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>cf_q95 <span class="ot">&lt;-</span> <span class="fu">apply</span>(counterfactual, <span class="dv">2</span>, quantile, <span class="fl">0.95</span>)</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>(<span class="fu">c</span>(x_idx, <span class="fu">rev</span>(x_idx)), <span class="fu">c</span>(cf_q05, <span class="fu">rev</span>(cf_q95)),</span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span><span class="fu">adjustcolor</span>(pal<span class="sc">$</span>slate, <span class="fl">0.25</span>), <span class="at">border=</span><span class="cn">NA</span>)</span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="fu">lines</span>(x_idx, cf_mean, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span>pal<span class="sc">$</span>blue, <span class="at">lty=</span><span class="dv">2</span>)</span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> n_pre <span class="sc">+</span> <span class="fl">0.5</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">lty=</span><span class="dv">3</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>,</span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Actual (post-launch)'</span>, <span class="st">'Counterfactual (no Tumbler v2\u2122)'</span>, <span class="st">'90% CI'</span>),</span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">col=</span><span class="fu">c</span>(pal<span class="sc">$</span>copper, pal<span class="sc">$</span>blue, <span class="cn">NA</span>), <span class="at">lwd=</span><span class="fu">c</span>(<span class="dv">2</span>,<span class="dv">3</span>,<span class="cn">NA</span>), <span class="at">lty=</span><span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="cn">NA</span>),</span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a>       <span class="at">pch=</span><span class="fu">c</span>(<span class="dv">16</span>, <span class="cn">NA</span>, <span class="dv">22</span>), <span class="at">pt.bg=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="cn">NA</span>, <span class="fu">adjustcolor</span>(pal<span class="sc">$</span>slate, <span class="fl">0.25</span>)),</span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a>       <span class="at">pt.cex=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>), <span class="at">text.font=</span><span class="dv">2</span>, <span class="at">text.col=</span>pal<span class="sc">$</span>navy,</span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a>       <span class="at">bg=</span><span class="fu">adjustcolor</span>(<span class="st">'white'</span>, <span class="fl">0.8</span>), <span class="at">box.lwd=</span><span class="fl">1.5</span>, <span class="at">box.col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a><span class="fu">box</span>(<span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The gap between the copper points (actual post-launch sales) and the blue dashed line (counterfactual) is the incremental effect of Tumbler v2™. The shaded region shows our uncertainty about the counterfactual. Where the copper points lie <em>above</em> the shaded region, we can be quite confident that the uplift is real and not just noise.</p>
+</section>
+<section id="the-cumulative-picture" class="level2">
+<h2 class="anchored" data-anchor-id="the-cumulative-picture">The Cumulative Picture</h2>
+<p>For a final summary, we can look at the cumulative incremental sales over the post-launch window:</p>
+<div class="cell" data-layout-align="center">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Color palette (dark blue anchored) ---</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>pal <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">navy      =</span> <span class="st">'#1B2838'</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">blue      =</span> <span class="st">'#2C5F8A'</span>,</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">slate     =</span> <span class="st">'#4A7FB5'</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">copper    =</span> <span class="st">'#C47E3F'</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">sage      =</span> <span class="st">'#5B8C6F'</span>,</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">light_bg  =</span> <span class="st">'#F7F9FC'</span>,</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid      =</span> <span class="st">'#D6DFE8'</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>cum_inc <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">apply</span>(incremental, <span class="dv">1</span>, cumsum))</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>cum_mean <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(cum_inc)</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>cum_q05 <span class="ot">&lt;-</span> <span class="fu">apply</span>(cum_inc, <span class="dv">2</span>, quantile, <span class="fl">0.05</span>)</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>cum_q95 <span class="ot">&lt;-</span> <span class="fu">apply</span>(cum_inc, <span class="dv">2</span>, quantile, <span class="fl">0.95</span>)</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar=</span><span class="fu">c</span>(<span class="fl">4.5</span>, <span class="dv">5</span>, <span class="dv">3</span>, <span class="dv">1</span>), <span class="at">family=</span><span class="st">'sans'</span>)</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="dv">1</span><span class="sc">:</span>n_post, cum_mean, <span class="at">type=</span><span class="st">'l'</span>, <span class="at">lwd=</span><span class="dv">3</span>, <span class="at">col=</span>pal<span class="sc">$</span>blue,</span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>     <span class="at">main=</span><span class="st">''</span>, <span class="at">xlab=</span><span class="st">''</span>, <span class="at">ylab=</span><span class="st">''</span>,</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylim=</span><span class="fu">range</span>(<span class="fu">c</span>(cum_q05, cum_q95)),</span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>     <span class="at">axes=</span><span class="cn">FALSE</span>, <span class="at">panel.first=</span><span class="fu">grid</span>(<span class="at">col=</span>pal<span class="sc">$</span>grid, <span class="at">lty=</span><span class="dv">1</span>, <span class="at">lwd=</span><span class="fl">0.5</span>))</span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">main=</span><span class="st">'Cumulative Incremental Sales from Tumbler v2\u2122'</span>,</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">font.main=</span><span class="dv">2</span>, <span class="at">cex.main=</span><span class="fl">1.4</span>, <span class="at">col.main=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a><span class="fu">title</span>(<span class="at">xlab=</span><span class="st">'Days Since Launch'</span>, <span class="at">ylab=</span><span class="st">'Cumulative $ Incremental'</span>,</span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">font.lab=</span><span class="dv">2</span>, <span class="at">cex.lab=</span><span class="fl">1.1</span>, <span class="at">col.lab=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a><span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy, <span class="at">col.axis=</span>pal<span class="sc">$</span>navy, <span class="at">font=</span><span class="dv">2</span>)</span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a><span class="fu">polygon</span>(<span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span>n_post, n_post<span class="sc">:</span><span class="dv">1</span>), <span class="fu">c</span>(cum_q05, <span class="fu">rev</span>(cum_q95)),</span>
+<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">col=</span><span class="fu">adjustcolor</span>(pal<span class="sc">$</span>slate, <span class="fl">0.2</span>), <span class="at">border=</span><span class="cn">NA</span>)</span>
+<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="dv">0</span>, <span class="at">lty=</span><span class="dv">2</span>, <span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a><span class="fu">box</span>(<span class="at">lwd=</span><span class="dv">2</span>, <span class="at">col=</span>pal<span class="sc">$</span>navy)</span>
+<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">'topleft'</span>, <span class="at">legend=</span><span class="fu">c</span>(<span class="st">'Posterior Mean'</span>, <span class="st">'90% Credible Interval'</span>),</span>
+<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">col=</span><span class="fu">c</span>(pal<span class="sc">$</span>blue, <span class="cn">NA</span>), <span class="at">lwd=</span><span class="fu">c</span>(<span class="dv">3</span>, <span class="cn">NA</span>), <span class="at">pch=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">22</span>),</span>
+<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a>       <span class="at">pt.bg=</span><span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">adjustcolor</span>(pal<span class="sc">$</span>slate, <span class="fl">0.2</span>)), <span class="at">pt.cex=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>),</span>
+<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a>       <span class="at">text.font=</span><span class="dv">2</span>, <span class="at">text.col=</span>pal<span class="sc">$</span>navy,</span>
+<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a>       <span class="at">bg=</span><span class="fu">adjustcolor</span>(<span class="st">'white'</span>, <span class="fl">0.8</span>), <span class="at">box.lwd=</span><span class="fl">1.5</span>, <span class="at">box.col=</span>pal<span class="sc">$</span>navy)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>If the credible interval stays above zero, we have strong evidence that the launch generated real incremental revenue.</p>
+</section>
+</section>
+<section id="curtain-call" class="level1">
+<h1>Curtain Call</h1>
+<section id="what-we-built" class="level2">
+<h2 class="anchored" data-anchor-id="what-we-built">What We Built</h2>
+<p>Let’s take stock. Across these two acts we:</p>
+<ol type="1">
+<li>Defined a flexible state space system that decomposes a time series into trend, seasonality, and regression components</li>
+<li>Implemented the Kalman filter and smoother in Stan’s function language</li>
+<li>Used the prediction error decomposition as a likelihood, letting Stan explore only the variance parameters while the filter handles the latent states</li>
+<li>Generated full posterior draws of the latent state via the Durbin and Koopman simulation smoother</li>
+<li>Projected the fitted model forward to build a counterfactual, then compared it against reality to quantify the incremental effect of Tumbler v2™</li>
+</ol>
+<p>The total parameter count that Stan actually sampled was twelve. Twelve parameters to characterize an entire time series decomposition with full uncertainty quantification. The Kalman filter did the rest.</p>
+</section>
+<section id="limitations-and-extensions" class="level2">
+<h2 class="anchored" data-anchor-id="limitations-and-extensions">Limitations and Extensions</h2>
+<p>No model is perfect, and ours has some notable limitations:</p>
+<p><strong>Linearity</strong>: The observation equation <span class="math inline">\(y_t = Z_t \alpha_t + \varepsilon_t\)</span> is linear. If the true relationship between covariates and sales is nonlinear, this model will miss it. Extensions using the <em>unscented</em> Kalman filter or particle filters can handle nonlinear state transitions, but at significant computational cost.</p>
+<p><strong>Exogeneity</strong>: We assumed that Abominable Snowman and Bigfoot’s sales are exogenous to LENI’s. If Tumbler v2™ <em>also</em> affected competitor sales (say, cannibalizing their market share), then our counterfactual would be biased. A multivariate state space model with <span class="math inline">\(p &gt; 1\)</span> could address this.</p>
+<p><strong>Prior sensitivity on</strong> <span class="math inline">\(P_1\)</span>: The initial state covariance matters more than you’d think, especially for short series. With 60 pre-launch observations we have reasonable burn-in, but for very short series you might want to use the diffuse initialization approach from Chapter 5 of <span class="citation" data-cites="book">(<a href="#ref-book" role="doc-biblioref">Durbin and Koopman 2012</a>)</span>.</p>
+<p><strong>Static coefficients</strong>: We assumed <span class="math inline">\(\beta_a\)</span> and <span class="math inline">\(\beta_b\)</span> are constant over time. If the relationship between LENI and its competitors is evolving (perhaps due to market dynamics), time-varying coefficients can be enabled simply by adding rows to <span class="math inline">\(R_t\)</span> and corresponding entries in <span class="math inline">\(Q_t\)</span>.</p>
+</section>
+<section id="final-bow" class="level2">
+<h2 class="anchored" data-anchor-id="final-bow">Final Bow</h2>
+<p>State space models are old. The Kalman filter dates to 1960. But the combination of a classical, well-understood filtering framework with modern Bayesian inference via Stan gives us something genuinely powerful: principled uncertainty quantification over decomposed time series components, all from a handful of variance parameters and some clever linear algebra.</p>
+<p>The audience applauds. The curtain falls. LENI’s stock price goes up.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-book" class="csl-entry" role="listitem">
+Durbin, James, and Siem Jan Koopman. 2012. <em><span class="nocase">Time Series Analysis by State Space Methods</span></em>. Oxford University Press. <a href="https://doi.org/10.1093/acprof:oso/9780199641178.001.0001">https://doi.org/10.1093/acprof:oso/9780199641178.001.0001</a>.
+</div>
+<div id="ref-sim_paper" class="csl-entry" role="listitem">
+Durbin, J., and S. J. Koopman. 2002. <span>“A Simple and Efficient Simulation Smoother for State Space Time Series Analysis.”</span> <em>Biometrika</em> 89 (3): 603–15. <a href="http://www.jstor.org/stable/4140605">http://www.jstor.org/stable/4140605</a>.
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
