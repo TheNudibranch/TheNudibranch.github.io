@@ -363,7 +363,7 @@ One implementation detail worth noting: since $y_t$ is univariate, $F_t$ is a sc
 With the script written and the cast assembled, it's time for the performance. We fit the model using `cmdstanr`:
 
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: false
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
@@ -384,7 +384,8 @@ fit <- mod$sample(
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
-  iter_sampling = 1000
+  iter_sampling = 1000,
+  adapt_delta = 0.99
 )
 ```
 
@@ -395,9 +396,9 @@ We fit on `y_vec_no_prod`, the series *excluding* the post-launch observations. 
 Before we trust any results, we need to make sure the sampler actually converged. The usual suspects:
 
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: false
-fit$summary(variables = c('var_vec', 'noise_var', 'P_1_diag')) |>
+fit$summary(variables = c('var_vec', 'noise_var', 'P_1_diag')) |> as.data.frame()
   select(variable, mean, q5, q95, rhat, ess_bulk)
 ```
 
@@ -422,13 +423,13 @@ If the posterior intervals for `var_vec[1]`, `var_vec[2]`, and `noise_var` conta
 One of the most satisfying checks: do we recover the true $\beta$ values? Remember, the DGP used $\beta_a = -1$ and $\beta_b = 1$. These live in the last two elements of $\alpha_t$, and since we gave them no disturbance (via $R_t$), they should be approximately constant across time. We can inspect them at the final time step:
 
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: false
 # Beta coefficients are in alpha_sim[N, 8] and alpha_sim[N, 9]
 fit$summary(variables = c(
   sprintf('alpha_sim[%d,8]', length(y_vec_no_prod)),
   sprintf('alpha_sim[%d,9]', length(y_vec_no_prod))
-)) |> select(variable, mean, q5, q95)
+))
 ```
 
 If the model is working, we should see the posteriors for $\beta_a$ and $\beta_b$ centered near $-1$ and $1$ respectively.
@@ -447,36 +448,69 @@ These components are additive. At any time $t$:
 
 $$\hat{y}_t = \mu_t + \tau_t + \beta_a x_{a,t} + \beta_b x_{b,t}$$
 
+
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: true
 #| fig-align: center
 #| fig-width: 10
 #| fig-height: 10
 library(tidyverse)
 
+# --- Color palette (dark blue anchored) ---
+pal <- list(
+  navy      = '#1B2838',
+  blue      = '#2C5F8A',
+  slate     = '#4A7FB5',
+  copper    = '#C47E3F',
+  sage      = '#5B8C6F',
+  light_bg  = '#F7F9FC',
+  grid      = '#D6DFE8'
+)
+
 # Extract posterior means for each component
-trend_mean <- fit$summary(variables = 'trend_comp[1,') |> pull(mean)
-season_mean <- fit$summary(variables = 'trend_comp[2,') |> pull(mean)
-regress_mean <- fit$summary(variables = 'trend_comp[3,') |> pull(mean)
+t_comp <- fit$draws('trend_comp', format='df')
+trend_mean <-  t_comp %>% select(starts_with('trend_comp[1,')) %>% colMeans()
+season_mean <- t_comp %>% select(starts_with('trend_comp[2,')) %>% colMeans()
+regress_mean <- t_comp %>% select(starts_with('trend_comp[3,')) %>% colMeans()
 
-par(mfrow=c(4,1), mar=c(3,4,2,1))
+par(mfrow=c(4,1), mar=c(3,4.5,2.5,1), bg=pal$light_bg, family='sans')
 
-plot(y_vec_no_prod, type='b', pch=16, lwd=2, main='Observed Series',
-     xaxt='n', yaxt='n', xlab='', ylab='')
-box(lwd=2)
+# Panel 1: Observed
+plot(y_vec_no_prod, type='b', pch=16, cex=0.8, lwd=1.5, col=pal$navy,
+     main='', xlab='', ylab='',
+     axes=FALSE, panel.first=grid(col=pal$grid, lty=1, lwd=0.5))
+title(main='Observed Series', font.main=2, cex.main=1.3, col.main=pal$navy)
+axis(1, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+axis(2, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+box(lwd=2, col=pal$navy)
 
-plot(trend_mean, type='l', lwd=3, col='steelblue', main='Trend (mu_t)',
-     xaxt='n', yaxt='n', xlab='', ylab='')
-box(lwd=2)
+# Panel 2: Trend
+plot(trend_mean, type='l', lwd=3, col=pal$blue,
+     main='', xlab='', ylab='',
+     axes=FALSE, panel.first=grid(col=pal$grid, lty=1, lwd=0.5))
+title(main=expression(bold(paste('Trend (', mu[t], ')'))), cex.main=1.3, col.main=pal$navy)
+axis(1, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+axis(2, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+box(lwd=2, col=pal$navy)
 
-plot(season_mean, type='l', lwd=3, col='darkgreen', main='Seasonal (tau_t)',
-     xaxt='n', yaxt='n', xlab='', ylab='')
-box(lwd=2)
+# Panel 3: Seasonal
+plot(season_mean, type='l', lwd=3, col=pal$sage,
+     main='', xlab='', ylab='',
+     axes=FALSE, panel.first=grid(col=pal$grid, lty=1, lwd=0.5))
+title(main=expression(bold(paste('Seasonal (', tau[t], ')'))), cex.main=1.3, col.main=pal$navy)
+axis(1, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+axis(2, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+box(lwd=2, col=pal$navy)
 
-plot(regress_mean, type='l', lwd=3, col='darkorange', main='Regression (beta * x)',
-     xaxt='n', yaxt='n', xlab='', ylab='')
-box(lwd=2)
+# Panel 4: Regression
+plot(regress_mean, type='l', lwd=3, col=pal$copper,
+     main='', xlab='', ylab='',
+     axes=FALSE, panel.first=grid(col=pal$grid, lty=1, lwd=0.5))
+title(main=expression(bold(paste('Regression (', beta %.% x, ')'))), cex.main=1.3, col.main=pal$navy)
+axis(1, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+axis(2, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+box(lwd=2, col=pal$navy)
 ```
 
 This decomposition is one of the primary selling points of the state space approach. You don't just get a fitted line. You get a full accounting of *where* the signal comes from at every point in time.
@@ -502,7 +536,7 @@ The procedure:
 4.  The resulting $\hat{y}_{n+1}, \dots, \hat{y}_{n+10}$ is our **counterfactual**: what the model predicts *without* any intervention
 
 ```{r}
-#| eval: false
+#| eval: true
 #| code-fold: false
 # Extract posterior draws of the final smoothed state and parameters
 n_pre <- length(y_vec_no_prod)
@@ -510,7 +544,7 @@ n_post <- sum(is_new_prod_live)  # 10 periods
 x_post <- cbind(x1, x2)[is_new_prod_live, ]
 
 # For each posterior draw, roll forward
-n_draws <- fit$metadata()$iter_sampling * fit$num_chains
+n_draws <- 4e3
 counterfactual <- matrix(NA, nrow = n_draws, ncol = n_post)
 
 draws <- fit$draws(format = 'draws_matrix')
@@ -552,6 +586,17 @@ Since we have a full posterior distribution over $\hat{y}_t^{\text{counterfactua
 #| fig-height: 6
 y_actual_post <- y_vec[is_new_prod_live]
 
+# --- Color palette (dark blue anchored) ---
+pal <- list(
+  navy      = '#1B2838',
+  blue      = '#2C5F8A',
+  slate     = '#4A7FB5',
+  copper    = '#C47E3F',
+  sage      = '#5B8C6F',
+  light_bg  = '#F7F9FC',
+  grid      = '#D6DFE8'
+)
+
 # Compute incremental for each draw
 incremental <- sweep(-counterfactual, 2, y_actual_post, '+')
 
@@ -567,10 +612,17 @@ cat(sprintf("95%% credible interval: [$%.2f, $%.2f]\n",
             quantile(total_inc, 0.025), quantile(total_inc, 0.975)))
 
 # Plot
+par(mar=c(4.5, 5, 3, 1), bg=pal$light_bg, family='sans')
 x_idx <- (n_pre + 1):(n_pre + n_post)
-plot(seq_along(y_vec), y_vec, type='b', pch=16, lwd=2,
-     main='Actual vs. Counterfactual', xaxt='n', yaxt='n',
-     xlab='', ylab='', col=ifelse(is_new_prod_live, 'darkred', 'black'))
+
+plot(seq_along(y_vec), y_vec, type='b', pch=16, cex=0.8, lwd=1.5,
+     main='', xlab='', ylab='',
+     col=ifelse(is_new_prod_live, pal$copper, pal$navy),
+     axes=FALSE, panel.first=grid(col=pal$grid, lty=1, lwd=0.5))
+title(main='Actual vs. Counterfactual', font.main=2, cex.main=1.4, col.main=pal$navy)
+title(xlab='Time', ylab='Sales', font.lab=2, cex.lab=1.1, col.lab=pal$navy)
+axis(1, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+axis(2, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
 
 # Counterfactual with uncertainty
 cf_mean <- colMeans(counterfactual)
@@ -578,19 +630,20 @@ cf_q05 <- apply(counterfactual, 2, quantile, 0.05)
 cf_q95 <- apply(counterfactual, 2, quantile, 0.95)
 
 polygon(c(x_idx, rev(x_idx)), c(cf_q05, rev(cf_q95)),
-        col=adjustcolor('steelblue', 0.3), border=NA)
-lines(x_idx, cf_mean, lwd=3, col='steelblue', lty=2)
+        col=adjustcolor(pal$slate, 0.25), border=NA)
+lines(x_idx, cf_mean, lwd=3, col=pal$blue, lty=2)
 
-abline(v = n_pre + 0.5, lwd=2, lty=3)
+abline(v = n_pre + 0.5, lwd=2, lty=3, col=pal$navy)
 legend('topleft',
-       legend=c('Actual (post-launch)', 'Counterfactual (no Tumbler v2)', '90% CI'),
-       col=c('darkred', 'steelblue', NA), lwd=c(2,3,NA), lty=c(1,2,NA),
-       pch=c(16, NA, 22), pt.bg=c(NA, NA, adjustcolor('steelblue', 0.3)),
-       pt.cex=c(1,1,2), bg=adjustcolor('white', 0.5))
-box(lwd=2)
+       legend=c('Actual (post-launch)', 'Counterfactual (no Tumbler v2\u2122)', '90% CI'),
+       col=c(pal$copper, pal$blue, NA), lwd=c(2,3,NA), lty=c(1,2,NA),
+       pch=c(16, NA, 22), pt.bg=c(NA, NA, adjustcolor(pal$slate, 0.25)),
+       pt.cex=c(1, 1, 2), text.font=2, text.col=pal$navy,
+       bg=adjustcolor('white', 0.8), box.lwd=1.5, box.col=pal$navy)
+box(lwd=2, col=pal$navy)
 ```
 
-The gap between the red points (actual post-launch sales) and the blue dashed line (counterfactual) is the incremental effect of Tumbler v2™. The shaded region shows our uncertainty about the counterfactual. Where the red points lie *above* the shaded region, we can be quite confident that the uplift is real and not just noise.
+The gap between the copper points (actual post-launch sales) and the blue dashed line (counterfactual) is the incremental effect of Tumbler v2™. The shaded region shows our uncertainty about the counterfactual. Where the copper points lie *above* the shaded region, we can be quite confident that the uplift is real and not just noise.
 
 ## The Cumulative Picture
 
@@ -602,23 +655,44 @@ For a final summary, we can look at the cumulative incremental sales over the po
 #| fig-align: center
 #| fig-width: 10
 #| fig-height: 6
+# --- Color palette (dark blue anchored) ---
+pal <- list(
+  navy      = '#1B2838',
+  blue      = '#2C5F8A',
+  slate     = '#4A7FB5',
+  copper    = '#C47E3F',
+  sage      = '#5B8C6F',
+  light_bg  = '#F7F9FC',
+  grid      = '#D6DFE8'
+)
+
 cum_inc <- t(apply(incremental, 1, cumsum))
 cum_mean <- colMeans(cum_inc)
 cum_q05 <- apply(cum_inc, 2, quantile, 0.05)
 cum_q95 <- apply(cum_inc, 2, quantile, 0.95)
 
-plot(1:n_post, cum_mean, type='l', lwd=3, col='darkred',
-     main='Cumulative Incremental Sales from Tumbler v2',
-     xlab='Days Since Launch', ylab='Cumulative $ Incremental',
-     ylim=range(c(cum_q05, cum_q95)))
+par(mar=c(4.5, 5, 3, 1), bg=pal$light_bg, family='sans')
+
+plot(1:n_post, cum_mean, type='l', lwd=3, col=pal$blue,
+     main='', xlab='', ylab='',
+     ylim=range(c(cum_q05, cum_q95)),
+     axes=FALSE, panel.first=grid(col=pal$grid, lty=1, lwd=0.5))
+title(main='Cumulative Incremental Sales from Tumbler v2\u2122',
+      font.main=2, cex.main=1.4, col.main=pal$navy)
+title(xlab='Days Since Launch', ylab='Cumulative $ Incremental',
+      font.lab=2, cex.lab=1.1, col.lab=pal$navy)
+axis(1, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+axis(2, lwd=2, col=pal$navy, col.axis=pal$navy, font=2)
+
 polygon(c(1:n_post, n_post:1), c(cum_q05, rev(cum_q95)),
-        col=adjustcolor('darkred', 0.2), border=NA)
-abline(h=0, lty=2, lwd=2)
-box(lwd=2)
+        col=adjustcolor(pal$slate, 0.2), border=NA)
+abline(h=0, lty=2, lwd=2, col=pal$navy)
+box(lwd=2, col=pal$navy)
 legend('topleft', legend=c('Posterior Mean', '90% Credible Interval'),
-       col=c('darkred', NA), lwd=c(3, NA), pch=c(NA, 22),
-       pt.bg=c(NA, adjustcolor('darkred', 0.2)), pt.cex=c(1,2),
-       bg=adjustcolor('white', 0.5))
+       col=c(pal$blue, NA), lwd=c(3, NA), pch=c(NA, 22),
+       pt.bg=c(NA, adjustcolor(pal$slate, 0.2)), pt.cex=c(1, 2),
+       text.font=2, text.col=pal$navy,
+       bg=adjustcolor('white', 0.8), box.lwd=1.5, box.col=pal$navy)
 ```
 
 If the credible interval stays above zero, we have strong evidence that the launch generated real incremental revenue.
